@@ -1,0 +1,22 @@
+{
+  "name": "hrs-scraper",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "discover": "bun src/discover.ts",
+    "scrape": "bun src/scrape.ts",
+    "migrate": "bun src/migrate.ts",
+    "test-parse": "bun src/test-parse.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "puppeteer": "^24.37.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
