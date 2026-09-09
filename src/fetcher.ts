@@ -1,141 +1,111 @@
-import puppeteer, { type Browser, type Page } from "puppeteer";
 import {
-  RATE_LIMIT_MS,
-  MAX_CONCURRENT,
+  BASE_URL,
+  FALLBACK_BASE_URL,
+  HEADERS,
   MAX_RETRIES,
+  RATE_LIMIT_MS,
+  REQUEST_TIMEOUT_MS,
   RETRY_BACKOFF_MS,
 } from "./config";
 
-let browser: Browser | null = null;
-let page: Page | null = null;
-let lastRequestTime = 0;
+/** Thrown for 404s so callers can distinguish "gone" from "try again". */
+export class NotFoundError extends Error {}
 
-async function getBrowser(): Promise<Browser> {
-  if (!browser) {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-      ],
-    });
-  }
-  return browser;
-}
+// Request starts are spaced RATE_LIMIT_MS apart globally, so raising the
+// worker count never raises the request rate past what this allows.
+let nextSlot = 0;
 
-async function getPage(): Promise<Page> {
-  if (!page || page.isClosed()) {
-    const b = await getBrowser();
-    page = await b.newPage();
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-    );
-    await page.setExtraHTTPHeaders({
-      "Accept-Language": "en-US,en;q=0.9",
-    });
-  }
-  return page;
-}
-
-async function rateLimit(): Promise<void> {
+async function takeSlot(): Promise<void> {
   const now = Date.now();
-  const elapsed = now - lastRequestTime;
-  if (elapsed < RATE_LIMIT_MS) {
-    await Bun.sleep(RATE_LIMIT_MS - elapsed);
-  }
-  lastRequestTime = Date.now();
+  const start = Math.max(now, nextSlot);
+  nextSlot = start + RATE_LIMIT_MS;
+  if (start > now) await Bun.sleep(start - now);
 }
 
 export async function fetchPage(url: string): Promise<string> {
-  await rateLimit();
-
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     if (attempt > 0) {
-      const backoff = RETRY_BACKOFF_MS * Math.pow(2, attempt - 1);
-      console.warn(`  Retry ${attempt}/${MAX_RETRIES} after ${backoff}ms...`);
-      await Bun.sleep(backoff);
+      await Bun.sleep(RETRY_BACKOFF_MS * Math.pow(2, attempt - 1));
     }
+    await takeSlot();
 
     try {
-      const p = await getPage();
-      const response = await p.goto(url, {
-        waitUntil: "domcontentloaded",
-        timeout: 30_000,
+      const response = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
-      if (!response) {
-        throw new Error(`No response from: ${url}`);
-      }
+      if (response.ok) return await response.text();
+      if (response.status === 404) throw new NotFoundError(`404 Not Found: ${url}`);
 
-      const status = response.status();
-
-      if (status === 200) {
-        return await p.content();
-      }
-
-      if (status === 403) {
-        // Cloudflare might show a challenge page - wait for it to resolve
-        console.warn(`  Got 403, waiting for Cloudflare challenge...`);
-        await Bun.sleep(5000);
-        // Check if page content changed after challenge
-        const bodyText = await p.evaluate(() => document.body?.innerText ?? "");
-        if (!bodyText.includes("Attention Required")) {
-          return await p.content();
-        }
-        throw new Error(`403 Forbidden (Cloudflare blocked): ${url}`);
-      }
-
-      if (status === 404) {
-        throw new Error(`404 Not Found: ${url}`);
-      }
-
-      lastError = new Error(`HTTP ${status}: ${url}`);
+      lastError = new Error(`HTTP ${response.status}: ${url}`);
     } catch (err) {
+      if (err instanceof NotFoundError) throw err;
       lastError = err instanceof Error ? err : new Error(String(err));
-      if (lastError.message.includes("404")) {
-        throw lastError;
-      }
     }
   }
 
-  throw lastError ?? new Error(`Failed after ${MAX_RETRIES} retries: ${url}`);
+  // The data host is a plain IIS mirror and occasionally drops requests. Fall
+  // back to the Cloudflare-fronted www host, which needs a real browser.
+  try {
+    return await fetchViaBrowser(url.replace(BASE_URL, FALLBACK_BASE_URL));
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(`${lastError?.message ?? url} (browser fallback: ${detail})`);
+  }
 }
 
-export async function fetchBatch(
-  urls: string[],
-  onProgress?: (completed: number, total: number, url: string) => void
-): Promise<Map<string, string>> {
-  const results = new Map<string, string>();
-  let completed = 0;
+// --- Puppeteer fallback (loaded lazily; unused on the happy path) ---
 
-  // Puppeteer uses a single page, so process sequentially
-  for (const url of urls) {
-    try {
-      const html = await fetchPage(url);
-      results.set(url, html);
-    } catch (err) {
-      console.error(
-        `  Failed: ${url} - ${err instanceof Error ? err.message : err}`
-      );
-    }
-    completed++;
-    onProgress?.(completed, urls.length, url);
+let browser: import("puppeteer").Browser | null = null;
+
+async function fetchViaBrowser(url: string): Promise<string> {
+  const puppeteer = (await import("puppeteer")).default;
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    });
   }
 
-  return results;
-}
-
-/** Close the browser when done */
-export async function closeBrowser(): Promise<void> {
-  if (page && !page.isClosed()) {
+  const page = await browser.newPage();
+  try {
+    await page.setUserAgent(HEADERS["User-Agent"]!);
+    const response = await page.goto(url, {
+      waitUntil: "domcontentloaded",
+      timeout: REQUEST_TIMEOUT_MS,
+    });
+    if (!response) throw new Error(`No response from ${url}`);
+    if (response.status() === 404) throw new NotFoundError(`404 Not Found: ${url}`);
+    if (!response.ok()) throw new Error(`HTTP ${response.status()}: ${url}`);
+    return await page.content();
+  } finally {
     await page.close();
-    page = null;
   }
+}
+
+/** Close the fallback browser, if one was ever launched. */
+export async function closeBrowser(): Promise<void> {
   if (browser) {
     await browser.close();
     browser = null;
   }
+}
+
+/** Run `fn` over `items` with at most `concurrency` in flight, preserving nothing. */
+export async function pool<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<void>
+): Promise<void> {
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      await fn(items[index]!, index);
+    }
+  });
+  await Promise.all(workers);
 }

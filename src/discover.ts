@@ -3,47 +3,64 @@ import {
   BASE_URL,
   DATA_DIR,
   MANIFEST_PATH,
-  type Volume,
+  MAX_CONCURRENT,
   type Chapter,
-  type SectionFile,
   type Manifest,
+  type SectionFile,
+  type Volume,
 } from "./config";
-import { fetchPage, closeBrowser } from "./fetcher";
+import { fetchPage, pool } from "./fetcher";
+import { isIndexFilename, normalizeChapterNumber } from "./parser";
 
-/** Extract directory/file links from an IIS directory listing page */
-function parseDirectoryListing(html: string, baseUrl: string): string[] {
-  const $ = cheerio.load(html);
-  const links: string[] = [];
+interface Entry {
+  name: string;
+  url: string;
+  isDir: boolean;
+}
+
+/**
+ * Read one IIS directory listing.
+ *
+ * The listings link with absolute paths (`<A HREF="/hrscurrent/Vol01.../">`),
+ * so hrefs are resolved against the page URL and then kept only when they land
+ * directly inside it. That drops the "[To Parent Directory]" link and any
+ * deeper path without needing to special-case either.
+ */
+async function listDirectory(pageUrl: string): Promise<Entry[]> {
+  const $ = cheerio.load(await fetchPage(pageUrl));
+  const entries: Entry[] = [];
 
   $("a").each((_, el) => {
     const href = $(el).attr("href");
     if (!href) return;
-    // Skip parent directory and non-relative links
-    if (href.startsWith("/") || href.startsWith("..") || href.startsWith("http")) return;
-    links.push(href);
+
+    const resolved = new URL(href, pageUrl).href;
+    if (!resolved.startsWith(pageUrl) || resolved === pageUrl) return;
+
+    const relative = decodeURIComponent(resolved.slice(pageUrl.length));
+    const isDir = relative.endsWith("/");
+    const name = isDir ? relative.slice(0, -1) : relative;
+    if (!name || name.includes("/")) return; // not a direct child
+
+    entries.push({ name, url: resolved, isDir });
   });
 
-  return links;
+  return entries;
 }
 
-/** Discover all volumes from the root HRS directory */
 async function discoverVolumes(): Promise<Volume[]> {
   console.log("Discovering volumes...");
-  const html = await fetchPage(BASE_URL);
-  const links = parseDirectoryListing(html, BASE_URL);
-
   const volumes: Volume[] = [];
-  for (const link of links) {
-    // Match patterns like "Vol01_Ch0001-0042F/"
-    const match = link.match(/^(Vol(\d+)_Ch(.+?))\/?$/);
-    if (match) {
-      volumes.push({
-        number: parseInt(match[2]!, 10),
-        dirName: match[1]!,
-        chapterRange: match[3]!,
-        chapters: [],
-      });
-    }
+
+  for (const entry of await listDirectory(BASE_URL)) {
+    const match = entry.name.match(/^Vol(\d+)_Ch(.+)$/);
+    if (!entry.isDir || !match) continue;
+    volumes.push({
+      number: parseInt(match[1]!, 10),
+      dirName: entry.name,
+      chapterRange: match[2]!,
+      chapters: [],
+    });
   }
 
   volumes.sort((a, b) => a.number - b.number);
@@ -51,81 +68,68 @@ async function discoverVolumes(): Promise<Volume[]> {
   return volumes;
 }
 
-/** Discover chapters within a volume directory */
+/**
+ * Every subdirectory of a volume is a chapter. Volume 1 also holds the
+ * non-HRS documents (`01-USCON`, `05-CONST`, `06-HHCA`, ...), which are
+ * kept — they are part of the published corpus.
+ */
 async function discoverChapters(volume: Volume): Promise<Chapter[]> {
-  const volumeUrl = `${BASE_URL}${volume.dirName}/`;
-  const html = await fetchPage(volumeUrl);
-  const links = parseDirectoryListing(html, volumeUrl);
+  const entries = await listDirectory(`${BASE_URL}${volume.dirName}/`);
+  const chapters = entries
+    .filter((entry) => entry.isDir)
+    .map((entry) => ({
+      number: normalizeChapterNumber(entry.name),
+      dirName: entry.name,
+      volumeNumber: volume.number,
+      title: "",
+      files: [] as SectionFile[],
+    }));
 
-  const chapters: Chapter[] = [];
-  for (const link of links) {
-    // Match patterns like "HRS0001/" or "HRS0431K/" or special dirs
-    const match = link.match(/^(HRS(\d{4}\w*))\/?$/i);
-    if (match) {
-      chapters.push({
-        number: match[2]!,
-        dirName: match[1]!,
-        volumeNumber: volume.number,
-        files: [],
-      });
-    }
-  }
-
-  chapters.sort((a, b) => a.number.localeCompare(b.number));
+  chapters.sort((a, b) => a.dirName.localeCompare(b.dirName));
   return chapters;
 }
 
-/** Discover section files within a chapter directory */
-async function discoverFiles(
-  volume: Volume,
-  chapter: Chapter
-): Promise<SectionFile[]> {
+async function discoverFiles(volume: Volume, chapter: Chapter): Promise<SectionFile[]> {
   const chapterUrl = `${BASE_URL}${volume.dirName}/${chapter.dirName}/`;
-  const html = await fetchPage(chapterUrl);
-  const links = parseDirectoryListing(html, chapterUrl);
-
-  const files: SectionFile[] = [];
-  for (const link of links) {
-    if (!link.toLowerCase().endsWith(".htm")) continue;
-    const filename = decodeURIComponent(link);
-    // Chapter index pages match pattern like "HRS_0001-.htm"
-    const isIndex = /^HRS_\d{4}\w*-\.htm$/i.test(filename);
-    files.push({
-      filename,
-      url: `${chapterUrl}${link}`,
-      isIndex,
-    });
-  }
+  const files = (await listDirectory(chapterUrl))
+    .filter((entry) => !entry.isDir && /\.html?$/i.test(entry.name))
+    .map((entry) => ({
+      filename: entry.name,
+      url: entry.url,
+      isIndex: isIndexFilename(entry.name),
+    }));
 
   files.sort((a, b) => a.filename.localeCompare(b.filename));
   return files;
 }
 
 async function main() {
-  console.log("HRS Discovery - Building manifest\n");
-
-  // Ensure data directory exists
+  console.log(`HRS Discovery - Building manifest from ${BASE_URL}\n`);
   await Bun.$`mkdir -p ${DATA_DIR}`.quiet();
 
   const volumes = await discoverVolumes();
-  let totalFiles = 0;
 
   for (const volume of volumes) {
-    console.log(
-      `\nVolume ${volume.number} (${volume.dirName})`
-    );
     volume.chapters = await discoverChapters(volume);
-    console.log(`  Found ${volume.chapters.length} chapters`);
-
-    for (const chapter of volume.chapters) {
-      chapter.files = await discoverFiles(volume, chapter);
-      totalFiles += chapter.files.length;
-      const indexCount = chapter.files.filter((f) => f.isIndex).length;
-      console.log(
-        `    ${chapter.dirName}: ${chapter.files.length} files (${indexCount} index)`
-      );
-    }
+    console.log(`Volume ${volume.number} (${volume.dirName}): ${volume.chapters.length} chapters`);
   }
+
+  const allChapters = volumes.flatMap((volume) =>
+    volume.chapters.map((chapter) => ({ volume, chapter }))
+  );
+
+  console.log(`\nListing ${allChapters.length} chapter directories...`);
+  let done = 0;
+  await pool(allChapters, MAX_CONCURRENT, async ({ volume, chapter }) => {
+    chapter.files = await discoverFiles(volume, chapter);
+    done++;
+    process.stdout.write(`\r  ${done}/${allChapters.length} chapters listed`.padEnd(60));
+  });
+
+  const totalFiles = volumes.reduce(
+    (sum, volume) => sum + volume.chapters.reduce((n, c) => n + c.files.length, 0),
+    0
+  );
 
   const manifest: Manifest = {
     createdAt: new Date().toISOString(),
@@ -135,9 +139,8 @@ async function main() {
   };
 
   await Bun.write(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
-  await closeBrowser();
-  console.log(`\nManifest saved to ${MANIFEST_PATH}`);
-  console.log(`Total: ${volumes.length} volumes, ${totalFiles} files`);
+  console.log(`\n\nManifest saved to ${MANIFEST_PATH}`);
+  console.log(`Total: ${volumes.length} volumes, ${allChapters.length} chapters, ${totalFiles} files`);
 }
 
 main().catch((err) => {

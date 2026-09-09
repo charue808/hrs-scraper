@@ -34,4 +34,12 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 # scraper data
-data/
+#
+# data/parsed and data/manifest.json ARE committed: git is the version store for
+# the corpus, so a re-scrape after a legislative session diffs to exactly the
+# sections that were amended. Serialization is byte-stable (see
+# SECTION_FIELD_ORDER in src/config.ts) to keep those diffs meaningful.
+#
+# Everything else under data/ is a runtime artifact and stays ignored.
+data/html/
+data/progress.json

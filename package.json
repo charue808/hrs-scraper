@@ -1,13 +1,13 @@
 {
   "name": "hrs-scraper",
-  "module": "index.ts",
   "type": "module",
   "private": true,
   "scripts": {
     "discover": "bun src/discover.ts",
     "scrape": "bun src/scrape.ts",
     "migrate": "bun src/migrate.ts",
-    "test-parse": "bun src/test-parse.ts"
+    "test-parse": "bun src/test-parse.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "cheerio": "^1.2.0",

@@ -9,11 +9,16 @@ CREATE TABLE IF NOT EXISTS volumes (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- chapter_number is TEXT because chapters carry letter suffixes (6D, 431K) and
+-- the non-HRS directories (05-CONST, 06-HHCA) are chapters here too. Numbers
+-- are stored without leading zeros so they match what the parser derives from
+-- section filenames.
 CREATE TABLE IF NOT EXISTS chapters (
   id SERIAL PRIMARY KEY,
   number TEXT UNIQUE NOT NULL,
   dir_name TEXT NOT NULL,
   volume_number INTEGER NOT NULL REFERENCES volumes(number),
+  title TEXT NOT NULL DEFAULT '',
   file_count INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -28,8 +33,15 @@ CREATE TABLE IF NOT EXISTS sections (
   history TEXT NOT NULL DEFAULT '',
   cross_references TEXT[] DEFAULT '{}',
   case_notes TEXT NOT NULL DEFAULT '',
+  -- Every annotation block on the page, as [{heading, text}, ...]. Pages carry
+  -- an open-ended set of these (Case Notes, Attorney General Opinions, Law
+  -- Journals and Reviews, Revision Note, COMMENTARY ON ..., and so on), so
+  -- they are kept whole rather than flattened into fixed columns.
+  annotations JSONB NOT NULL DEFAULT '[]',
   part_heading TEXT,
   chapter_number TEXT NOT NULL REFERENCES chapters(number),
+  doc_type TEXT NOT NULL DEFAULT 'hrs',
+  is_uncodified BOOLEAN DEFAULT FALSE,
   filename TEXT NOT NULL,
   url TEXT NOT NULL,
   is_repealed BOOLEAN DEFAULT FALSE,
@@ -41,9 +53,17 @@ CREATE TABLE IF NOT EXISTS sections (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Columns added after the first release, so migrations stay re-runnable
+-- against a database created by an earlier version of this file.
+ALTER TABLE chapters ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '';
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS annotations JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS doc_type TEXT NOT NULL DEFAULT 'hrs';
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS is_uncodified BOOLEAN DEFAULT FALSE;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sections_fts ON sections USING GIN (fts);
 CREATE INDEX IF NOT EXISTS idx_sections_chapter ON sections (chapter_number);
+CREATE INDEX IF NOT EXISTS idx_sections_doc_type ON sections (doc_type);
 CREATE INDEX IF NOT EXISTS idx_chapters_volume ON chapters (volume_number);
 
 -- Auto-update updated_at trigger
