@@ -1,6 +1,6 @@
 # HRS Scraper — Architecture & Reference
 
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 
 This was originally the pre-implementation plan. It is now the living design
 reference and describes the system as built, with the site facts corrected
@@ -26,14 +26,14 @@ Storage & Delivery below and `citation-linking.md`.
 
 ## Status
 
-Discovery and parsing are verified end to end against the live site, and the
-full corpus was scraped on 2026-09-09 with zero failures — 24,505 files,
-23,373 sections. Four small parser defects found in QA are fixed before the
-baseline corpus commit; see the Next Steps in `progress.md`.
+The corpus is scraped, parsed, committed and cross-linked; the site is not
+built. **`STATE.md` is the current-state summary** — what is trustworthy, what
+is missing, and where the loose threads are. This document is the design
+reference underneath it.
 
-Companion documents: `citation-linking.md` (the primary outcome) and
-`source-anomalies.md` (how errors in the published statutes are recorded and
-presented).
+Companion documents: `citation-linking.md` (the primary outcome, with all eight
+hazards and the measured results) and `source-anomalies.md` (how errors in the
+published statutes are recorded and presented).
 
 ## Storage & Delivery — decided 2026-09-09
 
@@ -64,10 +64,12 @@ Measured sizes for the full corpus: 154 MB of parsed JSON raw, ~33 MB gzipped.
 `db.ts`, `migrate.ts` and `sql/schema.sql` are kept — `--db` remains useful for
 ad-hoc analysis during development — but they are a side tool, not the pipeline.
 
-**Deployment constraint**: 24,505 files exceeds Cloudflare Pages' 20,000-file
-per-deployment cap, and other static hosts have their own ceilings. Verify the
-current limits before choosing a host; Workers static assets, a VPS, or folding
-the chapter indexes into fewer pages are the ways out.
+**Deployment**: the build emits roughly 24,600 files. Cloudflare raised the Pages
+cap to 100,000 for paid plans on 2026-01-23 (requires
+`PAGES_WRANGLER_MAJOR_VERSION=4`), and Workers static assets tier the same way,
+so a paid plan on either clears it. Both free tiers stop at 20,000. If free
+hosting ever becomes a requirement, folding the 1,132 chapter indexes into fewer
+pages is the cheapest reduction. Limits move — re-check before committing.
 
 ---
 
@@ -77,7 +79,8 @@ the chapter indexes into fewer pages are the ways out.
 - **Language**: TypeScript
 - **HTML parsing**: cheerio
 - **HTTP**: the built-in `fetch`, with Puppeteer as a fallback only
-- **Database**: Postgres (Neon), via the built-in `Bun.SQL`
+- **Search**: Pagefind (not yet wired up)
+- **Database** *(side tool)*: Postgres, via the built-in `Bun.SQL`
 
 The original plan specified `postgres.js` and plain `fetch` with browser-like
 headers. Bun ships a Postgres client, so `postgres.js` is unnecessary; the
@@ -305,6 +308,26 @@ whole title, in which a bare `Chapter` column header appears — so the
 
 ## Pipeline
 
+Five steps. The first two touch the network; the rest are local and cheap, which
+is what makes iterating on the parser practical.
+
+```
+discover  ──> data/manifest.json     crawl the directory listings          ~2 min
+scrape    ──> data/parsed/*.json     fetch + parse + cache HTML            ~45 min
+              data/html/*.htm
+chapters  ──> data/chapters.json     chapter titles from the index pages   seconds
+reparse   ──> data/parsed/*.json     rebuild from cached HTML              seconds
+render    ──> build/preview/*.html   one chapter, citations linked         seconds
+```
+
+`reparse` is the loop that matters after the initial scrape: change the parser,
+rebuild the whole corpus from `data/html` in seconds, and read the diff. It
+fetches anything missing from the cache, so a partial cache still produces a
+complete corpus.
+
+Citation linking is not a pipeline step — it happens at render time, from
+`data/parsed` plus `data/manifest.json` plus `data/corrections.json`.
+
 ### Phase 1 — Discovery (`src/discover.ts`)
 
 Three-level crawl of the directory listings: root → volumes → chapters → files.
@@ -322,7 +345,8 @@ Output: `data/manifest.json` (~5.6 MB). Runs in about 2 minutes.
 Walks the manifest through a concurrency pool. For each file:
 
 - index page → parse the chapter title, update `chapters.title`
-- section page → parse, write `data/parsed/<name>.json`, and upsert if `--db`
+- section page → parse, apply `data/corrections.json`, write
+  `data/parsed/<name>.json`, and upsert if `--db`
 
 Resume state lives in `data/progress.json` and is written every 100 files.
 Duplicate section numbers are reported rather than silently overwritten.
@@ -336,22 +360,41 @@ With `--db`, volumes and chapters are upserted up front, since
 
 ```
 src/
-  config.ts        types, constants, env
+  config.ts        types, constants, SECTION_FIELD_ORDER, serializeSection
   fetcher.ts       fetchPage, pool, closeBrowser, NotFoundError
-  discover.ts      Phase 1
-  scrape.ts        Phase 2
+
+  discover.ts      Phase 1: directory listings -> manifest
+  scrape.ts        Phase 2: fetch, parse, store
+  reparse.ts       rebuild data/parsed from cached HTML after a parser change
+  chapters.ts      chapter titles from index pages -> data/chapters.json
+
   parser.ts        filenameToSectionNumber, extractChapterFromFilename,
                    normalizeChapterNumber, isIndexFilename,
                    docTypeFromFilename, parseSection, parseChapterIndex
-  parser.test.ts   39 tests (bun test)
-  db.ts            getDb, closeDb, upsertVolume, upsertChapter,
-                   updateChapterTitle, upsertSection
-  migrate.ts       runs sql/schema.sql, or prints it if no DATABASE_URL
-  test-parse.ts    parse one URL or local file
-sql/
-  schema.sql       standalone schema
-data/              gitignored runtime data
+  corrections.ts   loadCorrections, applyCorrections, sectionNumberAliases
+  resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
+  citations.ts     detect, linkify, expandRange, tally, escapeHtml
+  render.ts        one chapter -> static HTML (preview)
+
+  profile-citations.ts   the citation quality metric
+  test-parse.ts          parse one URL or local file
+
+  parser.test.ts         65 tests
+  citations.test.ts      35 tests
+  corrections.test.ts    15 tests
+
+sql/schema.sql     standalone schema (side tool)
+data/              manifest.json, chapters.json, corrections.json and
+                   parsed/ are tracked; html/ and progress.json are not
 ```
+
+### Why the layers split where they do
+
+`parser.ts` is a faithful reporter of what a page says and holds no knowledge of
+the corpus as a whole. `corrections.ts` layers reviewed editorial judgment on
+top of it. `resolver.ts` owns the inventory. `citations.ts` owns the grammar and
+never touches the filesystem. That ordering is what keeps "the source says X" and
+"X is wrong" from getting tangled together.
 
 ### Fetching
 
@@ -384,10 +427,19 @@ phases.
 | `partHeading` | PART/ARTICLE banner above the section, if any |
 | `chapterNumber` | Normalized (`1`, `6D`, `431K`, `05-CONST`) |
 | `docType` | `hrs`, `const`, `uscon`, `hhca`, `adm`, `org`, `hnp` |
-| `isUncodified` | Heading was bracketed |
+| `isUncodified` | Heading was bracketed, `[§11-1.52]` |
 | `isRepealed` | From the title, or a body that is a repeal note |
-| `numberSource` | `page` or `filename` — how the number was obtained |
+| `covers` | The span a range page stands for (`§515-10 to 515-12`), else null. 272 sections |
+| `titleIsSupplied` | The bracket wrapped only the title — a catchline supplied editorially. 13 sections |
+| `sourceAnomalies` | Discrepancies from `data/corrections.json`; `[]` on all but one section |
+| `numberSource` | `page`, `filename`, `page-range`, or `correction` |
 | `filename`, `url` | Provenance |
+
+Field order is declared in `SECTION_FIELD_ORDER`, not left to object-literal
+insertion order. Adding a field appends and is safe; reordering or renaming
+rewrites all 23,373 files, so it belongs in its own commit — and adding an
+always-present field after the corpus is committed churns everything and buries
+the first real amendment diff.
 
 ### Database
 
@@ -440,19 +492,24 @@ Tunables in `config.ts`:
 
 ```bash
 bun install
+bun test
+
+bun run discover                      # crawl -> data/manifest.json (~2 min)
+bun run scrape --limit 20 --save-html  # smoke test
+bun run scrape --save-html            # full run (~45 min)
+
+bun run reparse                       # rebuild data/parsed from data/html (seconds)
+bun run reparse -- --dry-run          # report changes, write nothing
+bun run chapters                      # chapter titles -> data/chapters.json
+bun run profile-citations             # citation quality metric
+bun run render -- --chapter 26        # preview a chapter -> build/preview/
 
 # Parse a single page to sanity-check the parser
-bun run test-parse -- --url "https://data.capitol.hawaii.gov/hrscurrent/Vol01_Ch0001-0042F/HRS0001/HRS_0001-0001.htm" --json
-
-bun run discover                      # Phase 1 → data/manifest.json (~2 min)
-bun run scrape -- --limit 20          # smoke test
-bun run migrate                       # schema (prints SQL if no DATABASE_URL)
-bun run scrape -- --db                # full run (~45 min)
-
-bun test
+bun run test-parse -- --file data/html/HRS_0001-0001.htm --json
 ```
 
-Scraper flags: `--db`, `--limit N`, `--save-html`, `--concurrency N`.
+Scraper flags: `--save-html`, `--limit N`, `--concurrency N`, `--db`.
+`bun run migrate` and `--db` are the optional Postgres side tool.
 
 ---
 
@@ -471,62 +528,83 @@ Scraper flags: `--db`, `--limit N`, `--save-html`, `--concurrency N`.
 - **Special directories** with their own filename prefixes
 - **Malformed filenames** (`.docx.htm`, soft hyphen, `_[OLD]`)
 - **Duplicate section numbers** — reported rather than silently overwritten
+- **Range headings** (`§515-10 to 515-12 REPEALED.`) — 274 pages standing for a
+  span; the number comes from the filename and the span is recorded in `covers`
+- **Subsection markers in headings** — `<b>§26-12 Title. </b>(a)<b> </b>Text`,
+  including the variant split across `(`, `a`, `)` runs
+- **Bracketed titles** — `[§440G-16 Rules.]` (uncodified) versus
+  `§604-13 [Arrest under warrant.]` (catchline supplied editorially)
+- **`[OLD]` / `[NEW]` banners** preceding live content, in both section pages
+  and chapter index pages
+- **Bracketed chapter banners** — `[CHAPTER 30]`, and `[CHAPTER 56 TITLE]` with
+  the title inside the bracket
+- **Chapter titles beginning with a digit** — "911 SERVICES"
+- **Errors in the source itself** — a reviewed correction ledger, never inferred
 
 ---
 
 ## Known Gaps & Future Work
 
-- **Errors in the source documents.** The published HRS contains typographical
-  errors — `HRS_0634G-0002.htm` is headed `§643G-2` for a chapter that does not
-  exist. Policy, data model and rendering rules are in `source-anomalies.md`:
-  identity is corrected so navigation works, displayed text stays faithful to
-  the source, and a generated editorial note carries the claim and its evidence.
-  Corrections live in a reviewed `data/corrections.json` rather than being
-  inferred at parse time.
-- **Non-HRS numbering and titles.** The constitutions, Organic Act, Admission
-  Act and HHCA are captured and tagged, but numbered as prefixed identifiers
-  (`CONST §1-1`) rather than proper citations (`Haw. Const. art. I, §1`).
-  Titles are missed for the constitutions, where the title sits in centered
-  paragraphs above a `Section n.` heading; the Admission and Organic Acts have
-  no titles to find. Worth doing if those documents matter downstream — it is
-  about 424 files.
+Ordered by what stands between the current state and a finished site.
+`STATE.md` carries the same list in short form alongside the loose threads.
+
+### The correctness gap
+
+- **Non-HRS numbering and titles — 424 files.** The constitutions, Organic Act,
+  Admission Act and HHCA are captured and tagged, but numbered as prefixed
+  identifiers (`CONST §1-1`) rather than proper citations
+  (`Haw. Const. art. I, §1`). Titles are missed for the constitutions, where the
+  title sits in centered paragraphs above a `Section n.` heading; the Admission
+  and Organic Acts have no titles to find.
+
+  This is no longer optional. HRS text names these documents **306 times** and
+  none of those citations can be linked. The resolver deliberately keeps the two
+  namespaces apart — 89 non-HRS numbers collide outright with HRS numbers and
+  149 are bare — so merging them without a real mapping is how `section 2`
+  acquires a confident link to the Admission Act. Deferred until the site build
+  is done; see open question 4 in `citation-linking.md`.
+
+### To build
+
+- **The site build.** All chapters and chapter index pages at real URLs.
+  `src/render.ts` does one chapter into flat files as a review tool.
+- **Pagefind.** Not started.
+- **`citations.json`.** `detect()` plus `expandRange()` already produce the
+  graph; nothing emits it, so backlinks ("what cites this section?") are
+  unanswerable.
+
+### Smaller
+
+- **36 sections have an empty `bodyText`.** Never triaged. Probably banner or
+  repeal-note pages, but unconfirmed.
 - **Chapter index contents.** Only the chapter title is extracted. The section
   listing on each index page would make a good coverage check against the files
-  actually discovered.
+  actually discovered — and is the natural source for a chapter page's contents.
 - **Historical versions.** `hrsarchive/` holds yearly snapshots from 1999
   onward, but it exists on **`www` only** — the `data` mirror returns 500 for
-  that path — so crawling it would need the Puppeteer path throughout.
-- **Storage.** Measured on a 757-file sample: roughly 150 MB of local JSON and
-  about 90 MB of text in the database for the full corpus, most of it
-  `body_html`. Dropping `body_html`, or not writing local JSON during a `--db`
-  run, would cut that substantially if it matters.
-- **`fts` excludes annotations.** Case notes and commentary are not searchable
-  through `search_statutes()`. Deliberate for now — statute text ranks more
-  cleanly on its own — but easy to add as a `C`-weighted component.
-- **No provenance or version history.** Nothing records *when* a section was
-  fetched or whether its text changed between runs. `section_number` is the
-  upsert key and every write is `ON CONFLICT DO UPDATE`, so a re-scrape
-  overwrites in place and the previous text is gone. The HRS is amended every
-  legislative session, which makes this a question of when, not if.
+  that path — so crawling it would need the Puppeteer path throughout. Probably
+  not worth it.
+- **`fts` excludes annotations** in the Postgres side tool. Case notes and
+  commentary are not searchable through `search_statutes()`. Deliberate, and
+  irrelevant to the static site, which will index everything through Pagefind.
 
-  This matters more for the linked-document outcome than it would for a
-  one-off dataset: a citation graph is only trustworthy if the nodes it points
-  at are pinned to a known version of the text. "§X-Y links to §Z-W" is a claim
-  about a *moment* in the corpus.
+### Superseded
 
-  The minimum worth adding before the full `--db` run, since retrofitting
-  history onto an upsert-in-place table is materially worse than designing for
-  it now:
+- ~~**No provenance or version history.**~~ Resolved by the 2026-09-09 storage
+  decision: `data/parsed` is committed and git is the version store, so a
+  re-scrape diffs to exactly the amended sections and `git log` on one file is
+  that section's history. That is strictly better than the `section_versions`
+  table this section used to propose, and free. It depends on byte-stable
+  serialization — see `SECTION_FIELD_ORDER`.
 
-  - `scraped_at` and `source_etag` / `content_hash` on `sections` — a hash of
-    the parsed body is enough to answer "did this change?" without diffing text
-  - a `scrape_runs` table (run id, started/finished, file counts, failures) and
-    a `run_id` on each section, so any row can be traced to the run that wrote it
-  - decide the retention model: either a `section_versions` history table
-    written on hash change, or accept snapshot-only and record it as a
-    deliberate limitation rather than an accident
+  One nuance the old design got right and is worth restating: a citation graph is
+  only trustworthy if the nodes it points at are pinned to a known version of the
+  text. Git provides that pinning by commit, which is why the graph is built at
+  render time from the committed corpus rather than accumulated across runs.
 
-  Open question: whether history should ever be reconstructed backwards from
-  `hrsarchive/` (yearly snapshots from 1999), which is `www`-only and would
-  need the Puppeteer path throughout. Probably not worth it, but the schema
-  should not preclude it.
+  Deliberately **not** carried: a per-section `scraped_at`. It would rewrite all
+  23,373 files on every run and destroy the diff property the whole architecture
+  rests on. Run-level provenance belongs in a separate file if it is ever needed.
+- ~~**Storage.**~~ Measured for real: 154 MB of parsed JSON, ~33 MB gzipped,
+  32 MB in git. `bodyHtml` is 46% of it, retained for parse debugging and never
+  rendered.

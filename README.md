@@ -4,6 +4,9 @@ A TypeScript pipeline that crawls the [Hawaii Revised Statutes](https://www.capi
 parses ~24,500 statute files from raw HTML into structured data, and publishes
 them as a static, fully cross-linked document set.
 
+**Current state**: the corpus is scraped, parsed, committed and cross-linked;
+the site is not built yet. See [`docs/STATE.md`](docs/STATE.md).
+
 ## Motivation
 
 The Hawaii Revised Statutes are publicly available but only as individual `.htm`
@@ -338,25 +341,31 @@ Not yet evaluated.
 ```
 src/
   config.ts        — types, constants, SECTION_FIELD_ORDER, serializeSection
-  discover.ts      — Phase 1: crawl directory listings -> manifest
-  scrape.ts        — Phase 2: fetch, parse, write sections
-  parser.ts        — HTML -> structured ParsedSection data
-  parser.test.ts   — parser tests (bun test)
   fetcher.ts       — rate-limited fetching, concurrency pool, browser fallback
-  corrections.ts   — applies data/corrections.json; resolver alias table
+  discover.ts      — crawl directory listings -> manifest
+  scrape.ts        — fetch, parse, write sections
   reparse.ts       — rebuild data/parsed from cached HTML after a parser change
-  db.ts            — Postgres connection and upsert helpers (optional)
-  migrate.ts       — database schema migration (optional)
+  chapters.ts      — chapter titles from index pages -> data/chapters.json
+  parser.ts        — HTML -> structured ParsedSection data
+  corrections.ts   — applies data/corrections.json; resolver alias table
+  resolver.ts      — the known-section index, and resolution against it
+  citations.ts     — detect, resolve and link citations
+  render.ts        — one chapter -> static HTML (preview)
+  profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
+  *.test.ts        — 115 tests (bun test)
+  db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)
 docs/
+  STATE.md             — where the project stands; read this first
   project-plan.md      — architecture and design reference
   progress.md          — what changed and why, session by session
   citation-linking.md  — citation grammar, hazards, and the resolver design
   source-anomalies.md  — how errors in the published statutes are handled
 data/
-  manifest.json    — discovered URLs from Phase 1 (tracked)
+  manifest.json    — discovered URLs from discovery (tracked)
+  chapters.json    — chapter number -> title (tracked)
   corrections.json — reviewed errors in the published source (tracked)
   parsed/          — parsed JSON, the source of truth (tracked)
   html/            — cached raw HTML (gitignored)
