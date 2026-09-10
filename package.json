@@ -7,6 +7,7 @@
     "scrape": "bun src/scrape.ts",
     "migrate": "bun src/migrate.ts",
     "test-parse": "bun src/test-parse.ts",
+    "reparse": "bun src/reparse.ts",
     "test": "bun test"
   },
   "dependencies": {

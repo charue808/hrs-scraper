@@ -1,33 +1,106 @@
 # hrs-scraper
 
-A TypeScript scraper that crawls the [Hawaii Revised Statutes](https://www.capitol.hawaii.gov/hrscurrent/), parses ~24,500 statute files from raw HTML into structured data, and stores them in PostgreSQL with full-text search.
+A TypeScript pipeline that crawls the [Hawaii Revised Statutes](https://www.capitol.hawaii.gov/hrscurrent/),
+parses ~24,500 statute files from raw HTML into structured data, and publishes
+them as a static, fully cross-linked document set.
 
 ## Motivation
 
-The Hawaii Revised Statutes are publicly available but only as individual `.htm` files on an IIS directory server with no API or search functionality. This tool extracts the full corpus into a structured, searchable database — making it possible to build legal research tools, search interfaces, or datasets on top of the statutes.
+The Hawaii Revised Statutes are publicly available but only as individual `.htm`
+files on an IIS directory server with no API and no search. Worse, every
+reference one statute makes to another is dead text — you cannot follow a
+citation without manually working out which file it lives in.
+
+This tool extracts the full corpus into structured data, resolves those
+citations into real links, and renders the result as a static site.
+
+## Architecture
+
+**The product is a static site.** The corpus is read-only, public domain,
+carries no personalization, and changes on a legislative-session cadence.
+Nothing a database provides *at runtime* is something this content needs.
+
+| Concern | Decision |
+|---|---|
+| Source of truth | `data/parsed/*.json`, committed to the repo |
+| Version history | git — a re-scrape diffs to exactly the sections that were amended |
+| Output | 23,373 statute pages + 1,132 chapter indexes, pre-rendered HTML |
+| Citations | resolved at build time and baked into the markup |
+| Search | [Pagefind](https://pagefind.app) — chunked index; only the search page loads JS |
+| Database | optional side tool for ad-hoc analysis, not the pipeline |
+
+Statute pages ship no JavaScript, which also means there is nothing to fail for
+a screen reader.
+
+### Why git is the version store
+
+A re-scrape after a legislative session rewrites the corpus, and git diffs it to
+exactly the sections that changed. `git log` on one file *is* that section's
+amendment history, with real diffs — strictly better than a `section_versions`
+table, and free.
+
+This only works if serialization is byte-stable, so `serializeSection()` writes
+a declared key order (`SECTION_FIELD_ORDER` in `src/config.ts`) rather than
+relying on object-literal insertion order. Without that, reordering a literal in
+the parser would silently churn all 24,505 files and make every future diff
+worthless.
 
 ## Key Technical Decisions
 
-- **The `data.capitol.hawaii.gov` mirror** — `www.capitol.hawaii.gov` sits behind Cloudflare and returns 403 to anything that is not a real browser. The `data` host serves byte-identical files with no bot protection, so ordinary `fetch` works and the scrape runs with real concurrency. Puppeteer is kept only as a per-request fallback and is never launched on the happy path.
-- **The filename separator carries meaning** — `-` and `_` are not interchangeable. A second hyphen introduces an article (`HRS_0431-0001-0100` → `§431:1-100`) while an underscore introduces a decimal (`HRS_0001-0004_0005` → `§1-4.5`), and repeated underscores concatenate (`HRS_0011-0001_0005_0002` → `§11-1.52`). Roughly 3,000 files are numbered with the article form.
-- **Parse the page, not just the path** — Section numbers are taken from the page's own bold heading, with the filename as a fallback. `numberSource` records which was used.
-- **Class-driven parsing** — The pages are Word exports with a small, stable class vocabulary: `RegularParagraphs` for statute text and `XNotesHeading`/`XNotes` for annotations. The body is everything before the first `XNotesHeading`.
-- **Open-ended annotations** — Annotation headings vary widely (Case Notes, Attorney General Opinions, Law Journals and Reviews, Revision Note, `COMMENTARY ON §701-100`, …), so all of them are kept as `{heading, text}` pairs rather than flattened into fixed columns. `caseNotes` and `crossReferences` remain as convenience fields.
-- **Two-phase architecture** — Discovery (manifest) is separated from scraping, so the URL inventory can be built once and scraping can be resumed independently.
-- **Resume support** — Progress is persisted to disk every 100 files, allowing long-running scrapes to be stopped and restarted without data loss.
-- **Upsert-based storage** — All database writes use `INSERT ... ON CONFLICT DO UPDATE`, making the scraper idempotent and safe to re-run.
-- **Full-text search** — A GIN-indexed `tsvector` column with weighted fields (title='A', body='B') and a `search_statutes()` function for ranked results with highlighted snippets.
+- **The `data.capitol.hawaii.gov` mirror** — `www.capitol.hawaii.gov` sits behind
+  Cloudflare and returns 403 to anything that is not a real browser. The `data`
+  host serves byte-identical files with no bot protection, so ordinary `fetch`
+  works and the scrape runs with real concurrency. Puppeteer is kept only as a
+  per-request fallback and is never launched on the happy path.
+- **The filename separator carries meaning** — `-` and `_` are not
+  interchangeable. A second hyphen introduces an article (`HRS_0431-0001-0100` →
+  `§431:1-100`) while an underscore introduces a decimal (`HRS_0001-0004_0005` →
+  `§1-4.5`), and repeated underscores concatenate (`HRS_0011-0001_0005_0002` →
+  `§11-1.52`). 3,129 sections use the article form.
+- **Parse the page, not just the path** — Section numbers are taken from the
+  page's own bold heading, with the filename as a fallback. `numberSource`
+  records which was used; 97.7% of sections come from the page.
+- **Class-driven parsing** — The pages are Word exports with a small, stable
+  class vocabulary: `RegularParagraphs` for statute text and
+  `XNotesHeading`/`XNotes` for annotations. The body is everything before the
+  first `XNotesHeading`.
+- **Open-ended annotations** — Annotation headings vary widely (Case Notes,
+  Attorney General Opinions, Law Journals and Reviews, Revision Note,
+  `COMMENTARY ON §701-100`, …), so all of them are kept as `{heading, text}`
+  pairs rather than flattened into fixed columns. `caseNotes` and
+  `crossReferences` remain as convenience fields.
+- **Resolve citations, don't pattern-match them** — `manifest.json` is a complete
+  inventory of every file, which yields the exact set of valid section numbers.
+  Candidates are looked up against it; what resolves becomes a link, what does
+  not stays plain text and gets counted. A wrong link in a legal document is
+  worse than no link. See [`docs/citation-linking.md`](docs/citation-linking.md).
+- **The source has errors, and we say so** — the published HRS contains
+  typographical mistakes. We correct a section's *identity* so navigation works,
+  keep its *displayed text* faithful to the source, and attach a generated
+  editorial note explaining the discrepancy. See
+  [`docs/source-anomalies.md`](docs/source-anomalies.md).
+- **Two-phase pipeline** — Discovery is separated from scraping, so the URL
+  inventory is built once and scraping can be resumed independently.
 
 ## Corpus Shape
+
+Scraped in full on 2026-09-09 with zero failures.
 
 | | |
 |---|---|
 | Volumes | 14 |
 | Chapter directories | 1,114 |
-| `.htm` files | ~24,505 |
-| Chapter index pages | ~1,108 |
+| `.htm` files | 24,505 |
+| Parsed sections | 23,373 |
+| Chapter index pages | 1,132 |
+| Parsed JSON | 154 MB raw, ~33 MB gzipped |
 
-Volume 1 also contains six non-HRS directories — `01-USCON` (US Constitution), `02-HNP`, `03-ORG`, `04-ADM`, `05-CONST` (Hawaii Constitution), and `06-HHCA` (Hawaiian Homes Commission Act). These are discovered and scraped alongside the numbered chapters and tagged with a `docType`; their section numbering is prefixed (`CONST §1-1`, `HHCA §201.5`) since they do not follow HRS chapter/article grammar.
+Volume 1 also contains six non-HRS directories — `01-USCON` (US Constitution),
+`02-HNP`, `03-ORG` (Organic Act), `04-ADM` (Admission Act), `05-CONST` (Hawaii
+Constitution), and `06-HHCA` (Hawaiian Homes Commission Act). These are
+discovered and scraped alongside the numbered chapters and tagged with a
+`docType`; their section numbering is prefixed (`CONST §1-1`, `HHCA §201.5`)
+since they do not follow HRS chapter/article grammar.
 
 ## Parsed Output Example
 
@@ -37,43 +110,61 @@ Each statute section is parsed into structured data (`bodyHtml` elided):
 {
   "sectionNumber": "§1-2",
   "title": "Certain laws not obligatory until published.",
+  "chapterNumber": "1",
+  "docType": "hrs",
+  "partHeading": null,
   "bodyText": "No written law, unless otherwise specifically provided by legislative enactment, except general or special appropriation acts, loan fund acts, pension...",
   "history": "[CC 1859, §1; RL 1925, §3; RL 1935, §3; am L 1935, c 10, §2; RL 1945, §3; RL 1955, §1-3; HRS §1-2]",
   "crossReferences": [],
-  "caseNotes": "Prior to amendment spelling out that legislature may provide a different effective date, statute was so interpreted. 29 H. 250, 255. See 37 H. 260.",
+  "caseNotes": "Prior to amendment spelling out that legislature may provide a different effective date, statute was so interp...",
   "annotations": [
-    { "heading": "Case Notes", "text": "Prior to amendment spelling out that legislature..." }
+    {
+      "heading": "Case Notes",
+      "text": "Prior to amendment spelling out that legislature may provide..."
+    }
   ],
-  "partHeading": null,
-  "chapterNumber": "1",
-  "docType": "hrs",
   "isUncodified": false,
   "isRepealed": false,
+  "covers": null,
+  "titleIsSupplied": false,
+  "sourceAnomalies": [],
   "numberSource": "page",
   "filename": "HRS_0001-0002.htm",
   "url": "https://data.capitol.hawaii.gov/hrscurrent/Vol01_Ch0001-0042F/HRS0001/HRS_0001-0002.htm"
 }
 ```
 
-`isUncodified` reflects a bracketed heading (`[§11-1.52]`), which the HRS uses to mark sections not yet codified into the published volumes.
+Field notes, in the order they appear:
+
+- `isUncodified` — the heading was bracketed (`[§11-1.52]`), which the HRS uses
+  to mark sections not yet codified into the published volumes.
+- `covers` — set on the 272 pages whose heading states a span rather than one
+  section (`§515-10 to 515-12 REPEALED.`). A range heading cannot say which of
+  its members a given file is, so those take their number from the filename and
+  `numberSource` reads `page-range`.
+- `titleIsSupplied` — the bracket wrapped only the *title*
+  (`§604-13 [Arrest under warrant.]`), marking a catchline supplied editorially
+  rather than enacted. 13 sections.
+- `sourceAnomalies` — discrepancies between the page and the truth, from the
+  reviewed `data/corrections.json`. Empty on all but one section today.
+
+`bodyHtml` is retained as a fallback for debugging parse issues but is never
+rendered — pages are built from the structured fields, which is what gives
+control over the markup for accessibility. It is 46% of the payload and is
+serialized last so it stays out of the way in diffs.
 
 ## Tech Stack
 
 - **Runtime**: [Bun](https://bun.sh)
-- **HTML Parsing**: cheerio
-- **Browser Automation**: Puppeteer (fallback only)
-- **Database**: PostgreSQL ([Neon](https://neon.tech))
+- **HTML parsing**: cheerio
+- **Browser automation**: Puppeteer (fallback only)
+- **Search**: Pagefind
+- **Database** (optional): PostgreSQL, via the built-in `Bun.SQL`
 
 ## Setup
 
 ```bash
 bun install
-```
-
-Optionally create a `.env` file for database support:
-
-```
-DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
 ```
 
 ## Usage
@@ -96,46 +187,41 @@ bun run test-parse -- --file data/html/HRS_0001-0001.htm --json
 bun run discover
 ```
 
-Crawls the IIS directory listings across all 14 volumes and saves a complete manifest to `data/manifest.json`. Takes a few minutes.
+Crawls the IIS directory listings across all 14 volumes and writes a complete
+manifest to `data/manifest.json`. Takes about two minutes.
 
 ### 3. Scrape and parse
 
 ```bash
-# Small test batch
-bun run scrape -- --limit 20 --save-html
-
-# Full scrape (saves parsed JSON locally)
-bun run scrape
-
-# Full scrape with database insertion
-bun run scrape -- --db
+bun run scrape --limit 20 --save-html   # small test batch
+bun run scrape --save-html              # full run, ~45 min
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--db` | Upsert parsed sections into PostgreSQL |
-| `--limit N` | Process only N files |
 | `--save-html` | Save raw HTML to `data/html/` |
+| `--limit N` | Process only N files |
 | `--concurrency N` | Workers in flight (default 5) |
+| `--db` | Also upsert into PostgreSQL (optional; see below) |
 
-### 4. Database setup
+`--save-html` is recommended for any full run. It costs ~127 MB of gitignored,
+disposable disk and turns a later parse bug into a seconds-long local re-parse
+instead of another 24,505-request crawl against a government server.
+
+Progress is written to `data/progress.json` every 100 files, so a long run can
+be stopped and resumed. Delete that file to force a re-parse of everything.
+
+### 4. Re-parse after a parser change
 
 ```bash
-bun run migrate
+bun run reparse                 # rebuild data/parsed from data/html
+bun run reparse -- --dry-run    # report what would change, write nothing
 ```
 
-If `DATABASE_URL` is set, runs the migration directly. Otherwise, prints the SQL schema to stdout for manual use. The schema is written to be re-runnable against an existing database.
-
-**Schema highlights:**
-- `volumes`, `chapters`, and `sections` tables with foreign key relationships
-- Chapter numbers are stored without leading zeros (`1`, `6D`, `431K`) so that `sections.chapter_number` joins `chapters.number` directly
-- `annotations` JSONB column holding every annotation block on the page
-- GIN-indexed `tsvector` column for full-text search
-- `search_statutes(query, limit, offset)` — ranked search with `<mark>`-highlighted snippets
-- `get_chapter_sections(chapter)` — list all sections in a chapter
-- Auto-updating `updated_at` triggers
-
-Chapter titles are read from the chapter index pages during the scrape, so run the scrape to populate `chapters.title`.
+Rebuilds the corpus from cached HTML in seconds rather than re-crawling. Pages
+missing from the cache are fetched and cached, so a partial cache still yields a
+complete corpus. Duplicate section numbers are reported the same way the scraper
+reports them.
 
 ### 5. Tests
 
@@ -143,39 +229,151 @@ Chapter titles are read from the chapter index pages during the scrape, so run t
 bun test
 ```
 
-The parser suite covers section-number derivation against real filenames from the corpus (including the article/decimal distinction and the handful of malformed names), heading extraction from Word's split `<b>` markup, annotation splitting, and chapter index parsing.
+The suite covers section-number derivation against real filenames from the
+corpus (including the article/decimal distinction and the handful of malformed
+names), heading extraction from Word's split `<b>` markup, annotation splitting,
+and chapter index parsing.
+
+### Optional: PostgreSQL
+
+The database is **not** part of the publishing pipeline. It is kept because
+`--db` plus SQL is a convenient way to run ad-hoc analysis across the corpus
+during development.
+
+```bash
+echo 'DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require' > .env
+bun run migrate
+bun run scrape --db
+```
+
+Bun loads `.env` automatically. If `DATABASE_URL` is unset, `migrate` prints the
+schema to stdout instead of applying it. The schema is re-runnable against an
+existing database, and provides `volumes` / `chapters` / `sections` tables, a
+GIN-indexed `tsvector` for full-text search, `search_statutes()` for ranked
+results with highlighted snippets, and `get_chapter_sections()`.
+
+## Deployment
+
+The build emits roughly 24,600 files, which interacts with static-host file
+caps:
+
+| Host | Cap | Fits? |
+|---|---|---|
+| Cloudflare Pages (free) | 20,000 files | No |
+| Cloudflare Pages (paid) | [100,000 files since 2026-01-23](https://developers.cloudflare.com/changelog/post/2026-01-23-pages-file-limit-increase/) — requires `PAGES_WRANGLER_MAJOR_VERSION=4` | Yes |
+| [Workers static assets](https://developers.cloudflare.com/workers/platform/limits/) (free) | 20,000 files per version | No |
+| Workers static assets (paid) | 100,000 files per version, 25 MiB each | Yes |
+| A VPS / object storage | no practical cap | Yes |
+
+A paid Cloudflare plan on either product clears 24,600 comfortably. The free
+tier of both does not — which is the constraint to design around if free hosting
+is a requirement.
+
+Verify current limits before committing to a host; they move. If a cap needs
+working around, folding the 1,132 chapter indexes into fewer pages is the
+cheapest reduction.
+
+## Possible Direction: An Enhanced Site
+
+Static is the right default, and this section exists so that staying static
+stays a *choice* rather than a constraint nobody revisited.
+
+**The corpus does not care how it is rendered.** `data/parsed/*.json` is the
+source of truth, and every downstream artifact — HTML, a search index, a
+Postgres row, a JSON API — is derived from it. Moving to a dynamic site is a
+change to the render target, not a re-scrape and not a data migration. `db.ts`,
+`migrate.ts` and `sql/schema.sql` are retained precisely so that path is a
+wiring exercise rather than a rewrite.
+
+So the guidance is: **do not build for these until a feature actually demands
+one.** But know which features cross the line.
+
+### Features that stay comfortably static
+
+- Full-text search (Pagefind)
+- Citation links, resolved at build time
+- **Backlinks** — "what cites this section?" is a precomputed reverse index,
+  emitted as `citations.json` and baked into each page
+- A JSON API — just files on disk, one per section
+- Diffs between two published snapshots, pre-rendered from git history
+
+### Features that need a backend
+
+| Feature | Why it crosses the line |
+|---|---|
+| Proximity / boolean search (`negligence w/5 damages`) | Legal researchers expect it; Pagefind does not do it |
+| Change alerts ("email me when chapter 431 is amended") | Needs scheduling, subscriptions, delivery |
+| User accounts, saved searches, private annotations | Per-user state |
+| Interactive citation-graph exploration (N hops out) | Traversal over a graph too large to ship whole |
+| Arbitrary point-in-time queries ("§X-Y as of any date") | Pre-rendering every version of every section does not scale |
+| Usage analytics per section | Server-side collection |
+
+### A middle tier worth knowing about
+
+Most of the above does not require abandoning static rendering. Statute pages
+can stay pre-rendered while a small edge function handles the few dynamic
+endpoints — search, alert signup, graph queries. That keeps the property that
+matters most here: **the statutes themselves render without JavaScript**, so
+they stay fast, archivable, and accessible even if the dynamic layer is down.
+
+The escalation order, cheapest first:
+
+1. **Static** (current) — pre-rendered HTML + Pagefind.
+2. **Static + edge functions** — pages unchanged; dynamic endpoints only.
+3. **Static + a real backend** — the existing Postgres schema, populated by
+   `--db`, serving search and graph queries behind the same static pages.
+4. **Full application** — only if per-user state becomes central, which would be
+   a different product than "the statutes, readable and linked."
+
+### Adjacent data sources
+
+The [LRB session reports](https://lrb.hawaii.gov/publications/session-reports/)
+publish per-session act lists as PDFs. They are a plausible second source for
+detecting what changed in a legislative session — a way to know *which* sections
+to expect diffs in, rather than inferring it after the fact from a re-scrape.
+Not yet evaluated.
 
 ## Project Structure
 
 ```
 src/
-  config.ts        — types, constants, configuration
+  config.ts        — types, constants, SECTION_FIELD_ORDER, serializeSection
   discover.ts      — Phase 1: crawl directory listings -> manifest
-  scrape.ts        — Phase 2: fetch, parse, store sections
+  scrape.ts        — Phase 2: fetch, parse, write sections
   parser.ts        — HTML -> structured ParsedSection data
   parser.test.ts   — parser tests (bun test)
   fetcher.ts       — rate-limited fetching, concurrency pool, browser fallback
-  db.ts            — Postgres connection and upsert helpers
-  migrate.ts       — database schema migration
+  corrections.ts   — applies data/corrections.json; resolver alias table
+  reparse.ts       — rebuild data/parsed from cached HTML after a parser change
+  db.ts            — Postgres connection and upsert helpers (optional)
+  migrate.ts       — database schema migration (optional)
   test-parse.ts    — test parser against a single URL or file
 sql/
-  schema.sql       — standalone schema (runnable in psql or Neon SQL Editor)
-data/              — runtime data (gitignored)
-  manifest.json    — discovered URLs from Phase 1
-  progress.json    — scrape resume state
-  parsed/          — parsed JSON output
-  html/            — cached raw HTML
+  schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)
+docs/
+  project-plan.md      — architecture and design reference
+  progress.md          — what changed and why, session by session
+  citation-linking.md  — citation grammar, hazards, and the resolver design
+  source-anomalies.md  — how errors in the published statutes are handled
+data/
+  manifest.json    — discovered URLs from Phase 1 (tracked)
+  corrections.json — reviewed errors in the published source (tracked)
+  parsed/          — parsed JSON, the source of truth (tracked)
+  html/            — cached raw HTML (gitignored)
+  progress.json    — scrape resume state (gitignored)
 ```
 
 ## Rate Limiting
 
-The scraper is configured to be respectful of the source server:
-- 120ms minimum spacing between request starts, applied globally across workers
-- 5 concurrent workers by default (`--concurrency` to change)
+The scraper is deliberately gentle with the source server:
+
+- 120ms minimum spacing between request starts, applied **globally** across
+  workers — raising `--concurrency` never raises the request rate
+- 5 concurrent workers by default
 - 3 retries with exponential backoff, then a browser-based fallback
 - Browser-like request headers
 
-At these limits a full scrape of ~24,500 files takes roughly 45 minutes.
+At these limits a full scrape of 24,505 files takes roughly 45 minutes.
 
 ## License
 

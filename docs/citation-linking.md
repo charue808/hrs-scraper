@@ -23,6 +23,12 @@ corpus. Counts below are therefore indicative of *shape*, not of frequency
 across the full corpus. Re-run the profiling after the full scrape before
 treating any count as final.
 
+**Update 2026-09-09** — the full scrape is complete: 23,373 sections in
+`data/parsed`, including **3,129 colon/article numbers**. The blind spot noted
+below is now measurable. Every count in this document still comes from the old
+757-section sample and none of them have been revisited yet; that re-profiling
+is step 4 in `progress.md`.
+
 ---
 
 ## The core design decision: resolve, don't match
@@ -48,6 +54,19 @@ candidates is telling you exactly where the grammar is still wrong, and that
 number should be tracked run over run. Silent linking to a section that does not
 exist is the failure mode to design against — a wrong link in a legal document
 is worse than no link.
+
+**Triage the rejects into three buckets, not one number.** An unresolved
+candidate is either (1) a detector or grammar gap, (2) a genuine reference to
+something outside the corpus, or (3) an error in the source document. Only the
+first is a bug in this code, and collapsing all three into one count hides
+whether the number is going down for the right reason. Bucket 3 is how new
+entries to `data/corrections.json` get found — see `source-anomalies.md`.
+
+That file also doubles as an **alias table for the resolver**: a citation to
+`§643G-2` resolves through `observed → corrected` to `§634G-2` rather than
+falling into the unresolved pile. The link target is the corrected section; the
+visible link text stays as the citing document wrote it, which is the same
+identity/text split `source-anomalies.md` applies to headings.
 
 ---
 

@@ -11,6 +11,7 @@ import {
   type SectionFile,
 } from "./config";
 import { closeBrowser, fetchPage, pool } from "./fetcher";
+import { applyCorrections, loadCorrections } from "./corrections";
 import { parseChapterIndex, parseSection } from "./parser";
 import {
   closeDb,
@@ -41,6 +42,7 @@ if (!(await manifestFile.exists())) {
   console.error(`Manifest not found at ${MANIFEST_PATH}. Run 'bun run discover' first.`);
   process.exit(1);
 }
+const corrections = await loadCorrections();
 const manifest: Manifest = await manifestFile.json();
 
 let progress: Progress;
@@ -122,7 +124,11 @@ await pool(toProcess, concurrency, async ({ file, chapterNumber }) => {
       const index = parseChapterIndex(html, file.filename, file.url, chapterNumber);
       if (useDb) await updateChapterTitle(index.chapterNumber, index.title);
     } else {
-      const parsed = parseSection(html, file.filename, file.url, chapterNumber);
+      const { section: parsed, warnings } = applyCorrections(
+        parseSection(html, file.filename, file.url, chapterNumber),
+        corrections
+      );
+      for (const warning of warnings) console.warn(`\n  ${warning}`);
 
       const previous = seenNumbers.get(parsed.sectionNumber);
       if (previous && previous !== parsed.filename) {

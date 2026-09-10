@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "corrections": [
+    {
+      "filename": "HRS_0634G-0002.htm",
+      "field": "sectionNumber",
+      "observed": "§643G-2",
+      "corrected": "§634G-2",
+      "confidence": "conclusive",
+      "evidence": "Chapter 643G does not exist: the manifest has no HRS0643G directory. The file sits in HRS0634G/, and its chapter siblings §634G-1, §634G-3 and §634G-4 all read 634G and carry the same history line [L 2022, c 96, pt of §2]. The digits are transposed in this one heading.",
+      "reviewedOn": "2026-09-09"
+    }
+  ]
+}

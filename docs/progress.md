@@ -2,11 +2,13 @@
 
 **Last updated**: 2026-09-09
 
-## Status: Ready for the full scrape
+## Status: Corpus scraped, parsed clean, corrections applied; ready for the baseline commit
 
-Discovery produces a complete manifest, the scraper runs clean, and the output
-format is now byte-stable. Remaining work is the full scrape, then citation
-linking.
+The full scrape completed with zero failures. QA surfaced five parser defects
+and one genuine error in the published source; all six are resolved and the
+corpus re-parsed — 23,373 sections, no duplicate section numbers, 69 tests.
+
+Next: commit the baseline corpus, then re-profile citations against it.
 
 The destination changed on 2026-09-09: the product is a **static site**, not a
 Postgres database. See the session note below and Storage & Delivery in
@@ -14,6 +16,152 @@ Postgres database. See the session note below and Storage & Delivery in
 
 This document records what changed and why. `project-plan.md` is the design
 reference for the system as built.
+
+## 2026-09-09 — Full scrape complete; QA findings
+
+`bun run scrape --save-html` against the full manifest. **0 failures.**
+
+| | |
+|---|---|
+| Files processed | 24,505 |
+| Parsed sections | 23,373 |
+| Chapter index pages | 1,132 |
+| Parsed JSON | 154 MB (matched the estimate exactly) |
+| Saved HTML | 127 MB |
+| Number from the page | 22,832 (97.7%) |
+| Number from the filename | 541 |
+| Colon/article numbers (`§431:1-100`) | 3,129 |
+
+The 541 filename fallbacks are the 400 non-HRS documents plus ~141 article
+banner pages — the known gap, nothing new. The 3,129 colon/article numbers close
+the blind spot `citation-linking.md` flagged: that form was entirely absent from
+the 757-section sample and is now available for profiling.
+
+Page-derived and filename-derived numbers disagreed on only **9 of 22,832**
+files. Every defect below came out of those 9.
+
+### Defects found — all fixed, corpus re-parsed
+
+Re-parsed with `bun run reparse` (new; see below): 23,373 sections, 755 pages
+fetched to fill gaps in the HTML cache, 0 failures, **0 duplicate section
+numbers**.
+
+| | before | after |
+|---|---|---|
+| Duplicate section numbers | 3 | 0 |
+| Range fragments in titles | 274 | 0 |
+| Titles with a stray `]` | 105 | 1 (legitimate) |
+| Lowercase letters in section numbers | 0 (latent) | 0 (fixed at source) |
+| `numberSource` | page 22,832 / filename 541 | page 22,560 / filename 541 / page-range 272 |
+
+Two fields were added to `ParsedSection` in the same pass, deliberately before
+the baseline commit: `covers` (the span a range page stands for) and
+`titleIsSupplied` (13 sections). Adding an always-present field rewrites all
+23,373 files, which is free now and expensive once the corpus is committed.
+
+1. **Range headings — 274 files.** Initially sized at 4 from the duplicate
+   collisions, which caught only the cases that happened to collide. Pages headed
+   `§515-10 to 515-12 REPEALED.` stand for a span of sections, and the range
+   expression bled into the title. Two separate problems:
+
+   - *Fragment titles (all 274).* `HEADING_RE` takes everything after the number
+     as the title, so the title read `"to 515-12 REPEALED."` instead of
+     `"REPEALED."` and the span was lost as prose.
+   - *Wrong section number (3 files).* Only where the file is not the range's
+     start. `HRS_0327-0031` took the §327-21 banner of an `[OLD]` part above it;
+     `HRS_0425-0180` is the range's *end*, so matching the heading to the
+     filename does not help on its own.
+
+   Fixed by parsing the range: `covers` records the span, the section number
+   comes from the filename on a range page (a range heading cannot say which of
+   its members this file is), and where a page carries several headings the one
+   agreeing with the filename wins. Requiring a digit after `to` separates all
+   274 from the three real titles that begin with the word ("To heirs."), the
+   same digit-must-follow rule `citation-linking.md` uses for the period.
+
+2. **`filenameToSectionNumber` does not uppercase chapter letters.**
+   `HRS_0039a-0112` → `§39a-112`. Four files exposed it; all four were saved by
+   page-sourcing, so the corpus is clean today (0 lowercase `chapterNumber`).
+   Latent: any lowercase-letter filename *without* a page heading yields an
+   unresolvable number. `normalizeChapterNumber` already handles this correctly —
+   only the filename path is wrong.
+
+3. **A source typo, now in our data.** `HRS_0634G-0002.htm` reads `§643G-2`.
+   Chapter 643G does not exist. Fixed through the corrections ledger rather than
+   the parser — see below.
+
+4. **Stray brackets in titles.** 105 trailing `]` from a fully bracketed heading
+   (`[§440G-16 Rules.]` → `"Rules.]"`) — a delimiter artifact, stripped. Distinct
+   from 16 cases where the bracket wraps only the *title*
+   (`§604-13 [Arrest under warrant.]`), which marks a catchline supplied
+   editorially rather than enacted: those are unwrapped and recorded in
+   `titleIsSupplied` (13 after re-parse; the other 3 turned out to be partial
+   brackets inside the title). The 24 `[OLD]` markers are source text and were
+   left alone.
+
+5. **Non-HRS prefix dropped from page-derived numbers.** `HHCA_0501.htm` came
+   out as `§501` rather than `HHCA §501`. One file today, latent for all 400
+   non-HRS documents.
+
+Three residual bracket cases were inspected and left alone as genuine source
+text, not parser artifacts: `[Complaint] in action to enforce lien`, `[NEW]
+Definitions.` — editorial substitutions *within* a title rather than brackets
+wrapping it — and `Accretion to land. [(a)]`, marking an added subsection.
+
+`isUncodified` at 33.6% looked high but checks out: the sample is all
+letter-suffix chapters (431, 201H, 480J, 27G), newer session-law material where
+bracketed numbering is genuine.
+
+### `bun run reparse`
+
+Added `src/reparse.ts`, the tool `--save-html` exists to enable: rebuild
+`data/parsed` from `data/html` after a parser change, in seconds rather than a
+45-minute re-crawl. Pages missing from the cache are fetched and cached, so a
+partial cache still yields a complete corpus — which is what filled the 755
+gaps left by the original 757-file batch that resume-skipped without saving HTML.
+
+`--dry-run` reports what would change without writing; `--no-fetch` restricts it
+to what is already cached. It reports duplicate section numbers the same way the
+scraper does, which is how the fixes above were verified.
+
+### Corrections mechanism (implemented)
+
+`src/corrections.ts` + `data/corrections.json`, per `source-anomalies.md`.
+Applied after parsing, so `parser.ts` stays a faithful reporter of what the page
+says and the editorial layer sits on top of it.
+
+- `§634G-2` is the first and only entry. The corpus now files it correctly,
+  `numberSource` reads `correction`, and `sourceAnomalies` carries the observed
+  value `§643G-2` with the evidence — so the rendered editorial note is generated
+  from the record rather than written by hand. Chapter 634G reads 1/2/3/4 clean.
+- **Strict validation, loud failure.** A malformed ledger throws rather than
+  risking a silent mis-correction: unknown confidence tier, a conclusive entry
+  with nothing to correct to, a flagged entry smuggling in a correction, an
+  uncorrectable field, missing evidence, duplicate file+field.
+- **Stale entries warn instead of applying.** If `observed` no longer matches the
+  source — the parser changed, or the State fixed it upstream — the section is
+  left alone and a warning is printed. That is the retirement mechanism open
+  question 3 in `source-anomalies.md` asked for.
+- `sectionNumberAliases()` exposes `observed -> corrected` for the citation
+  resolver, so a citation to `§643G-2` resolves rather than joining the
+  unresolved pile. Flagged anomalies produce no alias — there is no target.
+- `sourceAnomalies` and the `correction` value on `numberSource` were added in
+  the same pass as `covers`/`titleIsSupplied`, before the baseline commit, for
+  the same byte-stability reason.
+
+A second `bun run reparse` reports `unchanged 23373  changed 0` — the pipeline is
+idempotent.
+
+### Source anomalies policy
+
+`docs/source-anomalies.md` added, prompted by defect 3. The rule: **publish the
+statute as published, and say so when it is wrong.** Identity (URL, resolver
+index, chapter grouping) is corrected; displayed text stays the source's; a
+generated editorial note carries the claim and its evidence. Corrections live in
+a reviewed `data/corrections.json`, never inferred at parse time, and that file
+doubles as an alias table for the citation resolver. One URL per section — no
+redirect from an erroneous number, because that would publish a URL asserting a
+section exists when it does not.
 
 ## 2026-09-09 — Architecture decided; output made byte-stable
 
@@ -219,29 +367,28 @@ Three cases that only appeared once real pages went through:
 
 ## Next Steps
 
-1. **Full scrape**: `bun run scrape` (~45 min; resumes from the 757 already done).
-   Two calls to make first:
-   - `--save-html` is worth it for this run. 24,505 requests against a
-     government server; if a parse bug surfaces later, the raw HTML locally is
-     the difference between a 5-second re-parse and another 45-minute crawl.
-     ~500 MB, gitignored, disposable.
-   - The 757 completed files carry the parse as it stood when they were written
-     and will not be re-fetched. Delete `data/progress.json` to redo them if any
-     parser change since then should apply.
-2. **Commit the corpus** once the scrape completes — this is the baseline
-   snapshot that every future re-scrape diffs against.
-3. **Re-profile citations against the full corpus.** Every count in
+1. ~~**Full scrape**~~ — done 2026-09-09, 0 failures. See above.
+2. **Fix the four defects and re-parse from local HTML**, before committing the
+   corpus. Three of them change section numbers, and the baseline commit is what
+   every future amendment diff is measured against — number churn in that diff
+   would be indistinguishable from a real legislative change. Add
+   `sourceAnomalies` to `ParsedSection` in the same pass, for the same reason:
+   an always-present field costs nothing to add while the corpus is uncommitted
+   and rewrites all 23,373 files if added later.
+3. **Commit the corpus** — the baseline snapshot every future re-scrape diffs
+   against.
+4. **Re-profile citations against the full corpus.** Every count in
    `citation-linking.md` comes from a Volume-1-heavy sample. Revisit before
    building the matcher.
-4. **Citation linking** — the primary outcome. Suggested order is in
+5. **Citation linking** — the primary outcome. Suggested order is in
    `citation-linking.md`: resolver first, Cross References annotations as the
    proving ground, then body text.
-5. **Static site build**: a Bun step reading `data/parsed` and writing HTML.
+6. **Static site build**: a Bun step reading `data/parsed` and writing HTML.
    Note the deployment constraint — 24,505 files exceeds Cloudflare Pages'
    20,000-file cap, and other hosts have their own ceilings. Verify current
    limits before choosing one.
-6. **Pagefind integration** over the built site.
-7. **Non-HRS numbering and titles**: the constitutions, Organic Act, Admission
+7. **Pagefind integration** over the built site.
+8. **Non-HRS numbering and titles**: the constitutions, Organic Act, Admission
    Act and HHCA (about 424 files) are captured and tagged, but their numbers are
    prefixed identifiers (`CONST §1-1`) rather than proper citations
    (`Haw. Const. art. I, §1`), and titles are missed for the constitutions,

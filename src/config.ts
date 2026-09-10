@@ -41,6 +41,45 @@ export interface Annotation {
   text: string;
 }
 
+/**
+ * The span of sections a single page covers, when its heading states a range
+ * rather than one section — `§515-10 to 515-12 REPEALED.`
+ *
+ * 274 pages in the corpus are shaped this way. The distinction matters because
+ * a range heading does not identify which section *this file* is: several
+ * filenames can point at the same range page, and the file is not always the
+ * range's start (`HRS_0425-0180.htm` is the end of §425-151 to 425-180). So
+ * the section number comes from the filename on these pages, and the span is
+ * recorded here rather than left as a prose fragment in the title.
+ */
+export interface SectionRange {
+  start: string; // e.g. "§425-151"
+  end: string; // e.g. "§425-180"
+  /** The range exactly as the heading writes it, before normalization. */
+  raw: string;
+}
+
+/**
+ * A discrepancy between what the published source says and what is true.
+ *
+ * The HRS contains typographical errors — `HRS_0634G-0002.htm` is headed
+ * `§643G-2` for a chapter that does not exist. We correct the section's
+ * *identity* so navigation and citation resolution work, keep its *displayed
+ * text* faithful to the source, and carry this record so the rendered page can
+ * generate an editorial note explaining the difference.
+ *
+ * `corrected` is null when `confidence` is `flagged`: something is wrong but
+ * the right answer is not established, so nothing is changed. See
+ * `docs/source-anomalies.md`.
+ */
+export interface SourceAnomaly {
+  field: string; // e.g. "sectionNumber"
+  observed: string; // what the source document says
+  corrected: string | null; // null when confidence is "flagged"
+  confidence: "conclusive" | "flagged";
+  evidence: string;
+}
+
 export interface ParsedSection {
   sectionNumber: string; // e.g. "§1-1" or "§431:10A-601"
   title: string;
@@ -55,8 +94,32 @@ export interface ParsedSection {
   docType: DocType;
   isUncodified: boolean; // heading was bracketed, e.g. "[§11-1.52]"
   isRepealed: boolean;
-  /** Whether sectionNumber came from the page text or was derived from the filename. */
-  numberSource: "page" | "filename";
+  /**
+   * Set when the heading covers a span of sections rather than one section.
+   * `null` on the overwhelming majority. See `SectionRange`.
+   */
+  covers: SectionRange | null;
+  /**
+   * The heading bracketed the *title* but not the number
+   * (`§604-13  [Arrest under warrant.]`), which by HRS convention marks a
+   * catchline supplied editorially rather than enacted. Distinct from
+   * `isUncodified`, where the bracket encloses the whole heading.
+   */
+  titleIsSupplied: boolean;
+  /**
+   * Discrepancies between this page and the published source, from the reviewed
+   * `data/corrections.json`. Empty on the overwhelming majority. See
+   * `SourceAnomaly` and `docs/source-anomalies.md`.
+   */
+  sourceAnomalies: SourceAnomaly[];
+  /**
+   * How `sectionNumber` was obtained. `page-range` means the page stated a
+   * range heading, which confirms the section exists but cannot identify which
+   * file it is — so the number was taken from the filename (see `SectionRange`).
+   * `correction` means the source's own number is wrong and a reviewed entry in
+   * `data/corrections.json` supplied the right one (see `sourceAnomalies`).
+   */
+  numberSource: "page" | "filename" | "page-range" | "correction";
   filename: string;
   url: string;
 }
@@ -96,6 +159,9 @@ export const SECTION_FIELD_ORDER: readonly (keyof ParsedSection)[] = [
   "annotations",
   "isUncodified",
   "isRepealed",
+  "covers",
+  "titleIsSupplied",
+  "sourceAnomalies",
   "numberSource",
   "filename",
   "url",
@@ -166,5 +232,7 @@ export const MANIFEST_PATH = `${DATA_DIR}/manifest.json`;
 export const PROGRESS_PATH = `${DATA_DIR}/progress.json`;
 export const PARSED_DIR = `${DATA_DIR}/parsed`;
 export const HTML_DIR = `${DATA_DIR}/html`;
+/** Reviewed record of errors in the published source. See docs/source-anomalies.md. */
+export const CORRECTIONS_PATH = `${DATA_DIR}/corrections.json`;
 
 export const DATABASE_URL = process.env.DATABASE_URL;

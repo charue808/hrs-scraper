@@ -5,6 +5,7 @@ import type {
   DocType,
   ParsedChapterIndex,
   ParsedSection,
+  SectionRange,
 } from "./config";
 
 const DOC_TYPES: Record<string, DocType> = {
@@ -30,11 +31,20 @@ function clean(text: string): string {
     .trim();
 }
 
-function stripLeadingZeros(s: string): string {
+/**
+ * Normalize one component of a section number: drop leading zeros and
+ * uppercase any letter suffix.
+ *
+ * Chapter and section letters are uppercase by HRS convention (`6D`, `431K`,
+ * `10H`), and the page text always writes them that way — but a handful of
+ * filenames are lowercase (`HRS_0039a-0112.htm`, `HRS_0302l-0002.htm`). Left
+ * alone those yield `§39a-112`, which matches neither the page nor anything in
+ * the resolver's index.
+ */
+function normalizeComponent(s: string): string {
   // Preserve letters at the end (e.g., "010A" -> "10A")
   const match = s.match(/^0*(\d+.*)$/);
-  if (match) return match[1] || "0";
-  return s;
+  return (match ? match[1] || "0" : s).toUpperCase();
 }
 
 /**
@@ -95,26 +105,26 @@ export function isIndexFilename(filename: string): boolean {
 export function filenameToSectionNumber(filename: string): string {
   const { prefix, rest, suffix } = normalizeFilename(filename);
   const { hyphen, underscore } = splitBySeparator(rest);
-  const decimals = underscore.map(stripLeadingZeros).join("");
+  const decimals = underscore.map(normalizeComponent).join("");
 
   if (prefix !== "HRS") {
     // Non-HRS documents (constitutions, HHCA, ...) have no chapter/article
     // grammar to honor, so keep their components in filename order.
-    const joined = hyphen.filter(Boolean).map(stripLeadingZeros).join("-");
+    const joined = hyphen.filter(Boolean).map(normalizeComponent).join("-");
     const number = decimals ? `${joined}.${decimals}` : joined;
     return `${prefix} §${number}${suffix}`;
   }
 
-  const chapter = stripLeadingZeros(hyphen[0] ?? "");
+  const chapter = normalizeComponent(hyphen[0] ?? "");
   const parts = hyphen.slice(1).filter(Boolean);
 
   let number: string;
   if (parts.length === 0) {
     number = chapter; // chapter index page, e.g. "HRS_0001-.htm"
   } else if (parts.length === 1) {
-    number = `${chapter}-${stripLeadingZeros(parts[0]!)}`;
+    number = `${chapter}-${normalizeComponent(parts[0]!)}`;
   } else {
-    number = `${chapter}:${stripLeadingZeros(parts[0]!)}-${stripLeadingZeros(parts[1]!)}`;
+    number = `${chapter}:${normalizeComponent(parts[0]!)}-${normalizeComponent(parts[1]!)}`;
   }
 
   if (decimals) number += `.${decimals}`;
@@ -125,7 +135,7 @@ export function filenameToSectionNumber(filename: string): string {
 export function extractChapterFromFilename(filename: string): string {
   const { prefix, rest } = normalizeFilename(filename);
   if (prefix !== "HRS") return prefix;
-  return stripLeadingZeros(splitBySeparator(rest).hyphen[0] ?? "");
+  return normalizeComponent(splitBySeparator(rest).hyphen[0] ?? "");
 }
 
 /**
@@ -135,7 +145,7 @@ export function extractChapterFromFilename(filename: string): string {
  */
 export function normalizeChapterNumber(dirName: string): string {
   const match = dirName.match(/^HRS(\d+[A-Za-z]*)$/i);
-  return match ? stripLeadingZeros(match[1]!) : dirName;
+  return match ? normalizeComponent(match[1]!) : dirName;
 }
 
 // --- HTML parsing ---
@@ -187,6 +197,81 @@ function leadingBoldText(runs: Run[]): string {
 
 const HEADING_RE = /^\[?\s*§+\s*([0-9][0-9A-Za-z:.\-]*[0-9A-Za-z])\s*\]?\s+(.*)$/;
 const STRUCTURAL_RE = /^(PART|SUBPART|ARTICLE|DIVISION|TITLE|CHAPTER)\s+[IVXLCDM0-9]/i;
+
+// A section number as written in running text. Ending the class on an
+// alphanumeric is what keeps a sentence-ending period out of the number:
+// `to 516. REPEALED.` yields `516`, not `516.` — the same digit-must-follow
+// rule the citation matcher uses. See docs/citation-linking.md.
+// The tail is optional so a single-digit end matches: the corpus writes
+// `§5-1 to 3 REPEALED.` as well as `§515-10 to 515-12`.
+const RANGE_NUMBER = "[0-9](?:[0-9A-Za-z:.\\-]*[0-9A-Za-z])?";
+// Requiring a digit after `to` is what separates the 274 range headings from
+// the three real titles that begin with the word ("To heirs.").
+const RANGE_HEAD_RE = new RegExp(`^to\\s+(${RANGE_NUMBER})`, "i");
+// Some headings list several spans: "to 602-24, 602-31 to 602-34, and 602-37".
+// The comma branch takes an optional `and`/`or` after it so the Oxford comma in
+// "to 602-24, 602-31 to 602-34, 602-36, and 602-37" does not end the list early.
+const RANGE_MORE_RE = new RegExp(
+  `^(?:\\s*,\\s*(?:and\\s+|or\\s+)?|\\s+and\\s+|\\s+or\\s+)(?:§+\\s*)?(${RANGE_NUMBER})` +
+    `(?:\\s+to\\s+(${RANGE_NUMBER}))?`,
+  "i"
+);
+
+/**
+ * Expand the end of a range against its start.
+ *
+ * The corpus abbreviates the end when the chapter is unchanged — `§39-125 to
+ * 131` means §39-131, not §131 — but also writes it in full
+ * (`§431:10A-521 to 431:10A-531`). A `-` or `:` in the end token means it
+ * already stands on its own.
+ */
+function expandRangeEnd(start: string, end: string): string {
+  // Split any leading document prefix and section sign off the start number.
+  const lead = start.match(/^(.*?§+\s*)/)?.[1] ?? "";
+  const core = start.slice(lead.length).replace(/\s*\[[^\]]*\]\s*$/, "");
+
+  if (/[-:]/.test(end)) return `${lead}${end}`;
+  const at = core.lastIndexOf("-");
+  return at === -1 ? `${lead}${end}` : `${lead}${core.slice(0, at + 1)}${end}`;
+}
+
+/**
+ * Detect a heading that covers a span of sections rather than one, and split
+ * the range expression off the title.
+ *
+ * `§515-10 to 515-12 REPEALED.` is one page standing for three sections. The
+ * range must be consumed only at the *start* of the title text, since a title
+ * can legitimately contain "to" further along — `to 349-14 Renumbered as
+ * §§349-21 to 349-23.` is a range of two whose title mentions a different span.
+ */
+function parseRangeTitle(
+  rest: string,
+  start: string
+): { covers: SectionRange; title: string } | null {
+  const head = rest.match(RANGE_HEAD_RE);
+  if (!head) return null;
+
+  let consumed = head[0]!.length;
+  let last = head[1]!;
+
+  for (;;) {
+    const more = rest.slice(consumed).match(RANGE_MORE_RE);
+    if (!more) break;
+    consumed += more[0]!.length;
+    last = more[2] ?? more[1]!;
+  }
+
+  // A period closing the range expression (`§501 to 516. REPEALED.`) belongs to
+  // the range, not the title. The number pattern refuses to swallow it — that
+  // is what keeps `516.` from being read as a decimal — so it is consumed here.
+  const trailingStop = rest.slice(consumed).match(/^\s*\./);
+  if (trailingStop) consumed += trailingStop[0]!.length;
+
+  return {
+    covers: { start, end: expandRangeEnd(start, last), raw: rest.slice(0, consumed).trim() },
+    title: rest.slice(consumed).trim(),
+  };
+}
 // Legislative history is a bracketed span carrying a year. The prefix varies
 // (L, RL, CC, AC, am L, ...), so the year is the reliable marker.
 const HISTORY_RE = /\[[^\[\]]*\b(?:1[6-9]\d{2}|20\d{2})\b[^\[\]]*\]/g;
@@ -264,30 +349,79 @@ export function parseSection(
     .map((block) => ({ heading: block.heading!, text: block.paragraphs.join("\n") }));
 
   // --- section number and title, taken from the page where possible ---
-  let sectionNumber = filenameToSectionNumber(filename);
+  const fromFilename = filenameToSectionNumber(filename);
+  const { prefix, suffix } = normalizeFilename(filename);
+
+  /** Build a full section number from a bare one parsed out of the page. */
+  const pageNumber = (raw: string): string =>
+    prefix === "HRS" ? `§${raw}${suffix}` : `${prefix} §${raw}${suffix}`;
+
+  let sectionNumber = fromFilename;
   let numberSource: ParsedSection["numberSource"] = "filename";
   let title = "";
   let isUncodified = false;
+  let titleIsSupplied = false;
+  let covers: SectionRange | null = null;
   let partHeading: string | null = null;
 
-  const headingIndex = body.elements.findIndex((el) => {
+  // Every heading on the page, in document order. A page can carry more than
+  // one: a repealed-range banner for an [OLD] part, then the section the file
+  // is actually for.
+  const candidates: { index: number; heading: string; number: string; rest: string }[] = [];
+  body.elements.forEach((el, index) => {
     const heading = leadingBoldText(textRuns(el));
-    return heading !== "" && HEADING_RE.test(heading);
+    if (heading === "") return;
+    const match = heading.match(HEADING_RE);
+    if (match) {
+      candidates.push({
+        index,
+        heading,
+        number: pageNumber(match[1]!),
+        rest: match[2]!.trim(),
+      });
+    }
   });
 
-  if (headingIndex !== -1) {
-    const heading = leadingBoldText(textRuns(body.elements[headingIndex]!));
-    const match = heading.match(HEADING_RE)!;
-    const suffix = normalizeFilename(filename).suffix;
-    sectionNumber = `§${match[1]!}${suffix}`;
-    numberSource = "page";
-    title = match[2]!.trim();
-    isUncodified = heading.startsWith("[");
+  // Prefer the heading that agrees with the filename; fall back to the first.
+  // Without this, `HRS_0327-0031.htm` takes the §327-21 banner above it and two
+  // different files end up claiming the same section number.
+  const chosen = candidates.find((c) => c.number === fromFilename) ?? candidates[0];
+  const headingIndex = chosen?.index ?? -1;
+
+  if (chosen) {
+    const range = parseRangeTitle(chosen.rest, chosen.number);
+    if (range) {
+      // A range heading confirms the section exists but does not say which of
+      // the range's members this file is — several filenames point at one range
+      // page, and the file is not always the start. The filename decides.
+      sectionNumber = fromFilename;
+      numberSource = "page-range";
+      covers = range.covers;
+      title = range.title;
+    } else {
+      sectionNumber = chosen.number;
+      numberSource = "page";
+      title = chosen.rest;
+    }
+
+    isUncodified = chosen.heading.startsWith("[");
+
+    // `[§440G-16 Rules.]` brackets the whole heading; HEADING_RE consumes the
+    // opening bracket with the number, leaving the closing one on the title.
+    if (isUncodified && title.endsWith("]")) title = title.slice(0, -1).trim();
+
+    // `§604-13  [Arrest under warrant.]` brackets only the title, which marks a
+    // catchline supplied editorially rather than enacted.
+    const supplied = title.match(/^\[([^\[\]]+)\]$/);
+    if (!isUncodified && supplied) {
+      title = supplied[1]!.trim();
+      titleIsSupplied = true;
+    }
 
     // Drop the heading from the body so bodyText starts at the statute text.
     const paragraph = body.paragraphs[headingIndex]!;
-    body.paragraphs[headingIndex] = paragraph.startsWith(heading)
-      ? paragraph.slice(heading.length).trim()
+    body.paragraphs[headingIndex] = paragraph.startsWith(chosen.heading)
+      ? paragraph.slice(chosen.heading.length).trim()
       : paragraph;
   }
 
@@ -345,6 +479,11 @@ export function parseSection(
     docType: docTypeFromFilename(filename),
     isUncodified,
     isRepealed,
+    covers,
+    titleIsSupplied,
+    // Populated from the reviewed ledger after parsing, never inferred here.
+    // See src/corrections.ts and docs/source-anomalies.md.
+    sourceAnomalies: [],
     numberSource,
     filename,
     url,

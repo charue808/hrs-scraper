@@ -303,3 +303,160 @@ describe("parseChapterIndex", () => {
     expect(index.title).toBe("COMMON LAW; CONSTRUCTION OF LAWS");
   });
 });
+
+describe("range headings", () => {
+  // 274 pages in the corpus stand for a span of sections rather than one, and
+  // the range expression previously bled into the title.
+  test("splits the range off the title and records the span", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>&nbsp; §515-10 to 515-12 REPEALED.</b>&nbsp;
+       L 1989, c 269, §3.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0515-0010.htm", "https://x/HRS_0515-0010.htm");
+    expect(parsed.sectionNumber).toBe("§515-10");
+    expect(parsed.title).toBe("REPEALED.");
+    expect(parsed.numberSource).toBe("page-range");
+    expect(parsed.covers).toEqual({ start: "§515-10", end: "§515-12", raw: "to 515-12" });
+  });
+
+  // The corpus abbreviates the end when the chapter is unchanged: "§39-125 to
+  // 131" means §39-131, not §131.
+  test("expands an abbreviated range end against its start", () => {
+    const html = page(`<p class="RegularParagraphs"><b>&nbsp; §39-125 to 131 REPEALED.</b></p>`);
+    const parsed = parseSection(html, "HRS_0039-0125.htm", "https://x/HRS_0039-0125.htm");
+    expect(parsed.covers?.end).toBe("§39-131");
+  });
+
+  test("expands an abbreviated decimal end", () => {
+    const html = page(`<p class="RegularParagraphs"><b>&nbsp; §486J-4 to 5.3 REPEALED.</b></p>`);
+    const parsed = parseSection(html, "HRS_0486J-0004.htm", "https://x/HRS_0486J-0004.htm");
+    expect(parsed.covers?.end).toBe("§486J-5.3");
+  });
+
+  // The file is not always the range's start, which is how three files ended up
+  // claiming a section number that belonged to another file.
+  test("takes the number from the filename when the file is the range end", () => {
+    const html = page(`<p class="RegularParagraphs"><b>&nbsp; §425-151 to 425-180 REPEALED.</b></p>`);
+    const parsed = parseSection(html, "HRS_0425-0180.htm", "https://x/HRS_0425-0180.htm");
+    expect(parsed.sectionNumber).toBe("§425-180");
+    expect(parsed.covers?.start).toBe("§425-151");
+  });
+
+  // A comma followed by "and" must not end the list early.
+  test("continues a list across an Oxford comma", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>&nbsp; §602-22 to 602-24, 602-31 to 602-34, 602-36,
+       and 602-37 REPEALED.</b></p>`
+    );
+    const parsed = parseSection(html, "HRS_0602-0022.htm", "https://x/HRS_0602-0022.htm");
+    expect(parsed.title).toBe("REPEALED.");
+    expect(parsed.covers?.end).toBe("§602-37");
+  });
+
+  // The range is consumed only at the start of the title: a title can mention a
+  // different span further along.
+  test("does not consume a range that appears inside the title", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>&nbsp; §349-12 to 349-14 Renumbered as §§349-21 to
+       349-23.</b></p>`
+    );
+    const parsed = parseSection(html, "HRS_0349-0012.htm", "https://x/HRS_0349-0012.htm");
+    expect(parsed.title).toBe("Renumbered as §§349-21 to 349-23.");
+    expect(parsed.covers?.end).toBe("§349-14");
+  });
+
+  test("a title that merely begins with the word 'to' is not a range", () => {
+    const html = page(`<p class="RegularParagraphs"><b>&nbsp; §532-2 To heirs.</b>&nbsp; Text.</p>`);
+    const parsed = parseSection(html, "HRS_0532-0002.htm", "https://x/HRS_0532-0002.htm");
+    expect(parsed.title).toBe("To heirs.");
+    expect(parsed.covers).toBeNull();
+    expect(parsed.numberSource).toBe("page");
+  });
+
+  // A repealed-range banner for an [OLD] part can sit above the section the
+  // file is actually for; the heading matching the filename wins.
+  test("prefers the heading that agrees with the filename", () => {
+    const html = page(
+      `<p class="RegularParagraphs">PART II. [OLD] DONATION OF EYES</p>
+       <p class="RegularParagraphs"><b>&nbsp; §327-21 to 327-24 REPEALED.</b>&nbsp; L 1969, c 81, §2.</p>
+       <p class="RegularParagraphs">PART II. DISPOSITION OF DEAD HUMAN BODIES</p>
+       <p class="RegularParagraphs"><b>&nbsp; §327-31 REPEALED.</b>&nbsp; L 2012, c 75, §6.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0327-0031.htm", "https://x/HRS_0327-0031.htm");
+    expect(parsed.sectionNumber).toBe("§327-31");
+    expect(parsed.title).toBe("REPEALED.");
+    expect(parsed.covers).toBeNull();
+  });
+});
+
+describe("bracketed headings", () => {
+  test("drops the closing bracket of a fully bracketed heading", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>[§440G-16 Rules.]</b>&nbsp; The director shall adopt
+       rules pursuant to chapter 91. [L 1987, c 301, §20]</p>`
+    );
+    const parsed = parseSection(html, "HRS_0440G-0016.htm", "https://x/HRS_0440G-0016.htm");
+    expect(parsed.title).toBe("Rules.");
+    expect(parsed.isUncodified).toBe(true);
+    expect(parsed.titleIsSupplied).toBe(false);
+  });
+
+  // A bracket around the title alone marks a catchline supplied editorially
+  // rather than enacted — a different fact from the section being uncodified.
+  test("unwraps a bracketed title and records that it was supplied", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>§604-13&nbsp; [Arrest under warrant.]</b>&nbsp; Text.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0604-0013.htm", "https://x/HRS_0604-0013.htm");
+    expect(parsed.title).toBe("Arrest under warrant.");
+    expect(parsed.titleIsSupplied).toBe(true);
+    expect(parsed.isUncodified).toBe(false);
+  });
+
+  // "[OLD]" is a marker inside the title, not a bracket around it.
+  test("leaves an [OLD] marker in the title alone", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>§226-53 [OLD] REPEALED.</b>&nbsp; L 1991, c 76, pt of §1.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0226-0053.htm", "https://x/HRS_0226-0053.htm");
+    expect(parsed.title).toBe("[OLD] REPEALED.");
+    expect(parsed.titleIsSupplied).toBe(false);
+  });
+});
+
+describe("lowercase chapter letters in filenames", () => {
+  // A handful of filenames write the chapter's letter suffix in lowercase. The
+  // page always writes it uppercase, so leaving it produces a number that
+  // matches neither the page nor the resolver's index.
+  test("uppercases the letter suffix", () => {
+    expect(filenameToSectionNumber("HRS_0039a-0112.htm")).toBe("§39A-112");
+    expect(filenameToSectionNumber("HRS_0206j-0017.htm")).toBe("§206J-17");
+    expect(filenameToSectionNumber("HRS_0516d-0011_0006.htm")).toBe("§516D-11.6");
+  });
+
+  test("agrees with the chapter number derived from the directory", () => {
+    expect(extractChapterFromFilename("HRS_0039a-0112.htm")).toBe("39A");
+    expect(normalizeChapterNumber("HRS0039A")).toBe("39A");
+  });
+});
+
+describe("non-HRS documents", () => {
+  // The section number built from a page heading previously dropped the
+  // document prefix, so HHCA §501 came out as a bare §501.
+  test("keeps the document prefix on a page-derived number", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>&nbsp; §501 to 516. REPEALED.</b>&nbsp; L 1990, c 349.</p>`
+    );
+    const parsed = parseSection(html, "HHCA_0501.htm", "https://x/HHCA_0501.htm");
+    expect(parsed.sectionNumber).toBe("HHCA §501");
+    expect(parsed.title).toBe("REPEALED.");
+    expect(parsed.covers).toEqual({ start: "HHCA §501", end: "HHCA §516", raw: "to 516." });
+  });
+});
+
+test("a single-digit range end is a range", () => {
+  const html = page(`<p class="RegularParagraphs"><b>&nbsp; §5-1 to 3 REPEALED.</b></p>`);
+  const parsed = parseSection(html, "HRS_0005-0001.htm", "https://x/HRS_0005-0001.htm");
+  expect(parsed.title).toBe("REPEALED.");
+  expect(parsed.covers?.end).toBe("§5-3");
+});

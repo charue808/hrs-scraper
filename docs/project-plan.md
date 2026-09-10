@@ -26,8 +26,14 @@ Storage & Delivery below and `citation-linking.md`.
 
 ## Status
 
-Discovery and parsing are verified end to end against the live site. The full
-scrape is the remaining work — see the Next Steps in `progress.md`.
+Discovery and parsing are verified end to end against the live site, and the
+full corpus was scraped on 2026-09-09 with zero failures — 24,505 files,
+23,373 sections. Four small parser defects found in QA are fixed before the
+baseline corpus commit; see the Next Steps in `progress.md`.
+
+Companion documents: `citation-linking.md` (the primary outcome) and
+`source-anomalies.md` (how errors in the published statutes are recorded and
+presented).
 
 ## Storage & Delivery — decided 2026-09-09
 
@@ -470,6 +476,13 @@ Scraper flags: `--db`, `--limit N`, `--save-html`, `--concurrency N`.
 
 ## Known Gaps & Future Work
 
+- **Errors in the source documents.** The published HRS contains typographical
+  errors — `HRS_0634G-0002.htm` is headed `§643G-2` for a chapter that does not
+  exist. Policy, data model and rendering rules are in `source-anomalies.md`:
+  identity is corrected so navigation works, displayed text stays faithful to
+  the source, and a generated editorial note carries the claim and its evidence.
+  Corrections live in a reviewed `data/corrections.json` rather than being
+  inferred at parse time.
 - **Non-HRS numbering and titles.** The constitutions, Organic Act, Admission
   Act and HHCA are captured and tagged, but numbered as prefixed identifiers
   (`CONST §1-1`) rather than proper citations (`Haw. Const. art. I, §1`).
