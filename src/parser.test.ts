@@ -460,3 +460,139 @@ test("a single-digit range end is a range", () => {
   expect(parsed.title).toBe("REPEALED.");
   expect(parsed.covers?.end).toBe("§5-3");
 });
+
+describe("subsection markers in headings", () => {
+  // Word writes `<b>§26-12 Title. </b>(a)<b> </b>The department...`. The "(a)"
+  // is unbolded and short enough to look like one of the connectors that hold a
+  // split heading together, which appended it to the title and dropped it from
+  // the body.
+  test("a subsection marker ends the heading and stays in the body", () => {
+    const html = page(
+      `<p class="RegularParagraphs"> <b>§26-12 Department of education. </b>(a)<b> </b>The
+       department of education shall be headed by an executive board. [L 1959, c 195]</p>`
+    );
+    const parsed = parseSection(html, "HRS_0026-0012.htm", "https://x/HRS_0026-0012.htm");
+    expect(parsed.title).toBe("Department of education.");
+    expect(parsed.bodyText.startsWith("(a) The department of education")).toBe(true);
+  });
+
+  test("real connectors in a split heading still work", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>&nbsp; §1</b>-<b>2&nbsp; Certain laws.</b>&nbsp; No written law.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0001-0002.htm", "https://x/HRS_0001-0002.htm");
+    expect(parsed.sectionNumber).toBe("§1-2");
+    expect(parsed.title).toBe("Certain laws.");
+  });
+});
+
+describe("bracketed chapter banners", () => {
+  const index = (body: string) =>
+    parseChapterIndex(page(body), "HRS_0030-.htm", "https://x/HRS_0030-.htm", "30");
+
+  test("a bracketed banner still yields the title", () => {
+    const parsed = index(
+      `<p class="RegularParagraphs">[CHAPTER 30]</p>
+       <p class="RegularParagraphs">[CHAPTER 30]</p>
+       <p class="RegularParagraphs">GUBERNATORIAL TRANSITION</p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">30-1 Declaration of purpose</p>`
+    );
+    expect(parsed.title).toBe("GUBERNATORIAL TRANSITION");
+  });
+
+  test("a title inside the bracket is taken from the banner itself", () => {
+    const parsed = index(
+      `<p class="RegularParagraphs">House Bill</p>
+       <p class="RegularParagraphs">[CHAPTER 56 PUBLIC OFF-STREET PARKING FACILITIES]</p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">56-1 Authorization by the council</p>`
+    );
+    expect(parsed.title).toBe("PUBLIC OFF-STREET PARKING FACILITIES");
+  });
+
+  test("an unbracketed banner is unchanged", () => {
+    const parsed = index(
+      `<p class="RegularParagraphs">CHAPTER 30</p>
+       <p class="RegularParagraphs">GUBERNATORIAL TRANSITION</p>
+       <p class="RegularParagraphs">Section</p>`
+    );
+    expect(parsed.title).toBe("GUBERNATORIAL TRANSITION");
+  });
+});
+
+test("a chapter title may begin with a digit", () => {
+  const parsed = parseChapterIndex(
+    page(
+      `<p class="RegularParagraphs">CHAPTER 138</p>
+       <p class="RegularParagraphs">911 SERVICES</p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">138-1 Definitions</p>`
+    ),
+    "HRS_0138-.htm",
+    "https://x/HRS_0138-.htm",
+    "138"
+  );
+  expect(parsed.title).toBe("911 SERVICES");
+});
+
+test("the section listing is still not mistaken for a title", () => {
+  const parsed = parseChapterIndex(
+    page(
+      `<p class="RegularParagraphs">CHAPTER 30</p>
+       <p class="RegularParagraphs">30-1 Declaration of purpose</p>`
+    ),
+    "HRS_0030-.htm",
+    "https://x/HRS_0030-.htm",
+    "30"
+  );
+  expect(parsed.title).toBe("");
+});
+
+test("a subsection marker split across runs is still stripped", () => {
+  // Word writes `(`, `a`, `)` as three separate runs, so no single run looks
+  // like a marker.
+  const html = page(
+    `<p class="RegularParagraphs"><b>[§305J-3]<span> Applicability of chapter; exceptions. </span></b>` +
+      `<b><span> </span></b><span>(</span>a<span>)<b> </b>This chapter shall not apply.</span></p>`
+  );
+  const parsed = parseSection(html, "HRS_0305J-0003.htm", "https://x/HRS_0305J-0003.htm");
+  expect(parsed.title).toBe("Applicability of chapter; exceptions.");
+  expect(parsed.bodyText.startsWith("(a) This chapter shall not apply")).toBe(true);
+});
+
+test("a title that is itself parenthesised survives", () => {
+  const html = page(`<p class="RegularParagraphs"><b>§88-53 (Reserved)</b></p>`);
+  expect(parseSection(html, "HRS_0088-0053.htm", "https://x/y").title).toBe("(Reserved)");
+});
+
+test("a superseded [OLD] chapter banner does not become the title", () => {
+  const parsed = parseChapterIndex(
+    page(
+      `<p class="RegularParagraphs">CHAPTER 11 [OLD]</p>
+       <p class="RegularParagraphs">VOTER REGISTRATION</p>
+       <p class="RegularParagraphs">CHAPTER 11</p>
+       <p class="RegularParagraphs">ELECTIONS, GENERALLY</p>
+       <p class="RegularParagraphs">Section</p>`
+    ),
+    "HRS_0011-.htm",
+    "https://x/HRS_0011-.htm",
+    "11"
+  );
+  expect(parsed.title).toBe("ELECTIONS, GENERALLY");
+});
+
+test("a [NEW] marker is a status, not a chapter title", () => {
+  const parsed = parseChapterIndex(
+    page(
+      `<p class="RegularParagraphs">CHAPTER 14 [OLD]</p>
+       <p class="RegularParagraphs">ABSENTEE VOTING</p>
+       <p class="RegularParagraphs">CHAPTER 14 [NEW]</p>
+       <p class="RegularParagraphs">PRESIDENTIAL ELECTIONS</p>`
+    ),
+    "HRS_0014-.htm",
+    "https://x/HRS_0014-.htm",
+    "14"
+  );
+  expect(parsed.title).toBe("PRESIDENTIAL ELECTIONS");
+});

@@ -188,11 +188,24 @@ function leadingBoldText(runs: Run[]): string {
       end = i;
       continue;
     }
-    if (clean(run.text).length <= 3) continue;
+    const text = clean(run.text);
+    // A subsection marker ends the heading even though it is short enough to
+    // look like a connector. Word writes `<b>§26-12 Department of education.
+    // </b>(a)<b> </b>The department...`, and treating `(a)` as a connector both
+    // appends it to the title and drops it from the body.
+    if (/^\([0-9a-z]+\)$/i.test(text)) break;
+    if (text.length <= 3) continue;
     break;
   }
   if (end === -1) return "";
-  return clean(runs.slice(0, end + 1).map((r) => r.text).join(""));
+  const heading = clean(runs.slice(0, end + 1).map((r) => r.text).join(""));
+
+  // Word sometimes splits the marker across runs of its own — `(`, `a`, `)` —
+  // so the per-run check above cannot see it. Strip it from the assembled
+  // heading instead. Shortening the heading here also puts the marker back at
+  // the front of the body, since the caller slices the heading off by length.
+  // Bounded to 1-3 characters so a real title like "(Reserved)" survives.
+  return heading.replace(/\s*\((?:\d{1,3}|[a-z]{1,3})\)\s*$/i, "");
 }
 
 const HEADING_RE = /^\[?\s*§+\s*([0-9][0-9A-Za-z:.\-]*[0-9A-Za-z])\s*\]?\s+(.*)$/;
@@ -516,13 +529,40 @@ export function parseChapterIndex(
     .filter(Boolean);
 
   let title = "";
-  const chapterIndex = paragraphs.findIndex((p) => /^chapter\s+[0-9]/i.test(p));
+  // The banner is bracketed on uncodified chapters, exactly as section headings
+  // are — `[CHAPTER 30]`. A variant puts the title inside the bracket too:
+  // `[CHAPTER 56 PUBLIC OFF-STREET PARKING FACILITIES]`.
+  const BANNER = /^\[?\s*chapter\s+([0-9][0-9A-Za-z]*)\s*(.*?)\s*\]?$/i;
+  // A superseded banner can precede the live one — `CHAPTER 14 [OLD]` then
+  // `CHAPTER 14 [NEW]` — exactly as `[OLD]` part banners precede section
+  // headings. Taking the first match makes "ABSENTEE VOTING" the title of the
+  // presidential-elections chapter.
+  const inlineOf = (p: string) => p.match(BANNER)?.[2]?.trim() ?? "";
+  // `[OLD]` / `[NEW]` are status markers, not titles: a banner carrying one has
+  // its title in the following paragraph like any unmarked banner.
+  const MARKER = /^\[?(old|new)\]?$/i;
+  const banners = paragraphs
+    .map((p, i) => (BANNER.test(p) ? i : -1))
+    .filter((i) => i !== -1);
+  const chapterIndex =
+    banners.find((i) => !/^\[?old\]?$/i.test(inlineOf(paragraphs[i]!))) ?? banners[0] ?? -1;
   if (chapterIndex !== -1) {
-    const next = paragraphs
-      .slice(chapterIndex + 1)
-      .find((p) => !/^section$/i.test(p));
-    if (next && !/^[0-9]/.test(next)) title = next;
+    const inline = inlineOf(paragraphs[chapterIndex]!);
+    if (inline && !MARKER.test(inline)) title = inline;
+    else {
+      // Otherwise the title is the next paragraph that is neither the "Section"
+      // column header nor a repeat of the banner nor the start of the listing.
+      const next = paragraphs
+        .slice(chapterIndex + 1)
+        .find((p) => !/^section$/i.test(p) && !BANNER.test(p));
+      // Reject only a line that opens the section listing (`138-1 Definitions`),
+      // not any line starting with a digit — chapter titles can begin with one
+      // ("911 SERVICES", "340B Drug Discount Program").
+      const listing = new RegExp(String.raw`^\[?${paragraphs[chapterIndex]!.match(BANNER)![1]}-`, "i");
+      if (next && !listing.test(next)) title = next;
+    }
   }
+  title = title.replace(/^\[/, "").replace(/\]$/, "").trim();
 
   return {
     chapterNumber: chapterNumber ?? extractChapterFromFilename(filename),

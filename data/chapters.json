@@ -1,0 +1,4450 @@
+{
+  "1": {
+    "title": "COMMON LAW; CONSTRUCTION OF LAWS",
+    "volume": 1
+  },
+  "2": {
+    "title": "STATUTE REVISION AND PUBLICATION",
+    "volume": 1
+  },
+  "3": {
+    "title": "UNIFORMITY OF LEGISLATION",
+    "volume": 1
+  },
+  "4": {
+    "title": "BOUNDARIES",
+    "volume": 1
+  },
+  "5": {
+    "title": "EMBLEMS AND SYMBOLS",
+    "volume": 1
+  },
+  "6": {
+    "title": "MEMORIALS",
+    "volume": 1
+  },
+  "7": {
+    "title": "MISCELLANEOUS RIGHTS OF THE PEOPLE",
+    "volume": 1
+  },
+  "8": {
+    "title": "HOLIDAYS AND PERIODS OF RECOGNITION AND OBSERVANCE",
+    "volume": 1
+  },
+  "9": {
+    "title": "FOUNDATION ON CULTURE AND THE ARTS",
+    "volume": 1
+  },
+  "10": {
+    "title": "OFFICE OF HAWAIIAN AFFAIRS",
+    "volume": 1
+  },
+  "11": {
+    "title": "ELECTIONS, GENERALLY",
+    "volume": 1
+  },
+  "12": {
+    "title": "PRIMARY ELECTIONS",
+    "volume": 1
+  },
+  "13": {
+    "title": "BOARD OF EDUCATION",
+    "volume": 1
+  },
+  "14": {
+    "title": "PRESIDENTIAL ELECTIONS",
+    "volume": 1
+  },
+  "15": {
+    "title": "ABSENTEE VOTING",
+    "volume": 1
+  },
+  "16": {
+    "title": "VOTING SYSTEMS",
+    "volume": 1
+  },
+  "17": {
+    "title": "VACANCIES",
+    "volume": 1
+  },
+  "18": {
+    "title": "DISTRICTING",
+    "volume": 1
+  },
+  "19": {
+    "title": "ELECTION OFFENSE",
+    "volume": 1
+  },
+  "21": {
+    "title": "LEGISLATIVE HEARINGS AND PROCEDURE",
+    "volume": 1
+  },
+  "22": {
+    "title": "PRESIDING OFFICERS, CLERKS, AND STAFF",
+    "volume": 1
+  },
+  "23": {
+    "title": "AUDITOR",
+    "volume": 1
+  },
+  "24": {
+    "title": "ALLOWANCE AND SALARY FOR LEGISLATORS",
+    "volume": 1
+  },
+  "25": {
+    "title": "REAPPORTIONMENT",
+    "volume": 1
+  },
+  "26": {
+    "title": "EXECUTIVE AND ADMINISTRATIVE DEPARTMENTS",
+    "volume": 1
+  },
+  "27": {
+    "title": "STATE FUNCTIONS AND RESPONSIBILITIES",
+    "volume": 1
+  },
+  "28": {
+    "title": "ATTORNEY GENERAL",
+    "volume": 1
+  },
+  "29": {
+    "title": "FEDERAL AID",
+    "volume": 1
+  },
+  "30": {
+    "title": "GUBERNATORIAL TRANSITION",
+    "volume": 1
+  },
+  "36": {
+    "title": "MANAGEMENT OF STATE FUNDS",
+    "volume": 1
+  },
+  "37": {
+    "title": "BUDGET",
+    "volume": 1
+  },
+  "38": {
+    "title": "DEPOSITS OF PUBLIC FUNDS",
+    "volume": 1
+  },
+  "39": {
+    "title": "STATE BONDS",
+    "volume": 1
+  },
+  "40": {
+    "title": "AUDIT AND ACCOUNTING",
+    "volume": 1
+  },
+  "41": {
+    "title": "STATE INSURANCE ADMINISTRATION",
+    "volume": 1
+  },
+  "42": {
+    "title": "GRANTS, SUBSIDIES, AND PURCHASES OF SERVICE",
+    "volume": 1
+  },
+  "46": {
+    "title": "GENERAL PROVISIONS",
+    "volume": 2
+  },
+  "47": {
+    "title": "COUNTY BONDS",
+    "volume": 2
+  },
+  "48": {
+    "title": "ECONOMIC DEVELOPMENT BONDS",
+    "volume": 2
+  },
+  "49": {
+    "title": "REVENUE BONDS",
+    "volume": 2
+  },
+  "50": {
+    "title": "CHARTER COMMISSIONS",
+    "volume": 2
+  },
+  "51": {
+    "title": "MASS TRANSIT",
+    "volume": 2
+  },
+  "52": {
+    "title": "POLICE DEPARTMENTS",
+    "volume": 2
+  },
+  "53": {
+    "title": "URBAN RENEWAL LAW",
+    "volume": 2
+  },
+  "54": {
+    "title": "WATER SYSTEMS",
+    "volume": 2
+  },
+  "56": {
+    "title": "PUBLIC OFF-STREET PARKING FACILITIES",
+    "volume": 2
+  },
+  "57": {
+    "title": "URBAN AND REGIONAL DESIGN",
+    "volume": 2
+  },
+  "58": {
+    "title": "EXCEPTIONAL TREES",
+    "volume": 2
+  },
+  "61": {
+    "title": "GENERAL ORGANIZATION AND POWERS",
+    "volume": 2
+  },
+  "62": {
+    "title": "COUNTY OFFICERS",
+    "volume": 2
+  },
+  "63": {
+    "title": "ELECTION OF OFFICERS",
+    "volume": 2
+  },
+  "64": {
+    "title": "PROVISIONS SPECIFIC FOR HAWAII",
+    "volume": 2
+  },
+  "65": {
+    "title": "PROVISIONS SPECIFIC FOR KAUAI",
+    "volume": 2
+  },
+  "66": {
+    "title": "PROVISIONS SPECIFIC FOR MAUI",
+    "volume": 2
+  },
+  "67": {
+    "title": "IMPROVEMENT BY ASSESSMENT",
+    "volume": 2
+  },
+  "70": {
+    "title": "GENERAL PROVISIONS RELATING TO HONOLULU",
+    "volume": 2
+  },
+  "71": {
+    "title": "ARTESIAN WELL CONTROL",
+    "volume": 2
+  },
+  "76": {
+    "title": "CIVIL SERVICE LAW",
+    "volume": 2
+  },
+  "77": {
+    "title": "COMPENSATION LAW",
+    "volume": 2
+  },
+  "78": {
+    "title": "PUBLIC SERVICE",
+    "volume": 2
+  },
+  "79": {
+    "title": "LEAVES OF ABSENCE",
+    "volume": 2
+  },
+  "80": {
+    "title": "HOURS OF WORK",
+    "volume": 2
+  },
+  "81": {
+    "title": "IN-SERVICE TRAINING PROGRAMS",
+    "volume": 2
+  },
+  "82": {
+    "title": "INCENTIVE AND SERVICE AWARDS",
+    "volume": 2
+  },
+  "83": {
+    "title": "TEMPORARY INTERGOVERNMENTAL ASSIGNMENT OF",
+    "volume": 2
+  },
+  "84": {
+    "title": "STANDARDS OF CONDUCT",
+    "volume": 2
+  },
+  "85": {
+    "title": "LOYALTY",
+    "volume": 2
+  },
+  "86": {
+    "title": "STRIKES AGAINST THE GOVERNMENT",
+    "volume": 2
+  },
+  "87": {
+    "title": "PUBLIC EMPLOYEES HEALTH FUND",
+    "volume": 2
+  },
+  "88": {
+    "title": "PENSION AND RETIREMENT SYSTEMS",
+    "volume": 2
+  },
+  "89": {
+    "title": "COLLECTIVE BARGAINING IN PUBLIC EMPLOYMENT",
+    "volume": 2
+  },
+  "90": {
+    "title": "STATE POLICY CONCERNING THE UTILIZATION OF",
+    "volume": 2
+  },
+  "91": {
+    "title": "ADMINISTRATIVE PROCEDURE",
+    "volume": 2
+  },
+  "92": {
+    "title": "PUBLIC AGENCY MEETINGS AND RECORDS",
+    "volume": 2
+  },
+  "93": {
+    "title": "GOVERNMENT PUBLICATIONS",
+    "volume": 2
+  },
+  "94": {
+    "title": "PUBLIC ARCHIVES; DISPOSAL OF RECORDS",
+    "volume": 2
+  },
+  "95": {
+    "title": "DESTROYING OR DEFACING OFFICIAL NOTICES",
+    "volume": 2
+  },
+  "96": {
+    "title": "THE OMBUDSMAN",
+    "volume": 2
+  },
+  "97": {
+    "title": "LOBBYISTS",
+    "volume": 2
+  },
+  "98": {
+    "title": "UNIFORM ELECTRONIC LEGAL MATERIAL ACT",
+    "volume": 2
+  },
+  "101": {
+    "title": "EMINENT DOMAIN",
+    "volume": 2
+  },
+  "102": {
+    "title": "CONCESSIONS ON PUBLIC PROPERTY",
+    "volume": 2
+  },
+  "103": {
+    "title": "EXPENDITURE OF PUBLIC MONEY AND PUBLIC CONTRACTS",
+    "volume": 2
+  },
+  "104": {
+    "title": "WAGES AND HOURS OF EMPLOYEES ON PUBLIC WORKS",
+    "volume": 2
+  },
+  "105": {
+    "title": "GOVERNMENT MOTOR VEHICLES",
+    "volume": 2
+  },
+  "106": {
+    "title": "INVENTORY, ACCOUNTING, AND DISPOSAL OF",
+    "volume": 2
+  },
+  "107": {
+    "title": "PUBLIC IMPROVEMENTS",
+    "volume": 2
+  },
+  "109": {
+    "title": "STADIUMS AND RECREATIONAL FACILITIES",
+    "volume": 2
+  },
+  "110": {
+    "title": "STATE-OWNED CEMETERIES",
+    "volume": 2
+  },
+  "111": {
+    "title": "ASSISTANCE TO DISPLACED PERSONS",
+    "volume": 2
+  },
+  "113": {
+    "title": "LAND ACQUISITION POLICIES FOR FEDERALLY",
+    "volume": 2
+  },
+  "115": {
+    "title": "PUBLIC ACCESS TO COASTAL AND INLAND RECREATIONAL",
+    "volume": 2
+  },
+  "121": {
+    "title": "MILITIA; NATIONAL GUARD",
+    "volume": 3
+  },
+  "122": {
+    "title": "HAWAII STATE GUARD",
+    "volume": 3
+  },
+  "123": {
+    "title": "NAVAL MILITIA",
+    "volume": 3
+  },
+  "124": {
+    "title": "MILITARY COURTS-MARTIAL",
+    "volume": 3
+  },
+  "125": {
+    "title": "PROCUREMENT AND CONTROL OF DISTRIBUTION",
+    "volume": 3
+  },
+  "126": {
+    "title": "FEDERAL FLOOD INSURANCE",
+    "volume": 3
+  },
+  "127": {
+    "title": "DISASTER RELIEF",
+    "volume": 3
+  },
+  "128": {
+    "title": "CIVIL DEFENSE AND EMERGENCY ACT",
+    "volume": 3
+  },
+  "129": {
+    "title": "BLACKOUTS AND ILLUMINATION CONTROL",
+    "volume": 3
+  },
+  "130": {
+    "title": "EMERGENCY SEAT OF GOVERNMENT",
+    "volume": 3
+  },
+  "131": {
+    "title": "COMMISSION ON SUBVERSIVE ACTIVITIES",
+    "volume": 3
+  },
+  "132": {
+    "title": "FIRE PROTECTION",
+    "volume": 3
+  },
+  "133": {
+    "title": "COMBUSTIBLES",
+    "volume": 3
+  },
+  "134": {
+    "title": "FIREARMS, AMMUNITION AND DANGEROUS WEAPONS",
+    "volume": 3
+  },
+  "135": {
+    "title": "EMERGENCY USE OF PRIVATE REAL PROPERTY",
+    "volume": 3
+  },
+  "136": {
+    "title": "LASER POINTING DEVICES",
+    "volume": 3
+  },
+  "137": {
+    "title": "SEARCH AND RESCUE REIMBURSEMENT ACT",
+    "volume": 3
+  },
+  "138": {
+    "title": "911 SERVICES",
+    "volume": 3
+  },
+  "139": {
+    "title": "LAW ENFORCEMENT STANDARDS",
+    "volume": 3
+  },
+  "141": {
+    "title": "DEPARTMENT OF AGRICULTURE AND BIOSECURITY",
+    "volume": 3
+  },
+  "142": {
+    "title": "ANIMALS, BRANDS, AND FENCES",
+    "volume": 3
+  },
+  "143": {
+    "title": "ANIMALS: LICENSES AND REGULATIONS",
+    "volume": 3
+  },
+  "144": {
+    "title": "FEED",
+    "volume": 3
+  },
+  "145": {
+    "title": "REGULATION OF FARM PRODUCE",
+    "volume": 3
+  },
+  "146": {
+    "title": "SLAUGHTERING OPERATIONS AND",
+    "volume": 3
+  },
+  "147": {
+    "title": "GRADES AND STANDARDS",
+    "volume": 3
+  },
+  "148": {
+    "title": "ADVERTISING AND MARKETING",
+    "volume": 3
+  },
+  "149": {
+    "title": "ECONOMIC POISONS",
+    "volume": 3
+  },
+  "150": {
+    "title": "SEEDS",
+    "volume": 3
+  },
+  "151": {
+    "title": "WEED CONTROL",
+    "volume": 3
+  },
+  "152": {
+    "title": "NOXIOUS WEED CONTROL",
+    "volume": 3
+  },
+  "153": {
+    "title": "AGRICULTURAL PRODUCTS PROGRAM",
+    "volume": 3
+  },
+  "154": {
+    "title": "FRUIT AND NUT ORCHARDS",
+    "volume": 3
+  },
+  "155": {
+    "title": "AGRICULTURAL AND WATER INFRASTRUCTURE LOANS",
+    "volume": 3
+  },
+  "156": {
+    "title": "FARM ADVISORY BOARD",
+    "volume": 3
+  },
+  "157": {
+    "title": "MILK CONTROL ACT",
+    "volume": 3
+  },
+  "159": {
+    "title": "HAWAII MEAT INSPECTION ACT",
+    "volume": 3
+  },
+  "161": {
+    "title": "POULTRY INSPECTION",
+    "volume": 3
+  },
+  "163": {
+    "title": "MARKETING ORDERS AND AGREEMENTS",
+    "volume": 3
+  },
+  "164": {
+    "title": "AGRICULTURE COORDINATING COMMITTEE",
+    "volume": 3
+  },
+  "165": {
+    "title": "HAWAII RIGHT TO FARM ACT",
+    "volume": 3
+  },
+  "166": {
+    "title": "AGRICULTURAL PARKS",
+    "volume": 3
+  },
+  "167": {
+    "title": "IRRIGATION WATER DEVELOPMENT",
+    "volume": 3
+  },
+  "168": {
+    "title": "IRRIGATION AND WATER UTILIZATION PROJECTS",
+    "volume": 3
+  },
+  "169": {
+    "title": "PRIVATE AGRICULTURAL PARKS",
+    "volume": 3
+  },
+  "171": {
+    "title": "PUBLIC LANDS, MANAGEMENT AND DISPOSITION OF",
+    "volume": 3
+  },
+  "172": {
+    "title": "LAND COMMISSION AWARDS; SURVEYS",
+    "volume": 3
+  },
+  "173": {
+    "title": "RECLAMATION OF LANDS",
+    "volume": 3
+  },
+  "174": {
+    "title": "WATER AND LAND DEVELOPMENT",
+    "volume": 3
+  },
+  "175": {
+    "title": "MOLOKAI IRRIGATION AND WATER UTILIZATION PROJECT",
+    "volume": 3
+  },
+  "176": {
+    "title": "WATER RESOURCES",
+    "volume": 3
+  },
+  "177": {
+    "title": "GROUND-WATER USE",
+    "volume": 3
+  },
+  "178": {
+    "title": "WELLS, GENERALLY",
+    "volume": 3
+  },
+  "179": {
+    "title": "FLOOD CONTROL AND FLOOD WATER CONSERVATION",
+    "volume": 3
+  },
+  "180": {
+    "title": "SOIL AND WATER CONSERVATION DISTRICTS",
+    "volume": 3
+  },
+  "181": {
+    "title": "STRIP MINING",
+    "volume": 3
+  },
+  "182": {
+    "title": "RESERVATION AND DISPOSITION OF",
+    "volume": 3
+  },
+  "183": {
+    "title": "FOREST RESERVES, WATER DEVELOPMENT, ZONING",
+    "volume": 3
+  },
+  "184": {
+    "title": "STATE PARKS AND RECREATION AREAS",
+    "volume": 3
+  },
+  "185": {
+    "title": "LAND FIRE PROTECTION LAW",
+    "volume": 3
+  },
+  "186": {
+    "title": "TREE FARMS",
+    "volume": 3
+  },
+  "187": {
+    "title": "GENERAL PROVISIONS RELATING TO AQUATIC RESOURCES",
+    "volume": 3
+  },
+  "188": {
+    "title": "FISHING RIGHTS AND REGULATIONS",
+    "volume": 3
+  },
+  "189": {
+    "title": "COMMERCIAL FISHING",
+    "volume": 3
+  },
+  "190": {
+    "title": "MARINE LIFE CONSERVATION PROGRAM",
+    "volume": 3
+  },
+  "191": {
+    "title": "BIRDS AND MAMMALS",
+    "volume": 3
+  },
+  "192": {
+    "title": "SHOOTING PRESERVES AND GAME BIRD FARMING",
+    "volume": 3
+  },
+  "193": {
+    "title": "CONSERVATION: EMPLOYMENT PROGRAMS",
+    "volume": 3
+  },
+  "194": {
+    "title": "INVASIVE SPECIES COUNCIL",
+    "volume": 3
+  },
+  "195": {
+    "title": "NATURAL AREA RESERVES SYSTEM",
+    "volume": 3
+  },
+  "196": {
+    "title": "ENERGY RESOURCES",
+    "volume": 3
+  },
+  "197": {
+    "title": "GENERAL PROVISIONS RELATING TO",
+    "volume": 3
+  },
+  "198": {
+    "title": "CONSERVATION EASEMENTS",
+    "volume": 3
+  },
+  "199": {
+    "title": "CONSERVATION AND RESOURCES ENFORCEMENT PROGRAM",
+    "volume": 3
+  },
+  "200": {
+    "title": "OCEAN RECREATION AND COASTAL AREAS PROGRAMS",
+    "volume": 3
+  },
+  "201": {
+    "title": "DEPARTMENT OF BUSINESS, ECONOMIC DEVELOPMENT,",
+    "volume": 4
+  },
+  "202": {
+    "title": "HAWAII WORKFORCE DEVELOPMENT COUNCIL",
+    "volume": 4
+  },
+  "203": {
+    "title": "TOURISM DEVELOPMENT",
+    "volume": 4
+  },
+  "204": {
+    "title": "STATE FAIRS",
+    "volume": 4
+  },
+  "205": {
+    "title": "LAND USE COMMISSION",
+    "volume": 4
+  },
+  "206": {
+    "title": "OAHU LAND DEVELOPMENT",
+    "volume": 4
+  },
+  "207": {
+    "title": "MORTGAGE LOANS",
+    "volume": 4
+  },
+  "208": {
+    "title": "ECONOMIC REDEVELOPMENT PROGRAM FOR",
+    "volume": 4
+  },
+  "209": {
+    "title": "DISASTER RELIEF AND REHABILITATION",
+    "volume": 4
+  },
+  "210": {
+    "title": "CAPITAL LOAN PROGRAM",
+    "volume": 4
+  },
+  "211": {
+    "title": "GUARANTEE OF COMMERCIAL LOANS",
+    "volume": 4
+  },
+  "212": {
+    "title": "FOREIGN-TRADE ZONES",
+    "volume": 4
+  },
+  "213": {
+    "title": "RESEARCH AND DEVELOPMENT INDUSTRY",
+    "volume": 4
+  },
+  "214": {
+    "title": "GRANTS-IN-AID FOR COUNTY CAPITAL",
+    "volume": 4
+  },
+  "218": {
+    "title": "MARINE AFFAIRS COORDINATOR",
+    "volume": 4
+  },
+  "219": {
+    "title": "AQUACULTURE LOAN PROGRAM",
+    "volume": 4
+  },
+  "220": {
+    "title": "AQUACULTURE FARMS",
+    "volume": 4
+  },
+  "221": {
+    "title": "COMMISSION ON THE YEAR 2000",
+    "volume": 4
+  },
+  "222": {
+    "title": "HAWAII RESEARCH CENTER FOR FUTURES STUDY",
+    "volume": 4
+  },
+  "223": {
+    "title": "QUALITY GROWTH POLICY",
+    "volume": 4
+  },
+  "224": {
+    "title": "STATE POPULATION AND PLANNING",
+    "volume": 4
+  },
+  "225": {
+    "title": "POLICY PLANNING",
+    "volume": 4
+  },
+  "226": {
+    "title": "HAWAII STATE PLANNING ACT",
+    "volume": 4
+  },
+  "227": {
+    "title": "NATURAL ENERGY LABORATORY OF HAWAII",
+    "volume": 4
+  },
+  "228": {
+    "title": "OCEAN RESOURCES MANAGEMENT",
+    "volume": 4
+  },
+  "229": {
+    "title": "SISTER-STATE AND PROVINCE RELATIONSHIPS",
+    "volume": 4
+  },
+  "231": {
+    "title": "ADMINISTRATION OF TAXES",
+    "volume": 4
+  },
+  "232": {
+    "title": "TAX APPEALS",
+    "volume": 4
+  },
+  "233": {
+    "title": "TAX CLASSIFICATION OF CERTAIN",
+    "volume": 4
+  },
+  "234": {
+    "title": "TAX RELIEF FOR NATURAL DISASTER LOSSES",
+    "volume": 4
+  },
+  "235": {
+    "title": "INCOME TAX LAW",
+    "volume": 4
+  },
+  "236": {
+    "title": "INHERITANCE AND ESTATE TAXES LAW",
+    "volume": 4
+  },
+  "237": {
+    "title": "GENERAL EXCISE TAX LAW",
+    "volume": 4
+  },
+  "238": {
+    "title": "USE TAX LAW",
+    "volume": 4
+  },
+  "239": {
+    "title": "PUBLIC SERVICE COMPANY TAX LAW",
+    "volume": 4
+  },
+  "240": {
+    "title": "PUBLIC UTILITIES; FRANCHISE TAX",
+    "volume": 4
+  },
+  "241": {
+    "title": "TAXATION OF BANKS AND OTHER FINANCIAL",
+    "volume": 4
+  },
+  "242": {
+    "title": "MORTGAGE LOAN EXEMPTION",
+    "volume": 4
+  },
+  "243": {
+    "title": "FUEL TAX LAW",
+    "volume": 4
+  },
+  "244": {
+    "title": "LIQUOR TAX LAW",
+    "volume": 4
+  },
+  "245": {
+    "title": "CIGARETTE TAX AND TOBACCO TAX LAW",
+    "volume": 4
+  },
+  "246": {
+    "title": "REAL PROPERTY TAX LAW",
+    "volume": 4
+  },
+  "247": {
+    "title": "CONVEYANCE TAX",
+    "volume": 4
+  },
+  "248": {
+    "title": "COUNTY BUDGETS; TAX FUNDS",
+    "volume": 4
+  },
+  "249": {
+    "title": "COUNTY VEHICULAR TAXES",
+    "volume": 4
+  },
+  "251": {
+    "title": "RENTAL MOTOR VEHICLE, TOUR VEHICLE, AND CAR-SHARING VEHICLE SURCHARGE TAX",
+    "volume": 4
+  },
+  "255": {
+    "title": "MULTISTATE TAX COMPACT",
+    "volume": 4
+  },
+  "256": {
+    "title": "COLLEGE SAVINGS PROGRAM",
+    "volume": 4
+  },
+  "257": {
+    "title": "INDIVIDUAL DEVELOPMENT ACCOUNTS",
+    "volume": 4
+  },
+  "261": {
+    "title": "AERONAUTICS",
+    "volume": 5
+  },
+  "262": {
+    "title": "AIRPORT ZONING ACT",
+    "volume": 5
+  },
+  "263": {
+    "title": "UNIFORM AERONAUTICS ACT (MODIFIED)",
+    "volume": 5
+  },
+  "264": {
+    "title": "HIGHWAYS",
+    "volume": 5
+  },
+  "265": {
+    "title": "COUNTY HIGHWAYS, SIDEWALKS, WHARVES",
+    "volume": 5
+  },
+  "266": {
+    "title": "HARBORS",
+    "volume": 5
+  },
+  "267": {
+    "title": "BOATING LAW",
+    "volume": 5
+  },
+  "268": {
+    "title": "FERRIES",
+    "volume": 5
+  },
+  "269": {
+    "title": "PUBLIC UTILITIES COMMISSION",
+    "volume": 5
+  },
+  "270": {
+    "title": "EMPLOYEES OF PUBLIC UTILITIES",
+    "volume": 5
+  },
+  "271": {
+    "title": "MOTOR CARRIER LAW",
+    "volume": 5
+  },
+  "272": {
+    "title": "DEFRAUDING CARRIERS OF PASSENGERS",
+    "volume": 5
+  },
+  "273": {
+    "title": "RAILWAY LAW",
+    "volume": 5
+  },
+  "274": {
+    "title": "RADIO CONTROL",
+    "volume": 5
+  },
+  "275": {
+    "title": "LIABILITIES AND OFFENSES CONNECTED WITH",
+    "volume": 5
+  },
+  "277": {
+    "title": "ENERGY CORRIDORS",
+    "volume": 5
+  },
+  "279": {
+    "title": "TRANSPORTATION CONTROL",
+    "volume": 5
+  },
+  "281": {
+    "title": "INTOXICATING LIQUOR",
+    "volume": 5
+  },
+  "286": {
+    "title": "HIGHWAY SAFETY",
+    "volume": 5
+  },
+  "287": {
+    "title": "MOTOR VEHICLE SAFETY RESPONSIBILITY ACT",
+    "volume": 5
+  },
+  "288": {
+    "title": "COMMON CARRIERS, COMPULSORY INSURANCE",
+    "volume": 5
+  },
+  "289": {
+    "title": "USED MOTOR VEHICLE PARTS AND ACCESSORIES",
+    "volume": 5
+  },
+  "290": {
+    "title": "ABANDONED VEHICLES",
+    "volume": 5
+  },
+  "291": {
+    "title": "TRAFFIC VIOLATIONS",
+    "volume": 5
+  },
+  "292": {
+    "title": "ODOMETER ACCURACY AND RECORD MAINTENANCE",
+    "volume": 5
+  },
+  "293": {
+    "title": "BICYCLES",
+    "volume": 5
+  },
+  "294": {
+    "title": "MOTOR VEHICLE ACCIDENT REPARATIONS",
+    "volume": 5
+  },
+  "296": {
+    "title": "PUBLIC EDUCATION",
+    "volume": 5
+  },
+  "297": {
+    "title": "PERSONNEL OF PUBLIC SCHOOLS",
+    "volume": 5
+  },
+  "298": {
+    "title": "SCHOOLS AND ATTENDANCE, GENERALLY",
+    "volume": 5
+  },
+  "299": {
+    "title": "DRIVER EDUCATION",
+    "volume": 5
+  },
+  "300": {
+    "title": "TECHNICAL AND VOCATIONAL TRAINING",
+    "volume": 5
+  },
+  "301": {
+    "title": "OTHER SPECIAL TRAINING",
+    "volume": 5
+  },
+  "302": {
+    "title": "AGENTS OF PRIVATE SCHOOLS AND",
+    "volume": 5
+  },
+  "303": {
+    "title": "EMPLOYEES' ANNUITY AND CUSTODIAL",
+    "volume": 5
+  },
+  "304": {
+    "title": "UNIVERSITY OF HAWAII",
+    "volume": 5
+  },
+  "305": {
+    "title": "COMMUNITY COLLEGES",
+    "volume": 5
+  },
+  "306": {
+    "title": "UNIVERSITY PROJECTS",
+    "volume": 5
+  },
+  "307": {
+    "title": "RESEARCH CORPORATION OF THE",
+    "volume": 5
+  },
+  "308": {
+    "title": "UNIVERSITY PARKING",
+    "volume": 5
+  },
+  "309": {
+    "title": "STUDENT LOAN FUNDS",
+    "volume": 5
+  },
+  "310": {
+    "title": "WESTERN REGIONAL EDUCATION COMPACT",
+    "volume": 5
+  },
+  "311": {
+    "title": "COMPACT FOR EDUCATION",
+    "volume": 5
+  },
+  "312": {
+    "title": "LIBRARIES",
+    "volume": 5
+  },
+  "314": {
+    "title": "HAWAII PUBLIC BROADCASTING AUTHORITY",
+    "volume": 5
+  },
+  "315": {
+    "title": "INTERSTATE AGREEMENT ON QUALIFICATIONS",
+    "volume": 5
+  },
+  "317": {
+    "title": "SECONDARY SCHOOL STUDENTS CONFERENCE",
+    "volume": 5
+  },
+  "318": {
+    "title": "COLLEGE AND UNIVERSITY STUDENT LEADERS",
+    "volume": 5
+  },
+  "319": {
+    "title": "DENTAL EDUCATION",
+    "volume": 5
+  },
+  "321": {
+    "title": "DEPARTMENT OF HEALTH",
+    "volume": 6
+  },
+  "322": {
+    "title": "NUISANCES; SANITARY REGULATIONS",
+    "volume": 6
+  },
+  "323": {
+    "title": "HOSPITALS AND MEDICAL FACILITIES",
+    "volume": 6
+  },
+  "324": {
+    "title": "MEDICAL RESEARCH; MORBIDITY AND MORTALITY",
+    "volume": 6
+  },
+  "325": {
+    "title": "INFECTIOUS AND COMMUNICABLE DISEASES",
+    "volume": 6
+  },
+  "326": {
+    "title": "HANSEN'S DISEASE",
+    "volume": 6
+  },
+  "327": {
+    "title": "MEDICAL AND RESEARCH USE OF BODIES",
+    "volume": 6
+  },
+  "328": {
+    "title": "FOOD, DRUGS, AND COSMETICS",
+    "volume": 6
+  },
+  "329": {
+    "title": "UNIFORM CONTROLLED SUBSTANCES ACT",
+    "volume": 6
+  },
+  "330": {
+    "title": "POISONS, SALE OF",
+    "volume": 6
+  },
+  "331": {
+    "title": "RADIUM FOR MEDICAL AND SURGICAL PURPOSES",
+    "volume": 6
+  },
+  "332": {
+    "title": "MATTRESSES, MANUFACTURE, ETC., AND SALE OF",
+    "volume": 6
+  },
+  "333": {
+    "title": "MENTAL RETARDATION",
+    "volume": 6
+  },
+  "334": {
+    "title": "MENTAL HEALTH, MENTAL ILLNESS, DRUG ADDICTION,",
+    "volume": 6
+  },
+  "335": {
+    "title": "INTERSTATE COMPACT ON MENTAL HEALTH",
+    "volume": 6
+  },
+  "336": {
+    "title": "DEPORTATION AND TRANSFER OF ALIEN AND",
+    "volume": 6
+  },
+  "337": {
+    "title": "UNIFORM ACT FOR THE EXTRADITION OF PERSONS OF",
+    "volume": 6
+  },
+  "338": {
+    "title": "VITAL STATISTICS",
+    "volume": 6
+  },
+  "339": {
+    "title": "LITTER CONTROL",
+    "volume": 6
+  },
+  "340": {
+    "title": "HAWAII WASTE MANAGEMENT",
+    "volume": 6
+  },
+  "341": {
+    "title": "ENVIRONMENTAL ADVISORY COUNCIL",
+    "volume": 6
+  },
+  "342": {
+    "title": "ENVIRONMENTAL QUALITY",
+    "volume": 6
+  },
+  "343": {
+    "title": "ENVIRONMENTAL IMPACT STATEMENTS",
+    "volume": 6
+  },
+  "344": {
+    "title": "STATE ENVIRONMENTAL POLICY",
+    "volume": 6
+  },
+  "346": {
+    "title": "DEPARTMENT OF HUMAN SERVICES",
+    "volume": 7
+  },
+  "347": {
+    "title": "BLIND, VISUALLY HANDICAPPED, AND OTHER DISABLED PERSONS",
+    "volume": 7
+  },
+  "348": {
+    "title": "VOCATIONAL REHABILITATION",
+    "volume": 7
+  },
+  "349": {
+    "title": "EXECUTIVE OFFICE ON AGING",
+    "volume": 7
+  },
+  "350": {
+    "title": "CHILD ABUSE",
+    "volume": 7
+  },
+  "351": {
+    "title": "CRIME VICTIM COMPENSATION",
+    "volume": 7
+  },
+  "352": {
+    "title": "HAWAII YOUTH CORRECTIONAL FACILITIES",
+    "volume": 7
+  },
+  "353": {
+    "title": "CORRECTIONS AND REHABILITATION",
+    "volume": 7
+  },
+  "354": {
+    "title": "CORRECTIONAL INDUSTRIES",
+    "volume": 7
+  },
+  "355": {
+    "title": "WESTERN INTERSTATE CORRECTIONS COMPACT",
+    "volume": 7
+  },
+  "356": {
+    "title": "HAWAII HOUSING AUTHORITY;",
+    "volume": 7
+  },
+  "357": {
+    "title": "FEDERAL HOUSING PROJECTS",
+    "volume": 7
+  },
+  "358": {
+    "title": "GOVERNMENT AID FOR HOUSING PROJECTS",
+    "volume": 7
+  },
+  "359": {
+    "title": "STATE HOUSING PROJECTS",
+    "volume": 7
+  },
+  "360": {
+    "title": "PROVISIONS APPLICABLE TO PUBLIC",
+    "volume": 7
+  },
+  "361": {
+    "title": "COMMUNITY HOME MORTGAGE PROGRAM",
+    "volume": 7
+  },
+  "362": {
+    "title": "PROGRESSIVE NEIGHBORHOODS PROGRAM",
+    "volume": 7
+  },
+  "363": {
+    "title": "VETERANS RIGHTS AND BENEFITS",
+    "volume": 7
+  },
+  "364": {
+    "title": "VETERANS LOANS",
+    "volume": 7
+  },
+  "367": {
+    "title": "STATUS OF WOMEN",
+    "volume": 7
+  },
+  "368": {
+    "title": "CIVIL RIGHTS COMMISSION",
+    "volume": 7
+  },
+  "369": {
+    "title": "HAWAII STATE LESBIAN, GAY, BISEXUAL, TRANSGENDER, QUEER, PLUS COMMISSION",
+    "volume": 7
+  },
+  "371": {
+    "title": "DEPARTMENT OF LABOR AND INDUSTRIAL RELATIONS",
+    "volume": 7
+  },
+  "372": {
+    "title": "APPRENTICESHIP",
+    "volume": 7
+  },
+  "373": {
+    "title": "COMMERCIAL EMPLOYMENT AGENCIES",
+    "volume": 7
+  },
+  "374": {
+    "title": "EMIGRANT AGENTS",
+    "volume": 7
+  },
+  "375": {
+    "title": "GARMENT INDUSTRY HOMEWORK",
+    "volume": 7
+  },
+  "376": {
+    "title": "INDUSTRIAL SAFETY",
+    "volume": 7
+  },
+  "377": {
+    "title": "HAWAII EMPLOYMENT RELATIONS ACT",
+    "volume": 7
+  },
+  "378": {
+    "title": "EMPLOYMENT PRACTICES",
+    "volume": 7
+  },
+  "379": {
+    "title": "RECRUITING AND HIRING OF EMPLOYEES DURING",
+    "volume": 7
+  },
+  "380": {
+    "title": "LABOR DISPUTES; JURISDICTION OF COURTS",
+    "volume": 7
+  },
+  "381": {
+    "title": "LABOR DISPUTES; PUBLIC UTILITIES",
+    "volume": 7
+  },
+  "382": {
+    "title": "LABOR DISPUTES; STEVEDORING INDUSTRY",
+    "volume": 7
+  },
+  "383": {
+    "title": "HAWAII EMPLOYMENT SECURITY LAW",
+    "volume": 7
+  },
+  "384": {
+    "title": "HAWAII AGRICULTURAL UNEMPLOYMENT",
+    "volume": 7
+  },
+  "385": {
+    "title": "ADDITIONAL UNEMPLOYMENT COMPENSATION",
+    "volume": 7
+  },
+  "386": {
+    "title": "WORKERS' COMPENSATION LAW",
+    "volume": 7
+  },
+  "387": {
+    "title": "WAGE AND HOUR LAW",
+    "volume": 7
+  },
+  "388": {
+    "title": "WAGES AND OTHER COMPENSATION, PAYMENT OF",
+    "volume": 7
+  },
+  "389": {
+    "title": "HAWAII RETIREMENT SAVINGS",
+    "volume": 7
+  },
+  "390": {
+    "title": "CHILD LABOR LAW",
+    "volume": 7
+  },
+  "392": {
+    "title": "TEMPORARY DISABILITY INSURANCE",
+    "volume": 7
+  },
+  "393": {
+    "title": "PREPAID HEALTH CARE ACT",
+    "volume": 7
+  },
+  "394": {
+    "title": "MANPOWER DEVELOPMENT AND TRAINING",
+    "volume": 7
+  },
+  "396": {
+    "title": "OCCUPATIONAL SAFETY AND HEALTH",
+    "volume": 7
+  },
+  "397": {
+    "title": "BOILER AND ELEVATOR SAFETY LAW",
+    "volume": 7
+  },
+  "398": {
+    "title": "FAMILY LEAVE",
+    "volume": 7
+  },
+  "401": {
+    "title": "COMMISSIONER OF FINANCIAL INSTITUTIONS",
+    "volume": 8
+  },
+  "402": {
+    "title": "FIDUCIARIES AND INVESTMENTS",
+    "volume": 8
+  },
+  "403": {
+    "title": "HAWAII BANK ACT",
+    "volume": 8
+  },
+  "404": {
+    "title": "BANK MERGERS",
+    "volume": 8
+  },
+  "405": {
+    "title": "INTERNATIONAL AND FOREIGN BANKING",
+    "volume": 8
+  },
+  "406": {
+    "title": "TRUST COMPANIES",
+    "volume": 8
+  },
+  "407": {
+    "title": "SAVINGS AND LOAN ASSOCIATIONS",
+    "volume": 8
+  },
+  "408": {
+    "title": "FINANCIAL SERVICES LOAN COMPANIES",
+    "volume": 8
+  },
+  "409": {
+    "title": "SMALL LOAN COMPANIES",
+    "volume": 8
+  },
+  "410": {
+    "title": "STATE CHARTERED CREDIT UNIONS",
+    "volume": 8
+  },
+  "411": {
+    "title": "EMERGENCY ACQUISITION OF FINANCIAL INSTITUTIONS",
+    "volume": 8
+  },
+  "412": {
+    "title": "CODE OF FINANCIAL INSTITUTIONS",
+    "volume": 8
+  },
+  "414": {
+    "title": "HAWAII BUSINESS CORPORATION ACT",
+    "volume": 8
+  },
+  "415": {
+    "title": "HAWAII BUSINESS CORPORATION ACT",
+    "volume": 8
+  },
+  "416": {
+    "title": "CORPORATIONS, GENERALLY",
+    "volume": 8
+  },
+  "417": {
+    "title": "CONSOLIDATION AND MERGER OF CORPORATIONS",
+    "volume": 8
+  },
+  "418": {
+    "title": "FOREIGN CORPORATIONS",
+    "volume": 8
+  },
+  "419": {
+    "title": "CORPORATIONS SOLE FOR ECCLESIASTICAL PURPOSES",
+    "volume": 8
+  },
+  "420": {
+    "title": "BUSINESS DEVELOPMENT CORPORATIONS",
+    "volume": 8
+  },
+  "421": {
+    "title": "AGRICULTURAL COOPERATIVE ASSOCIATIONS",
+    "volume": 8
+  },
+  "422": {
+    "title": "FISH MARKETING ASSOCIATIONS",
+    "volume": 8
+  },
+  "423": {
+    "title": "DENTAL SERVICE CORPORATIONS",
+    "volume": 8
+  },
+  "424": {
+    "title": "OPTOMETRIC SERVICE CORPORATIONS",
+    "volume": 8
+  },
+  "425": {
+    "title": "PARTNERSHIPS",
+    "volume": 8
+  },
+  "428": {
+    "title": "UNIFORM LIMITED LIABILITY COMPANY ACT",
+    "volume": 8
+  },
+  "429": {
+    "title": "UNIFORM UNINCORPORATED NONPROFIT ASSOCIATION ACT",
+    "volume": 8
+  },
+  "431": {
+    "title": "INSURANCE CODE",
+    "volume": 9
+  },
+  "432": {
+    "title": "BENEFIT SOCIETIES",
+    "volume": 9
+  },
+  "433": {
+    "title": "MUTUAL AND FRATERNAL BENEFIT SOCIETIES",
+    "volume": 9
+  },
+  "434": {
+    "title": "INSURANCE BY FRATERNAL BENEFIT SOCIETIES",
+    "volume": 9
+  },
+  "435": {
+    "title": "CREDIT LIFE INSURANCE AND",
+    "volume": 9
+  },
+  "436": {
+    "title": "ABSTRACT MAKERS",
+    "volume": 10
+  },
+  "437": {
+    "title": "MOTOR VEHICLE INDUSTRY LICENSING ACT",
+    "volume": 10
+  },
+  "438": {
+    "title": "BARBERING, PRACTICE OF",
+    "volume": 10
+  },
+  "439": {
+    "title": "BEAUTY CULTURE",
+    "volume": 10
+  },
+  "440": {
+    "title": "BOXING CONTESTS",
+    "volume": 10
+  },
+  "441": {
+    "title": "CEMETERY AND FUNERAL TRUSTS",
+    "volume": 10
+  },
+  "442": {
+    "title": "CHIROPRACTIC",
+    "volume": 10
+  },
+  "443": {
+    "title": "COLLECTION AGENCIES",
+    "volume": 10
+  },
+  "444": {
+    "title": "CONTRACTORS",
+    "volume": 10
+  },
+  "445": {
+    "title": "COUNTY LICENSES",
+    "volume": 10
+  },
+  "446": {
+    "title": "DEBT ADJUSTING",
+    "volume": 10
+  },
+  "447": {
+    "title": "DENTAL HYGIENISTS",
+    "volume": 10
+  },
+  "448": {
+    "title": "DENTISTRY",
+    "volume": 10
+  },
+  "449": {
+    "title": "ESCROW DEPOSITORIES",
+    "volume": 10
+  },
+  "450": {
+    "title": "FUMIGATION",
+    "volume": 10
+  },
+  "451": {
+    "title": "GASOLINE, FUEL, AND MOTOR OIL",
+    "volume": 10
+  },
+  "452": {
+    "title": "MASSAGE",
+    "volume": 10
+  },
+  "453": {
+    "title": "MEDICINE AND SURGERY",
+    "volume": 10
+  },
+  "454": {
+    "title": "MORTGAGE BROKERS AND SOLICITORS",
+    "volume": 10
+  },
+  "455": {
+    "title": "NATUROPATHIC MEDICINE",
+    "volume": 10
+  },
+  "456": {
+    "title": "NOTARIES PUBLIC",
+    "volume": 10
+  },
+  "457": {
+    "title": "NURSES",
+    "volume": 10
+  },
+  "458": {
+    "title": "OPTICIANS, DISPENSING",
+    "volume": 10
+  },
+  "459": {
+    "title": "OPTOMETRY",
+    "volume": 10
+  },
+  "460": {
+    "title": "OSTEOPATHY",
+    "volume": 10
+  },
+  "461": {
+    "title": "PHARMACISTS AND PHARMACY",
+    "volume": 10
+  },
+  "462": {
+    "title": "PHOTOGRAPHY",
+    "volume": 10
+  },
+  "463": {
+    "title": "PRIVATE INVESTIGATORS AND GUARDS",
+    "volume": 10
+  },
+  "464": {
+    "title": "PROFESSIONAL ENGINEERS, ARCHITECTS,",
+    "volume": 10
+  },
+  "465": {
+    "title": "PSYCHOLOGISTS",
+    "volume": 10
+  },
+  "466": {
+    "title": "PUBLIC ACCOUNTANCY",
+    "volume": 10
+  },
+  "467": {
+    "title": "REAL ESTATE BROKERS AND SALESPERSONS",
+    "volume": 10
+  },
+  "468": {
+    "title": "SOLICITORS; BUSINESS OF TAKING ORDERS",
+    "volume": 10
+  },
+  "469": {
+    "title": "UNDERTAKERS, EMBALMERS, FUNERAL DIRECTORS",
+    "volume": 10
+  },
+  "470": {
+    "title": "VENDORS, ITINERANT",
+    "volume": 10
+  },
+  "471": {
+    "title": "VETERINARY MEDICINE",
+    "volume": 10
+  },
+  "472": {
+    "title": "VETERINARY TECHNOLOGY PRACTICE",
+    "volume": 10
+  },
+  "474": {
+    "title": "BUSINESS ACTION CENTER",
+    "volume": 10
+  },
+  "476": {
+    "title": "CREDIT SALES",
+    "volume": 11
+  },
+  "477": {
+    "title": "DISCLOSURE OF FINANCE COSTS",
+    "volume": 11
+  },
+  "478": {
+    "title": "INTEREST AND USURY",
+    "volume": 11
+  },
+  "479": {
+    "title": "INSURANCE COMPANIES, FREEDOM OF",
+    "volume": 11
+  },
+  "480": {
+    "title": "MONOPOLIES; RESTRAINT OF TRADE",
+    "volume": 11
+  },
+  "481": {
+    "title": "FAIR TRADE REGULATIONS",
+    "volume": 11
+  },
+  "482": {
+    "title": "TRADEMARKS, SERVICE MARKS, AND TRADE NAMES,",
+    "volume": 11
+  },
+  "483": {
+    "title": "UNIFORM JOINT OBLIGATIONS ACT",
+    "volume": 11
+  },
+  "484": {
+    "title": "UNIFORM LAND SALES PRACTICES ACT",
+    "volume": 11
+  },
+  "485": {
+    "title": "UNIFORM SECURITIES ACT (MODIFIED)",
+    "volume": 11
+  },
+  "486": {
+    "title": "MEASUREMENT STANDARDS",
+    "volume": 11
+  },
+  "487": {
+    "title": "CONSUMER PROTECTION",
+    "volume": 11
+  },
+  "488": {
+    "title": "LEGAL SERVICE PLANS",
+    "volume": 11
+  },
+  "489": {
+    "title": "DISCRIMINATION IN PUBLIC ACCOMMODATIONS",
+    "volume": 11
+  },
+  "490": {
+    "title": "UNIFORM COMMERCIAL CODE",
+    "volume": 11
+  },
+  "501": {
+    "title": "LAND COURT REGISTRATION",
+    "volume": 12
+  },
+  "502": {
+    "title": "BUREAU OF CONVEYANCES; RECORDING",
+    "volume": 12
+  },
+  "503": {
+    "title": "COMMISSIONERS OF DEEDS",
+    "volume": 12
+  },
+  "504": {
+    "title": "FEDERAL JUDGMENT REGISTRATION",
+    "volume": 12
+  },
+  "505": {
+    "title": "UNIFORM FEDERAL TAX LIEN REGISTRATION ACT",
+    "volume": 12
+  },
+  "506": {
+    "title": "MORTGAGES OF REAL PROPERTY OR FIXTURES",
+    "volume": 12
+  },
+  "507": {
+    "title": "LIENS",
+    "volume": 12
+  },
+  "508": {
+    "title": "UNIFORM VENDOR AND PURCHASER RISK ACT",
+    "volume": 12
+  },
+  "509": {
+    "title": "CONVEYANCES TO TWO OR MORE",
+    "volume": 12
+  },
+  "510": {
+    "title": "COMMUNITY PROPERTY",
+    "volume": 12
+  },
+  "511": {
+    "title": "WAR EMERGENCY AGENCY",
+    "volume": 12
+  },
+  "512": {
+    "title": "RELEASE OF POWERS",
+    "volume": 12
+  },
+  "513": {
+    "title": "PROPERTY RIGHTS--LABOR ORGANIZATIONS",
+    "volume": 12
+  },
+  "514": {
+    "title": "HORIZONTAL PROPERTY REGIMES",
+    "volume": 12
+  },
+  "515": {
+    "title": "DISCRIMINATION IN REAL PROPERTY",
+    "volume": 12
+  },
+  "516": {
+    "title": "RESIDENTIAL LEASEHOLDS",
+    "volume": 12
+  },
+  "517": {
+    "title": "DISPOSITION OF TRUST REAL PROPERTY",
+    "volume": 12
+  },
+  "518": {
+    "title": "COVENANTS IN LEASES",
+    "volume": 12
+  },
+  "519": {
+    "title": "REAL PROPERTY LEASES",
+    "volume": 12
+  },
+  "520": {
+    "title": "LANDOWNERS' LIABILITY",
+    "volume": 12
+  },
+  "521": {
+    "title": "RESIDENTIAL LANDLORD-TENANT CODE",
+    "volume": 12
+  },
+  "522": {
+    "title": "UNIFORM DISCLAIMER OF PROPERTY INTERESTS ACT",
+    "volume": 12
+  },
+  "523": {
+    "title": "REVISED UNIFORM DISPOSITION OF UNCLAIMED",
+    "volume": 12
+  },
+  "524": {
+    "title": "FACILITIES FOR ELDERS",
+    "volume": 12
+  },
+  "525": {
+    "title": "UNIFORM STATUTORY RULE AGAINST PERPETUITIES",
+    "volume": 12
+  },
+  "526": {
+    "title": "UNIFORM DISCLAIMER OF PROPERTY INTERESTS ACT",
+    "volume": 12
+  },
+  "527": {
+    "title": "UNIFORM REAL PROPERTY TRANSFER ON DEATH ACT",
+    "volume": 12
+  },
+  "531": {
+    "title": "PROBATE: JURISDICTION AND PROCEDURE",
+    "volume": 12
+  },
+  "532": {
+    "title": "DESCENT OF PROPERTY",
+    "volume": 12
+  },
+  "533": {
+    "title": "DOWER AND CURTESY",
+    "volume": 12
+  },
+  "534": {
+    "title": "UNIFORM SIMULTANEOUS DEATH ACT",
+    "volume": 12
+  },
+  "535": {
+    "title": "SPECIFIC PERFORMANCE OF DECEDENT'S",
+    "volume": 12
+  },
+  "536": {
+    "title": "WILLS",
+    "volume": 12
+  },
+  "537": {
+    "title": "UNIFORM TESTAMENTARY ADDITIONS TO TRUSTS ACT",
+    "volume": 12
+  },
+  "538": {
+    "title": "DISCLAIMERS",
+    "volume": 12
+  },
+  "539": {
+    "title": "UNIFORM TRANSFER-ON-DEATH (TOD)",
+    "volume": 12
+  },
+  "551": {
+    "title": "GUARDIANS AND WARDS",
+    "volume": 12
+  },
+  "552": {
+    "title": "UNIFORM VETERAN'S GUARDIANSHIP ACT",
+    "volume": 12
+  },
+  "553": {
+    "title": "UNIFORM GIFTS TO MINORS ACT",
+    "volume": 12
+  },
+  "554": {
+    "title": "TRUSTS AND TRUSTEES; ACCOUNTS",
+    "volume": 12
+  },
+  "555": {
+    "title": "EMPLOYEES TRUST",
+    "volume": 12
+  },
+  "556": {
+    "title": "UNIFORM FIDUCIARIES ACT",
+    "volume": 12
+  },
+  "557": {
+    "title": "REVISED UNIFORM PRINCIPAL",
+    "volume": 12
+  },
+  "558": {
+    "title": "LAND TRUSTS--BENEFICIARY CONTROLLED",
+    "volume": 12
+  },
+  "560": {
+    "title": "UNIFORM PROBATE CODE",
+    "volume": 12
+  },
+  "571": {
+    "title": "FAMILY COURTS",
+    "volume": 12
+  },
+  "572": {
+    "title": "MARRIAGE",
+    "volume": 12
+  },
+  "573": {
+    "title": "MARRIED WOMEN",
+    "volume": 12
+  },
+  "574": {
+    "title": "NAMES",
+    "volume": 12
+  },
+  "575": {
+    "title": "UNIFORM DESERTION AND NONSUPPORT ACT",
+    "volume": 12
+  },
+  "576": {
+    "title": "UNIFORM RECIPROCAL ENFORCEMENT OF SUPPORT ACT",
+    "volume": 12
+  },
+  "577": {
+    "title": "CHILDREN",
+    "volume": 12
+  },
+  "578": {
+    "title": "ADOPTION",
+    "volume": 12
+  },
+  "579": {
+    "title": "ILLEGITIMATES: PATERNITY PROCEEDINGS",
+    "volume": 12
+  },
+  "580": {
+    "title": "ANNULMENT, DIVORCE, AND SEPARATION",
+    "volume": 12
+  },
+  "581": {
+    "title": "OFFICE OF CHILDREN AND YOUTH",
+    "volume": 12
+  },
+  "582": {
+    "title": "INTERSTATE COMPACT ON JUVENILES",
+    "volume": 12
+  },
+  "583": {
+    "title": "UNIFORM CHILD CUSTODY JURISDICTION ACT",
+    "volume": 12
+  },
+  "584": {
+    "title": "UNIFORM PARENTAGE ACT",
+    "volume": 12
+  },
+  "585": {
+    "title": "EX PARTE TEMPORARY RESTRAINING ORDERS",
+    "volume": 12
+  },
+  "586": {
+    "title": "DOMESTIC ABUSE PROTECTIVE ORDERS",
+    "volume": 12
+  },
+  "587": {
+    "title": "CHILD PROTECTIVE ACT",
+    "volume": 12
+  },
+  "588": {
+    "title": "CHILDREN'S JUSTICE PROGRAM",
+    "volume": 12
+  },
+  "601": {
+    "title": "COURTS GENERALLY",
+    "volume": 13
+  },
+  "602": {
+    "title": "COURTS OF APPEAL",
+    "volume": 13
+  },
+  "603": {
+    "title": "CIRCUIT COURTS",
+    "volume": 13
+  },
+  "604": {
+    "title": "DISTRICT COURTS",
+    "volume": 13
+  },
+  "605": {
+    "title": "ATTORNEYS",
+    "volume": 13
+  },
+  "606": {
+    "title": "CLERKS, REPORTERS, INTERPRETERS, ETC.",
+    "volume": 13
+  },
+  "607": {
+    "title": "COSTS AND FEES",
+    "volume": 13
+  },
+  "608": {
+    "title": "EXPENSES AND SALARIES",
+    "volume": 13
+  },
+  "609": {
+    "title": "JURORS",
+    "volume": 13
+  },
+  "610": {
+    "title": "RETIREMENT AND REMOVAL OF JUSTICES AND JUDGES",
+    "volume": 13
+  },
+  "611": {
+    "title": "COUNSEL AND OTHER SERVICES FOR INDIGENT",
+    "volume": 13
+  },
+  "612": {
+    "title": "JURORS",
+    "volume": 13
+  },
+  "613": {
+    "title": "CENTER FOR ALTERNATIVE DISPUTE RESOLUTION",
+    "volume": 13
+  },
+  "614": {
+    "title": "CRIMINAL JUSTICE RESEARCH INSTITUTE",
+    "volume": 13
+  },
+  "615": {
+    "title": "WOMEN'S CORRECTIONS IMPLEMENTATION COMMISSION",
+    "volume": 13
+  },
+  "621": {
+    "title": "EVIDENCE AND WITNESSES, GENERALLY",
+    "volume": 13
+  },
+  "622": {
+    "title": "DOCUMENTARY EVIDENCE",
+    "volume": 13
+  },
+  "623": {
+    "title": "UNIFORM JUDICIAL NOTICE OF FOREIGN LAWS",
+    "volume": 13
+  },
+  "624": {
+    "title": "DEPOSITIONS AND DISCOVERY",
+    "volume": 13
+  },
+  "625": {
+    "title": "NOTICE TO ADMIT, INSPECTION, AND DISCOVERY",
+    "volume": 13
+  },
+  "626": {
+    "title": "HAWAII RULES OF EVIDENCE",
+    "volume": 13
+  },
+  "631": {
+    "title": "AGREED FACTS, SUBMISSION ON IN SUPREME COURT",
+    "volume": 13
+  },
+  "632": {
+    "title": "DECLARATORY JUDGMENTS",
+    "volume": 13
+  },
+  "633": {
+    "title": "SMALL CLAIMS, DISTRICT COURTS",
+    "volume": 13
+  },
+  "634": {
+    "title": "CIVIL ACTIONS AND PROCEEDINGS, GENERALLY",
+    "volume": 13
+  },
+  "635": {
+    "title": "TRIALS",
+    "volume": 13
+  },
+  "636": {
+    "title": "JUDGMENT",
+    "volume": 13
+  },
+  "637": {
+    "title": "EQUITY: JURISDICTION AND PROCEDURE",
+    "volume": 13
+  },
+  "641": {
+    "title": "APPEALS",
+    "volume": 13
+  },
+  "642": {
+    "title": "RESERVED QUESTIONS",
+    "volume": 13
+  },
+  "651": {
+    "title": "ATTACHMENT AND EXECUTION",
+    "volume": 13
+  },
+  "652": {
+    "title": "GARNISHMENT",
+    "volume": 13
+  },
+  "653": {
+    "title": "GARNISHMENT OF GOVERNMENT BENEFICIARIES",
+    "volume": 13
+  },
+  "654": {
+    "title": "SPECIAL PROCEEDINGS FOR IMMEDIATE",
+    "volume": 13
+  },
+  "655": {
+    "title": "DEPOSIT AND DELIVERY",
+    "volume": 13
+  },
+  "656": {
+    "title": "FRAUDS, STATUTE OF",
+    "volume": 13
+  },
+  "657": {
+    "title": "LIMITATION OF ACTIONS",
+    "volume": 13
+  },
+  "658": {
+    "title": "ARBITRATION AND AWARDS",
+    "volume": 13
+  },
+  "659": {
+    "title": "QUO WARRANTO",
+    "volume": 13
+  },
+  "660": {
+    "title": "HABEAS CORPUS",
+    "volume": 13
+  },
+  "661": {
+    "title": "ACTIONS BY AND AGAINST THE STATE",
+    "volume": 13
+  },
+  "662": {
+    "title": "STATE TORT LIABILITY ACT",
+    "volume": 13
+  },
+  "663": {
+    "title": "TORT ACTIONS",
+    "volume": 13
+  },
+  "664": {
+    "title": "BOUNDARIES, FENCES, WAYS, WATER RIGHTS",
+    "volume": 13
+  },
+  "665": {
+    "title": "ESCHEAT",
+    "volume": 13
+  },
+  "666": {
+    "title": "LANDLORD AND TENANT",
+    "volume": 13
+  },
+  "667": {
+    "title": "FORECLOSURES",
+    "volume": 13
+  },
+  "668": {
+    "title": "PARTITION OF REAL ESTATE",
+    "volume": 13
+  },
+  "669": {
+    "title": "QUIETING TITLE",
+    "volume": 13
+  },
+  "671": {
+    "title": "MEDICAL TORTS",
+    "volume": 13
+  },
+  "672": {
+    "title": "DESIGN PROFESSIONAL CONCILIATION PANEL",
+    "volume": 13
+  },
+  "673": {
+    "title": "NATIVE HAWAIIAN TRUSTS JUDICIAL RELIEF ACT",
+    "volume": 13
+  },
+  "674": {
+    "title": "INDIVIDUAL CLAIMS RESOLUTION UNDER THE",
+    "volume": 13
+  },
+  "675": {
+    "title": "TOBACCO LIABILITY ACT",
+    "volume": 13
+  },
+  "676": {
+    "title": "STRUCTURED SETTLEMENT PROTECTION ACT",
+    "volume": 13
+  },
+  "701": {
+    "title": "PRELIMINARY PROVISIONS",
+    "volume": 14
+  },
+  "702": {
+    "title": "GENERAL PRINCIPLES OF PENAL LIABILITY",
+    "volume": 14
+  },
+  "703": {
+    "title": "GENERAL PRINCIPLES OF JUSTIFICATION",
+    "volume": 14
+  },
+  "704": {
+    "title": "PENAL RESPONSIBILITY AND FITNESS TO PROCEED",
+    "volume": 14
+  },
+  "705": {
+    "title": "INCHOATE CRIMES",
+    "volume": 14
+  },
+  "706": {
+    "title": "DISPOSITION OF CONVICTED DEFENDANTS",
+    "volume": 14
+  },
+  "707": {
+    "title": "OFFENSES AGAINST THE PERSON",
+    "volume": 14
+  },
+  "708": {
+    "title": "OFFENSES AGAINST PROPERTY RIGHTS",
+    "volume": 14
+  },
+  "709": {
+    "title": "OFFENSES AGAINST THE FAMILY AND AGAINST",
+    "volume": 14
+  },
+  "710": {
+    "title": "OFFENSES AGAINST PUBLIC ADMINISTRATION",
+    "volume": 14
+  },
+  "711": {
+    "title": "OFFENSES AGAINST PUBLIC ORDER",
+    "volume": 14
+  },
+  "712": {
+    "title": "OFFENSES AGAINST PUBLIC HEALTH AND MORALS",
+    "volume": 14
+  },
+  "713": {
+    "title": "REPEAL AND RECODIFICATION PROVISIONS",
+    "volume": 14
+  },
+  "801": {
+    "title": "RIGHTS OF ACCUSED",
+    "volume": 14
+  },
+  "802": {
+    "title": "COUNSEL AND OTHER SERVICES FOR INDIGENT",
+    "volume": 14
+  },
+  "803": {
+    "title": "ARRESTS, SEARCHES, SEARCH WARRANTS",
+    "volume": 14
+  },
+  "804": {
+    "title": "BAIL; BOND TO KEEP THE PEACE",
+    "volume": 14
+  },
+  "805": {
+    "title": "CRIMINAL PROCEDURE: DISTRICT COURTS",
+    "volume": 14
+  },
+  "806": {
+    "title": "CRIMINAL PROCEDURE: CIRCUIT COURTS",
+    "volume": 14
+  },
+  "807": {
+    "title": "",
+    "volume": 14
+  },
+  "831": {
+    "title": "UNIFORM ACT ON STATUS OF CONVICTED PERSONS",
+    "volume": 14
+  },
+  "832": {
+    "title": "UNIFORM CRIMINAL EXTRADITION ACT",
+    "volume": 14
+  },
+  "833": {
+    "title": "UNIFORM RENDITION OF ACCUSED PERSONS ACT",
+    "volume": 14
+  },
+  "834": {
+    "title": "AGREEMENT ON DETAINERS",
+    "volume": 14
+  },
+  "835": {
+    "title": "SECURING ATTENDANCE OF WITNESS BY MATERIAL",
+    "volume": 14
+  },
+  "836": {
+    "title": "UNIFORM ACT TO SECURE THE ATTENDANCE",
+    "volume": 14
+  },
+  "837": {
+    "title": "",
+    "volume": 14
+  },
+  "841": {
+    "title": "INQUESTS, CORONERS",
+    "volume": 14
+  },
+  "842": {
+    "title": "ORGANIZED CRIME",
+    "volume": 14
+  },
+  "843": {
+    "title": "HAWAII CRIMINAL JUSTICE COMMISSION",
+    "volume": 14
+  },
+  "844": {
+    "title": "STATE LAW ENFORCEMENT PLANNING AGENCY",
+    "volume": 14
+  },
+  "845": {
+    "title": "CAREER CRIMINALS",
+    "volume": 14
+  },
+  "846": {
+    "title": "HAWAII CRIMINAL JUSTICE DATA CENTER;",
+    "volume": 14
+  },
+  "847": {
+    "title": "",
+    "volume": 14
+  },
+  "851": {
+    "title": "CREDIT CARD OFFENSES",
+    "volume": 14
+  },
+  "852": {
+    "title": "OBSTRUCTION OF INGRESS OR EGRESS",
+    "volume": 14
+  },
+  "853": {
+    "title": "CRIMINAL PROCEDURE: DEFERRED ACCEPTANCE OF GUILTY",
+    "volume": 14
+  },
+  "1B": {
+    "title": "DESIGNATION OF RURAL AREAS FOR FEDERAL PROGRAMS",
+    "volume": 1
+  },
+  "01-USCON": {
+    "title": "",
+    "volume": 1
+  },
+  "04-ADM": {
+    "title": "",
+    "volume": 1
+  },
+  "4E": {
+    "title": "STATE BOARD ON GEOGRAPHIC NAMES",
+    "volume": 1
+  },
+  "05-CONST": {
+    "title": "",
+    "volume": 1
+  },
+  "6D": {
+    "title": "protection of caves",
+    "volume": 1
+  },
+  "6E": {
+    "title": "HISTORIC PRESERVATION",
+    "volume": 1
+  },
+  "6F": {
+    "title": "JUDICIARY HISTORY CENTER",
+    "volume": 1
+  },
+  "06-HHCA": {
+    "title": "does not conflict with this Act, has only incidental impact on Hawaiian home lands, and is not inconsistent with interests of the beneficiaries; thus, chapter applies to Hawaiian home lands. 87 H. 91, 952 P.2d 379.",
+    "volume": 1
+  },
+  "6K": {
+    "title": "KAHO`OLAWE ISLAND RESERVE",
+    "volume": 1
+  },
+  "9C": {
+    "title": "ETHNIC STUDIES",
+    "volume": 1
+  },
+  "10H": {
+    "title": "NATIVE HAWAIIAN RECOGNITION",
+    "volume": 1
+  },
+  "13D": {
+    "title": "BOARD OF TRUSTEES, OFFICE OF HAWAIIAN AFFAIRS",
+    "volume": 1
+  },
+  "14D": {
+    "title": "Agreement among the states to elect the",
+    "volume": 1
+  },
+  "15A": {
+    "title": "VOTING BY MAILING BALLOT",
+    "volume": 1
+  },
+  "15D": {
+    "title": "UNIFORM MILITARY AND OVERSEAS VOTERS ACT",
+    "volume": 1
+  },
+  "16A": {
+    "title": "UNIFORM ACT FOR VOTING BY NEW RESIDENTS IN",
+    "volume": 1
+  },
+  "21B": {
+    "title": "IMPEACHMENT OF THE GOVERNOR; LIEUTENANT GOVERNOR",
+    "volume": 1
+  },
+  "21D": {
+    "title": "ACCESS/LEGISLATIVE INFORMATION SERVICE",
+    "volume": 1
+  },
+  "21E": {
+    "title": "JOINT LEGISLATIVE MANAGEMENT COMMITTEE",
+    "volume": 1
+  },
+  "21F": {
+    "title": "LEGISLATIVE FISCAL AND BUDGET ANALYSIS",
+    "volume": 1
+  },
+  "21G": {
+    "title": "PUBLIC ACCESS",
+    "volume": 1
+  },
+  "23G": {
+    "title": "OFFICE OF THE LEGISLATIVE REFERENCE BUREAU",
+    "volume": 1
+  },
+  "26H": {
+    "title": "HAWAII REGULATORY LICENSING REFORM ACT",
+    "volume": 1
+  },
+  "27C": {
+    "title": "STATE INFORMATION SERVICE",
+    "volume": 1
+  },
+  "27G": {
+    "title": "ACCESS HAWAII COMMITTEE",
+    "volume": 1
+  },
+  "27J": {
+    "title": "APOSTILLES AND CERTIFICATIONS",
+    "volume": 1
+  },
+  "37B": {
+    "title": "DISPOSITION OF EXCESS REVENUES",
+    "volume": 1
+  },
+  "37C": {
+    "title": "STATE DEBT",
+    "volume": 1
+  },
+  "37D": {
+    "title": "MANAGEMENT OF FINANCING AGREEMENTS",
+    "volume": 1
+  },
+  "39A": {
+    "title": "SPECIAL PURPOSE REVENUE BONDS",
+    "volume": 1
+  },
+  "39B": {
+    "title": "ALLOCATION OF PRIVATE ACTIVITY BONDS",
+    "volume": 1
+  },
+  "39C": {
+    "title": "ALLOCATION OF STATE BOND CEILING",
+    "volume": 1
+  },
+  "41D": {
+    "title": "STATE RISK MANAGEMENT AND INSURANCE",
+    "volume": 1
+  },
+  "42D": {
+    "title": "GRANTS, SUBSIDIES, AND PURCHASES OF SERVICE",
+    "volume": 1
+  },
+  "42F": {
+    "title": "GRANTS",
+    "volume": 1
+  },
+  "47C": {
+    "title": "INDEBTEDNESS OF THE COUNTIES, EXCLUSIONS FROM",
+    "volume": 2
+  },
+  "48E": {
+    "title": "POLITICAL SUBDIVISION POLLUTION CONTROL",
+    "volume": 2
+  },
+  "51D": {
+    "title": "TRANSIT CAPITAL DEVELOPMENT FUND",
+    "volume": 2
+  },
+  "52D": {
+    "title": "POLICE DEPARTMENTS",
+    "volume": 2
+  },
+  "87A": {
+    "title": "HAWAII EMPLOYER-UNION HEALTH BENEFITS TRUST FUND",
+    "volume": 2
+  },
+  "87D": {
+    "title": "VOLUNTARY EMPLOYEES' BENEFICIARY ASSOCIATION TRUSTS",
+    "volume": 2
+  },
+  "88D": {
+    "title": "TAX DEFERRED COMPENSATION PLANS FOR PUBLIC EMPLOYEES",
+    "volume": 2
+  },
+  "88E": {
+    "title": "DEFERRED COMPENSATION PLAN",
+    "volume": 2
+  },
+  "88F": {
+    "title": "DEFERRED COMPENSATION RETIREMENT PLAN FOR PART-TIME,",
+    "volume": 2
+  },
+  "89A": {
+    "title": "OFFICE OF COLLECTIVE BARGAINING AND MANAGED COMPETITION",
+    "volume": 2
+  },
+  "89C": {
+    "title": "PUBLIC OFFICERS AND EMPLOYEES EXCLUDED FROM",
+    "volume": 2
+  },
+  "89E": {
+    "title": "SEPARATION BENEFITS",
+    "volume": 2
+  },
+  "90D": {
+    "title": "COMMISSION FOR NATIONAL AND COMMUNITY SERVICE",
+    "volume": 2
+  },
+  "92E": {
+    "title": "FAIR INFORMATION PRACTICE",
+    "volume": 2
+  },
+  "92F": {
+    "title": "UNIFORM INFORMATION PRACTICES ACT (MODIFIED)",
+    "volume": 2
+  },
+  "92H": {
+    "title": "RESTRICTIONS ON PUBLICATION OF CERTAIN",
+    "volume": 2
+  },
+  "92J": {
+    "title": "DEPARTMENT OF HAWAIIAN HOME LANDS RECORDS",
+    "volume": 2
+  },
+  "103B": {
+    "title": "EMPLOYMENT OF STATE RESIDENTS ON",
+    "volume": 2
+  },
+  "103D": {
+    "title": "HAWAII PUBLIC PROCUREMENT CODE",
+    "volume": 2
+  },
+  "103F": {
+    "title": "PURCHASES OF HEALTH AND HUMAN SERVICES",
+    "volume": 2
+  },
+  "107D": {
+    "title": "STATE FACILITY RENOVATION PARTNERSHIP PROGRAM",
+    "volume": 2
+  },
+  "122A": {
+    "title": "HAWAII STATE DEFENSE FORCE",
+    "volume": 3
+  },
+  "124A": {
+    "title": "HAWAII CODE OF MILITARY JUSTICE",
+    "volume": 3
+  },
+  "124B": {
+    "title": "HAWAII CODE OF MILITARY JUSTICE",
+    "volume": 3
+  },
+  "125C": {
+    "title": "PROCUREMENT, CONTROL, DISTRIBUTION AND SALE OF",
+    "volume": 3
+  },
+  "127A": {
+    "title": "EMERGENCY MANAGEMENT",
+    "volume": 3
+  },
+  "127D": {
+    "title": "INTRASTATE MUTUAL AID ACT",
+    "volume": 3
+  },
+  "127F": {
+    "title": "EMERGENCY MANAGEMENT ASSISTANCE COMPACT",
+    "volume": 3
+  },
+  "128A": {
+    "title": "HOMELAND SECURITY",
+    "volume": 3
+  },
+  "128B": {
+    "title": "CYBERSECURITY",
+    "volume": 3
+  },
+  "128D": {
+    "title": "ENVIRONMENTAL RESPONSE LAW",
+    "volume": 3
+  },
+  "128E": {
+    "title": "HAWAII EMERGENCY PLANNING AND COMMUNITY",
+    "volume": 3
+  },
+  "128F": {
+    "title": "EMERGENCY MANAGEMENT ASSISTANCE COMPACT",
+    "volume": 3
+  },
+  "132C": {
+    "title": "REDUCED IGNITION PROPENSITY CIGARETTES LAW",
+    "volume": 3
+  },
+  "132D": {
+    "title": "FIREWORKS",
+    "volume": 3
+  },
+  "134C": {
+    "title": "GUN VIOLENCE AND VIOLENT CRIMES COMMISSION",
+    "volume": 3
+  },
+  "141D": {
+    "title": "AGRICULTURAL ENTERPRISES",
+    "volume": 3
+  },
+  "145D": {
+    "title": "DONATION OF FOOD",
+    "volume": 3
+  },
+  "148D": {
+    "title": "AQUACULTURE ADVISORY COUNCIL",
+    "volume": 3
+  },
+  "149A": {
+    "title": "HAWAII PESTICIDES LAW",
+    "volume": 3
+  },
+  "150A": {
+    "title": "PLANT AND NON-DOMESTIC ANIMAL QUARANTINE",
+    "volume": 3
+  },
+  "155D": {
+    "title": "LIVESTOCK REVITALIZATION PROGRAM",
+    "volume": 3
+  },
+  "163D": {
+    "title": "AGRIBUSINESS DEVELOPMENT CORPORATION",
+    "volume": 3
+  },
+  "166E": {
+    "title": "NON-AGRICULTURAL PARK LANDS",
+    "volume": 3
+  },
+  "171C": {
+    "title": "PUBLIC LAND DEVELOPMENT CORPORATION",
+    "volume": 3
+  },
+  "173A": {
+    "title": "ACQUISITION OF RESOURCE VALUE LANDS",
+    "volume": 3
+  },
+  "174C": {
+    "title": "STATE WATER CODE",
+    "volume": 3
+  },
+  "174E": {
+    "title": "RED HILL WATER ALLIANCE INITIATIVE",
+    "volume": 3
+  },
+  "176D": {
+    "title": "PROTECTION OF INSTREAM USES OF WATER",
+    "volume": 3
+  },
+  "179D": {
+    "title": "DAMS AND RESERVOIRS",
+    "volume": 3
+  },
+  "180C": {
+    "title": "SOIL EROSION AND SEDIMENT CONTROL",
+    "volume": 3
+  },
+  "183B": {
+    "title": "HAWAIIAN FISHPONDS",
+    "volume": 3
+  },
+  "183C": {
+    "title": "CONSERVATION DISTRICT",
+    "volume": 3
+  },
+  "183D": {
+    "title": "WILDLIFE",
+    "volume": 3
+  },
+  "187A": {
+    "title": "AQUATIC RESOURCES",
+    "volume": 3
+  },
+  "188C": {
+    "title": "PACIFIC MARINE FISHERIES COMPACT",
+    "volume": 3
+  },
+  "188E": {
+    "title": "HAWAII FISHERIES COORDINATING COUNCIL",
+    "volume": 3
+  },
+  "188F": {
+    "title": "WEST HAWAII REGIONAL FISHERY MANAGEMENT AREA",
+    "volume": 3
+  },
+  "189G": {
+    "title": "AQUACULTURE ADVISORY COUNCIL",
+    "volume": 3
+  },
+  "190D": {
+    "title": "OCEAN AND SUBMERGED LANDS LEASING",
+    "volume": 3
+  },
+  "195D": {
+    "title": "CONSERVATION OF AQUATIC LIFE, WILDLIFE, AND",
+    "volume": 3
+  },
+  "195F": {
+    "title": "FOREST STEWARDSHIP",
+    "volume": 3
+  },
+  "195H": {
+    "title": "MAUNA KEA STEWARDSHIP AND OVERSIGHT AUTHORITY",
+    "volume": 3
+  },
+  "196D": {
+    "title": "GEOTHERMAL AND CABLE SYSTEM DEVELOPMENT",
+    "volume": 3
+  },
+  "198D": {
+    "title": "HAWAII STATEWIDE TRAIL AND ACCESS SYSTEM",
+    "volume": 3
+  },
+  "199D": {
+    "title": "CIVIL NATURAL RESOURCE VIOLATIONS ACT",
+    "volume": 3
+  },
+  "200A": {
+    "title": "UNIFORM CERTIFICATE OF TITLE FOR VESSELS ACT",
+    "volume": 3
+  },
+  "200D": {
+    "title": "KANEOHE BAY REGIONAL COUNCIL",
+    "volume": 3
+  },
+  "201B": {
+    "title": "HAWAII TOURISM AUTHORITY",
+    "volume": 4
+  },
+  "201C": {
+    "title": "FINANCIAL SERVICES ASSISTANCE PROGRAM",
+    "volume": 4
+  },
+  "201D": {
+    "title": "BUSINESS ACTION CENTER",
+    "volume": 4
+  },
+  "201E": {
+    "title": "HOUSING FINANCE AND DEVELOPMENT CORPORATION",
+    "volume": 4
+  },
+  "201F": {
+    "title": "RENTAL HOUSING TRUST FUND",
+    "volume": 4
+  },
+  "201G": {
+    "title": "HOUSING AND COMMUNITY DEVELOPMENT",
+    "volume": 4
+  },
+  "201H": {
+    "title": "HAWAII HOUSING FINANCE AND DEVELOPMENT CORPORATION",
+    "volume": 4
+  },
+  "201M": {
+    "title": "SMALL BUSINESS REGULATORY FLEXIBILITY ACT",
+    "volume": 4
+  },
+  "201N": {
+    "title": "RENEWABLE ENERGY FACILITY SITING PROCESS",
+    "volume": 4
+  },
+  "205A": {
+    "title": "COASTAL ZONE MANAGEMENT",
+    "volume": 4
+  },
+  "206E": {
+    "title": "HAWAII COMMUNITY DEVELOPMENT AUTHORITY",
+    "volume": 4
+  },
+  "206G": {
+    "title": "KALAELOA COMMUNITY DEVELOPMENT DISTRICT",
+    "volume": 4
+  },
+  "206J": {
+    "title": "ALOHA TOWER DEVELOPMENT CORPORATION",
+    "volume": 4
+  },
+  "206M": {
+    "title": "HAWAII TECHNOLOGY DEVELOPMENT CORPORATION",
+    "volume": 4
+  },
+  "206N": {
+    "title": "WIRELESS BROADBAND AND COMMUNICATIONS NETWORKS",
+    "volume": 4
+  },
+  "206P": {
+    "title": "HAWAII TELECOMMUNICATIONS AND",
+    "volume": 4
+  },
+  "206R": {
+    "title": "BROADBAND INFRASTRUCTURE GRANT PROGRAM",
+    "volume": 4
+  },
+  "206S": {
+    "title": "HAWAII BROADBAND AND DIGITAL EQUITY OFFICE",
+    "volume": 4
+  },
+  "206X": {
+    "title": "CONVENTION CENTER AUTHORITY",
+    "volume": 4
+  },
+  "209E": {
+    "title": "STATE ENTERPRISE ZONES",
+    "volume": 4
+  },
+  "210D": {
+    "title": "COMMUNITY-BASED DEVELOPMENT",
+    "volume": 4
+  },
+  "211D": {
+    "title": "CAPITAL ACCESS PROGRAM",
+    "volume": 4
+  },
+  "211E": {
+    "title": "HAWAII INNOVATION DEVELOPMENT PROGRAM",
+    "volume": 4
+  },
+  "211F": {
+    "title": "HAWAII STRATEGIC DEVELOPMENT CORPORATION",
+    "volume": 4
+  },
+  "211G": {
+    "title": "STATE PRIVATE INVESTMENT FUND",
+    "volume": 4
+  },
+  "213E": {
+    "title": "EMPLOYEE OWNERSHIP AND PARTICIPATION PROGRAMS",
+    "volume": 4
+  },
+  "225M": {
+    "title": "STATE PLANNING",
+    "volume": 4
+  },
+  "225P": {
+    "title": "HAWAII CLIMATE CHANGE MITIGATION AND ADAPTATION INITIATIVE",
+    "volume": 4
+  },
+  "227D": {
+    "title": "NATURAL ENERGY LABORATORY OF HAWAII AUTHORITY",
+    "volume": 4
+  },
+  "232E": {
+    "title": "TAX REVIEW COMMISSION",
+    "volume": 4
+  },
+  "235D": {
+    "title": "QUALIFIED IMPROVEMENT TAX CREDIT",
+    "volume": 4
+  },
+  "236A": {
+    "title": "REVISED UNIFORM ESTATE TAX APPORTIONMENT ACT",
+    "volume": 4
+  },
+  "236D": {
+    "title": "ESTATE AND TRANSFER TAX",
+    "volume": 4
+  },
+  "236E": {
+    "title": "ESTATE AND GENERATION-SKIPPING TRANSFER TAX",
+    "volume": 4
+  },
+  "237D": {
+    "title": "TRANSIENT ACCOMMODATIONS TAX",
+    "volume": 4
+  },
+  "244D": {
+    "title": "LIQUOR TAX LAW",
+    "volume": 4
+  },
+  "246A": {
+    "title": "TRANSFER OF REAL PROPERTY TAXATION FUNCTIONS",
+    "volume": 4
+  },
+  "255D": {
+    "title": "HAWAII SIMPLIFIED SALES AND USE TAX ADMINISTRATION ACT",
+    "volume": 4
+  },
+  "256B": {
+    "title": "HAWAII ABLE SAVINGS PROGRAM",
+    "volume": 4
+  },
+  "261C": {
+    "title": "HAWAII AIR CARRIERS",
+    "volume": 5
+  },
+  "261D": {
+    "title": "TRANSPORTATION USE SPECIAL FUND",
+    "volume": 5
+  },
+  "261E": {
+    "title": "HAWAII AIR CARRIERS",
+    "volume": 5
+  },
+  "263A": {
+    "title": "ALCOHOL AND AVIATION SAFETY",
+    "volume": 5
+  },
+  "265A": {
+    "title": "COUNTY HIGHWAYS AND SIDEWALKS",
+    "volume": 5
+  },
+  "267A": {
+    "title": "ABANDONED VESSELS",
+    "volume": 5
+  },
+  "267B": {
+    "title": "TRESPASS TO VESSELS",
+    "volume": 5
+  },
+  "267C": {
+    "title": "VESSEL IDENTIFICATION NUMBERS",
+    "volume": 5
+  },
+  "269E": {
+    "title": "ONE CALL CENTER; ADVANCE WARNING TO EXCAVATORS",
+    "volume": 5
+  },
+  "269G": {
+    "title": "SECURITIZATION",
+    "volume": 5
+  },
+  "271G": {
+    "title": "HAWAII WATER CARRIER ACT",
+    "volume": 5
+  },
+  "279A": {
+    "title": "STATEWIDE TRANSPORTATION PLANNING",
+    "volume": 5
+  },
+  "279C": {
+    "title": "ENVIRONMENTAL PLANNING",
+    "volume": 5
+  },
+  "279D": {
+    "title": "Metropolitan planning organizations",
+    "volume": 5
+  },
+  "279E": {
+    "title": "METROPOLITAN PLANNING ORGANIZATION",
+    "volume": 5
+  },
+  "279G": {
+    "title": "RIDESHARING",
+    "volume": 5
+  },
+  "279J": {
+    "title": "TRANSPORTATION NETWORK COMPANIES",
+    "volume": 5
+  },
+  "279L": {
+    "title": "PEER-TO-PEER CAR-SHARING",
+    "volume": 5
+  },
+  "286A": {
+    "title": "VEHICLE EQUIPMENT SAFETY COMPACT",
+    "volume": 5
+  },
+  "286C": {
+    "title": "DRIVER LICENSE COMPACT",
+    "volume": 5
+  },
+  "286G": {
+    "title": "DRIVER EDUCATION AND TRAINING FUND",
+    "volume": 5
+  },
+  "291A": {
+    "title": "NONRESIDENT VIOLATOR COMPACT",
+    "volume": 5
+  },
+  "291C": {
+    "title": "STATEWIDE TRAFFIC CODE",
+    "volume": 5
+  },
+  "291D": {
+    "title": "ADJUDICATION OF INFRACTIONS",
+    "volume": 5
+  },
+  "291E": {
+    "title": "USE OF INTOXICANTS WHILE OPERATING A VEHICLE",
+    "volume": 5
+  },
+  "291J": {
+    "title": "PHOTO RED LIGHT IMAGING DETECTOR SYSTEMS",
+    "volume": 5
+  },
+  "291L": {
+    "title": "AUTOMATED SPEED ENFORCEMENT SYSTEMS",
+    "volume": 5
+  },
+  "296C": {
+    "title": "SCHOOL/COMMUNITY-BASED MANAGEMENT",
+    "volume": 5
+  },
+  "296D": {
+    "title": "SCHOOL PRIORITY FUND",
+    "volume": 5
+  },
+  "297D": {
+    "title": "HAWAII TEACHER STANDARDS BOARD",
+    "volume": 5
+  },
+  "302A": {
+    "title": "EDUCATION",
+    "volume": 5
+  },
+  "302B": {
+    "title": "PUBLIC CHARTER SCHOOLS",
+    "volume": 5
+  },
+  "302C": {
+    "title": "PRIVATE SCHOOLS",
+    "volume": 5
+  },
+  "302D": {
+    "title": "PUBLIC CHARTER SCHOOLS",
+    "volume": 5
+  },
+  "302H": {
+    "title": "Hawaiian language medium education",
+    "volume": 5
+  },
+  "302L": {
+    "title": "EARLY LEARNING SYSTEM",
+    "volume": 5
+  },
+  "304A": {
+    "title": "UNIVERSITY OF HAWAII SYSTEM",
+    "volume": 5
+  },
+  "304D": {
+    "title": "CENTER FOR NURSING",
+    "volume": 5
+  },
+  "304E": {
+    "title": "NURSING SCHOLARS PROGRAM",
+    "volume": 5
+  },
+  "305A": {
+    "title": "CAREER AND TECHNICAL EDUCATION UNDER",
+    "volume": 5
+  },
+  "305E": {
+    "title": "COLLEGE-CREDIT EQUIVALENCY PROGRAM",
+    "volume": 5
+  },
+  "305H": {
+    "title": "STATE POST-SECONDARY EDUCATION COMMISSION",
+    "volume": 5
+  },
+  "305J": {
+    "title": "POST-SECONDARY EDUCATION AUTHORIZATION",
+    "volume": 5
+  },
+  "309H": {
+    "title": "HAWAII HEALTH CORPS",
+    "volume": 5
+  },
+  "311D": {
+    "title": "INTERSTATE COMPACT ON EDUCATIONAL",
+    "volume": 5
+  },
+  "321C": {
+    "title": "OFFICE OF LANGUAGE ACCESS",
+    "volume": 6
+  },
+  "321D": {
+    "title": "INTERDEPARTMENTAL CLUSTER FOR SERVICES TO CHILDREN",
+    "volume": 6
+  },
+  "321E": {
+    "title": "DISPERSAL REVIEW COUNCIL",
+    "volume": 6
+  },
+  "321F": {
+    "title": "OFFICE OF THE ALOHA HEALTH CORPS",
+    "volume": 6
+  },
+  "321G": {
+    "title": "CALIFORNIA-HAWAII COOPERATIVE COMMISSION",
+    "volume": 6
+  },
+  "321H": {
+    "title": "NEUROTRAUMA",
+    "volume": 6
+  },
+  "322H": {
+    "title": "HAWAII HEALTH AUTHORITY",
+    "volume": 6
+  },
+  "323B": {
+    "title": "HEALTH CARE PRIVACY HARMONIZATION ACT",
+    "volume": 6
+  },
+  "323C": {
+    "title": "PRIVACY OF HEALTH CARE INFORMATION",
+    "volume": 6
+  },
+  "323D": {
+    "title": "HEALTH PLANNING AND RESOURCES DEVELOPMENT AND",
+    "volume": 6
+  },
+  "323F": {
+    "title": "HAWAII HEALTH SYSTEMS CORPORATION",
+    "volume": 6
+  },
+  "323G": {
+    "title": "HOSPITAL DISCHARGE PLANNING--DESIGNATION OF A CAREGIVER",
+    "volume": 6
+  },
+  "323J": {
+    "title": "REPRODUCTIVE HEALTH CARE SERVICES",
+    "volume": 6
+  },
+  "327C": {
+    "title": "DEATH",
+    "volume": 6
+  },
+  "327D": {
+    "title": "MEDICAL TREATMENT DECISIONS",
+    "volume": 6
+  },
+  "327E": {
+    "title": "UNIFORM HEALTH-CARE DECISIONS ACT (MODIFIED)",
+    "volume": 6
+  },
+  "327F": {
+    "title": "MEDICAL TREATMENT DECISIONS FOR PSYCHOTIC DISORDERS",
+    "volume": 6
+  },
+  "327G": {
+    "title": "ADVANCE MENTAL HEALTH CARE DIRECTIVES",
+    "volume": 6
+  },
+  "327H": {
+    "title": "PAIN PATIENT'S BILL OF RIGHTS",
+    "volume": 6
+  },
+  "327K": {
+    "title": "pROVIDER oRDERS FOR lIFE-SUSTAINING TREATMENT",
+    "volume": 6
+  },
+  "327L": {
+    "title": "OUR CARE, OUR CHOICE ACT",
+    "volume": 6
+  },
+  "327N": {
+    "title": "HYDROLYSIS FACILITIES",
+    "volume": 6
+  },
+  "328A": {
+    "title": "WATER, FURNISHING POTABLE",
+    "volume": 6
+  },
+  "328B": {
+    "title": "RETURN-FOR-CREDIT-AND-REUSE OF PRESCRIPTION DRUGS",
+    "volume": 6
+  },
+  "328C": {
+    "title": "DONATION OF PHARMACEUTICALS AND HEALTH CARE SUPPLIES",
+    "volume": 6
+  },
+  "328D": {
+    "title": "BOTTLED WATER",
+    "volume": 6
+  },
+  "328E": {
+    "title": "INTOXICATING COMPOUNDS",
+    "volume": 6
+  },
+  "328G": {
+    "title": "HEMP PROCESSORS",
+    "volume": 6
+  },
+  "328J": {
+    "title": "SMOKING",
+    "volume": 6
+  },
+  "328K": {
+    "title": "SMOKING",
+    "volume": 6
+  },
+  "328L": {
+    "title": "HAWAII TOBACCO SETTLEMENT MONEYS",
+    "volume": 6
+  },
+  "329B": {
+    "title": "SUBSTANCE ABUSE TESTING",
+    "volume": 6
+  },
+  "329C": {
+    "title": "IMITATION CONTROLLED SUBSTANCES ACT",
+    "volume": 6
+  },
+  "329D": {
+    "title": "MEDICAL CANNABIS DISPENSARY SYSTEM",
+    "volume": 6
+  },
+  "329E": {
+    "title": "OVERDOSE PREVENTION AND EMERGENCY RESPONSE ACT",
+    "volume": 6
+  },
+  "330C": {
+    "title": "HAWAII POISON PREVENTION PACKAGING ACT",
+    "volume": 6
+  },
+  "332D": {
+    "title": "POLYBROMINATED DIPHENYL ETHERS",
+    "volume": 6
+  },
+  "333E": {
+    "title": "DEVELOPMENTAL DISABILITIES",
+    "volume": 6
+  },
+  "333F": {
+    "title": "SERVICES FOR PERSONS WITH DEVELOPMENTAL OR",
+    "volume": 6
+  },
+  "334B": {
+    "title": "UTILIZATION REVIEW AND MANAGED CARE OF MENTAL HEALTH,",
+    "volume": 6
+  },
+  "334D": {
+    "title": "DIVERSION PROGRAM FOR CHEMICALLY",
+    "volume": 6
+  },
+  "334E": {
+    "title": "RIGHTS OF RECIPIENTS OF MENTAL HEALTH SERVICES",
+    "volume": 6
+  },
+  "339D": {
+    "title": "ELECTRONIC DEVICE RECYCLING AND",
+    "volume": 6
+  },
+  "339K": {
+    "title": "NORTHWEST INTERSTATE COMPACT ON LOW-LEVEL",
+    "volume": 6
+  },
+  "340A": {
+    "title": "SOLID WASTE",
+    "volume": 6
+  },
+  "340B": {
+    "title": "WASTEWATER TREATMENT PERSONNEL",
+    "volume": 6
+  },
+  "340E": {
+    "title": "SAFE DRINKING WATER",
+    "volume": 6
+  },
+  "340F": {
+    "title": "HAWAII LAW FOR MANDATORY CERTIFICATION OF",
+    "volume": 6
+  },
+  "342B": {
+    "title": "AIR POLLUTION CONTROL",
+    "volume": 6
+  },
+  "342C": {
+    "title": "OZONE LAYER PROTECTION",
+    "volume": 6
+  },
+  "342D": {
+    "title": "WATER POLLUTION",
+    "volume": 6
+  },
+  "342E": {
+    "title": "NONPOINT SOURCE POLLUTION MANAGEMENT AND CONTROL",
+    "volume": 6
+  },
+  "342F": {
+    "title": "NOISE POLLUTION",
+    "volume": 6
+  },
+  "342G": {
+    "title": "INTEGRATED SOLID WASTE MANAGEMENT",
+    "volume": 6
+  },
+  "342H": {
+    "title": "SOLID WASTE POLLUTION",
+    "volume": 6
+  },
+  "342I": {
+    "title": "SPECIAL WASTES RECYCLING",
+    "volume": 6
+  },
+  "342J": {
+    "title": "HAZARDOUS WASTE",
+    "volume": 6
+  },
+  "342L": {
+    "title": "UNDERGROUND STORAGE TANKS",
+    "volume": 6
+  },
+  "342N": {
+    "title": "USED OIL TRANSPORT, RECYCLING, AND DISPOSAL",
+    "volume": 6
+  },
+  "342P": {
+    "title": "ASBESTOS AND LEAD",
+    "volume": 6
+  },
+  "343D": {
+    "title": "HAWAII ENVIRONMENTAL DISCLOSURE LAW",
+    "volume": 6
+  },
+  "346C": {
+    "title": "LONG-TERM CARE FINANCING PROGRAM",
+    "volume": 7
+  },
+  "346D": {
+    "title": "LONG-TERM CARE",
+    "volume": 7
+  },
+  "346E": {
+    "title": "NURSING FACILITY TAX",
+    "volume": 7
+  },
+  "346F": {
+    "title": "NURSING FACILITY SUSTAINABILITY PROGRAM",
+    "volume": 7
+  },
+  "346G": {
+    "title": "HOSPITAL SUSTAINABILITY PROGRAM",
+    "volume": 7
+  },
+  "347D": {
+    "title": "HAWAII STATE COORDINATING COUNCIL ON DEAFNESS",
+    "volume": 7
+  },
+  "348E": {
+    "title": "COMMISSION ON PERSONS WITH DISABILITIES",
+    "volume": 7
+  },
+  "348F": {
+    "title": "DISABILITY AND COMMUNICATION ACCESS BOARD",
+    "volume": 7
+  },
+  "349C": {
+    "title": "ELDER ABUSE OR NEGLECT",
+    "volume": 7
+  },
+  "349F": {
+    "title": "SUPPORTED DECISION-MAKING AGREEMENT FOR QUALIFIED ADULTS",
+    "volume": 7
+  },
+  "350B": {
+    "title": "HAWAII CHILDREN'S TRUST FUND",
+    "volume": 7
+  },
+  "350C": {
+    "title": "ADOPTION ASSISTANCE COMPACT AND PROCEDURES FOR",
+    "volume": 7
+  },
+  "350E": {
+    "title": "INTERSTATE COMPACT ON PLACEMENT OF CHILDREN",
+    "volume": 7
+  },
+  "352D": {
+    "title": "OFFICE OF YOUTH SERVICES",
+    "volume": 7
+  },
+  "353B": {
+    "title": "INTERSTATE COMPACT FOR THE SUPERVISION OF ADULT OFFENDERS",
+    "volume": 7
+  },
+  "353C": {
+    "title": "LAW ENFORCEMENT",
+    "volume": 7
+  },
+  "353D": {
+    "title": "OFFENDER FAMILY SERVICE CENTER ACT",
+    "volume": 7
+  },
+  "353E": {
+    "title": "STATEWIDE INTEGRATED SEX OFFENDER TREATMENT PROGRAM",
+    "volume": 7
+  },
+  "353F": {
+    "title": "CORRECTIONS POPULATION MANAGEMENT COMMISSION",
+    "volume": 7
+  },
+  "353G": {
+    "title": "CRIMINAL OFFENDER TREATMENT ACT",
+    "volume": 7
+  },
+  "353H": {
+    "title": "COMPREHENSIVE OFFENDER REENTRY SYSTEM",
+    "volume": 7
+  },
+  "353L": {
+    "title": "HAWAII CORRECTIONAL SYSTEM OVERSIGHT COMMISSION",
+    "volume": 7
+  },
+  "354D": {
+    "title": "HAWAII CORRECTIONAL INDUSTRIES",
+    "volume": 7
+  },
+  "355D": {
+    "title": "INTERSTATE CORRECTIONS COMPACT",
+    "volume": 7
+  },
+  "356D": {
+    "title": "HAWAII PUBLIC HOUSING AUTHORITY",
+    "volume": 7
+  },
+  "358D": {
+    "title": "HOMELESS ASSISTANCE ACT",
+    "volume": 7
+  },
+  "359A": {
+    "title": "TEACHERS HOUSING",
+    "volume": 7
+  },
+  "359G": {
+    "title": "HAWAII HOUSING AUTHORITY--HOUSING PROJECTS",
+    "volume": 7
+  },
+  "359L": {
+    "title": "FACTORY BUILT HOUSING",
+    "volume": 7
+  },
+  "360E": {
+    "title": "ADVISORY COUNCIL ON HOUSING",
+    "volume": 7
+  },
+  "367D": {
+    "title": "PARITY FOR FEMALE OFFENDERS",
+    "volume": 7
+  },
+  "368D": {
+    "title": "DISCRIMINATION IN STATE EDUCATIONAL PROGRAMS AND ACTIVITIES",
+    "volume": 7
+  },
+  "368F": {
+    "title": "RENTAL DISCRIMINATION BASED ON SOURCE OF INCOME",
+    "volume": 7
+  },
+  "368H": {
+    "title": "DISCRIMINATORY REPORTING TO A LAW ENFORCEMENT OFFICER",
+    "volume": 7
+  },
+  "371K": {
+    "title": "COMMUNITY SERVICES",
+    "volume": 7
+  },
+  "373C": {
+    "title": "OCCUPATIONAL AND CAREER INFORMATION",
+    "volume": 7
+  },
+  "373E": {
+    "title": "STATEWIDE TRANSITION TO WORK SYSTEM",
+    "volume": 7
+  },
+  "373F": {
+    "title": "TOURISM TRAINING COUNCIL",
+    "volume": 7
+  },
+  "373K": {
+    "title": "PROFESSIONAL EMPLOYMENT ORGANIZATIONS",
+    "volume": 7
+  },
+  "373L": {
+    "title": "PROFESSIONAL EMPLOYER ORGANIZATIONS",
+    "volume": 7
+  },
+  "379A": {
+    "title": "PICKETING OF RESIDENCE OR DWELLING PLACE",
+    "volume": 7
+  },
+  "386A": {
+    "title": "HAWAII STATE COMPENSATION MUTUAL INSURANCE FUND",
+    "volume": 7
+  },
+  "394A": {
+    "title": "JOB TRAINING",
+    "volume": 7
+  },
+  "394B": {
+    "title": "DISLOCATED WORKERS",
+    "volume": 7
+  },
+  "398A": {
+    "title": "LEAVE OF ABSENCE FOR ORGAN, BONE MARROW, OR",
+    "volume": 7
+  },
+  "405A": {
+    "title": "INTERNATIONAL BANKING FACILITIES",
+    "volume": 8
+  },
+  "405D": {
+    "title": "FOREIGN BANKS",
+    "volume": 8
+  },
+  "408A": {
+    "title": "INDUSTRIAL LOAN COMPANY GUARANTY ACT",
+    "volume": 8
+  },
+  "414D": {
+    "title": "HAWAII NONPROFIT CORPORATIONS ACT",
+    "volume": 8
+  },
+  "414E": {
+    "title": "CONTROL SHARE ACQUISITIONS",
+    "volume": 8
+  },
+  "415A": {
+    "title": "PROFESSIONAL CORPORATION ACT",
+    "volume": 8
+  },
+  "415B": {
+    "title": "HAWAII NONPROFIT CORPORATION ACT",
+    "volume": 8
+  },
+  "417E": {
+    "title": "CORPORATE TAKE-OVERS",
+    "volume": 8
+  },
+  "420D": {
+    "title": "SUSTAINABLE BUSINESS CORPORATIONS",
+    "volume": 8
+  },
+  "421C": {
+    "title": "CONSUMER COOPERATIVE ASSOCIATIONS",
+    "volume": 8
+  },
+  "421G": {
+    "title": "LIMITED-EQUITY HOUSING COOPERATIVES",
+    "volume": 8
+  },
+  "421H": {
+    "title": "LIMITED-EQUITY HOUSING COOPERATIVES",
+    "volume": 8
+  },
+  "421I": {
+    "title": "COOPERATIVE HOUSING CORPORATIONS",
+    "volume": 8
+  },
+  "421J": {
+    "title": "PLANNED COMMUNITY ASSOCIATIONS",
+    "volume": 8
+  },
+  "425D": {
+    "title": "UNIFORM LIMITED PARTNERSHIP ACT",
+    "volume": 8
+  },
+  "425E": {
+    "title": "UNIFORM LIMITED PARTNERSHIP ACT",
+    "volume": 8
+  },
+  "425R": {
+    "title": "REGISTERED AGENTS ACT",
+    "volume": 8
+  },
+  "431A": {
+    "title": "READABILITY OF INSURANCE CONTRACTS",
+    "volume": 9
+  },
+  "431C": {
+    "title": "LIFE SETTLEMENTS",
+    "volume": 9
+  },
+  "431D": {
+    "title": "INSURANCE COMPANY INSOLVENCY",
+    "volume": 9
+  },
+  "431E": {
+    "title": "LIFE SETTLEMENTS",
+    "volume": 9
+  },
+  "431F": {
+    "title": "HAWAII LIFE AND DISABILITY INSURANCE GUARANTY",
+    "volume": 9
+  },
+  "431H": {
+    "title": "INSURANCE INFORMATION PROTECTION ACT",
+    "volume": 9
+  },
+  "431J": {
+    "title": "CAPTIVE INSURANCE COMPANIES",
+    "volume": 9
+  },
+  "431K": {
+    "title": "RISK RETENTION",
+    "volume": 9
+  },
+  "431L": {
+    "title": "MEDICAID-RELATED MANDATES",
+    "volume": 9
+  },
+  "431M": {
+    "title": "MENTAL HEALTH AND ALCOHOL AND SUBSTANCE USE DISORDER",
+    "volume": 9
+  },
+  "431N": {
+    "title": "STATE HEALTH INSURANCE PROGRAM ACT",
+    "volume": 9
+  },
+  "431P": {
+    "title": "HAWAII HURRICANE RELIEF FUND",
+    "volume": 9
+  },
+  "431R": {
+    "title": "PRESCRIPTION DRUG BENEFITS",
+    "volume": 9
+  },
+  "431S": {
+    "title": "PHARMACY BENEFIT MANAGERS",
+    "volume": 9
+  },
+  "432C": {
+    "title": "NONPROFIT ENTITIES; CONVERSION OF ASSETS",
+    "volume": 9
+  },
+  "432D": {
+    "title": "HEALTH MAINTENANCE ORGANIZATION ACT",
+    "volume": 9
+  },
+  "432E": {
+    "title": "PATIENTS' BILL OF RIGHTS AND RESPONSIBILITIES ACT",
+    "volume": 9
+  },
+  "432F": {
+    "title": "HEALTH CARE PROVIDER NETWORK ADEQUACY",
+    "volume": 9
+  },
+  "432G": {
+    "title": "DENTAL INSURERS",
+    "volume": 9
+  },
+  "435C": {
+    "title": "HAWAII MEDICAL MALPRACTICE UNDERWRITING PLAN",
+    "volume": 9
+  },
+  "435E": {
+    "title": "PHYSICIANS AND SURGEONS COOPERATIVE",
+    "volume": 9
+  },
+  "435H": {
+    "title": "Hawaii health insurance exchange",
+    "volume": 9
+  },
+  "436B": {
+    "title": "UNIFORM PROFESSIONAL AND VOCATIONAL LICENSING ACT",
+    "volume": 10
+  },
+  "436C": {
+    "title": "LICENSING SANCTIONS FOR STUDENT LOAN DEFAULTS",
+    "volume": 10
+  },
+  "436D": {
+    "title": "ACUPUNCTURE PRACTITIONERS",
+    "volume": 10
+  },
+  "436E": {
+    "title": "ACUPUNCTURE PRACTITIONERS",
+    "volume": 10
+  },
+  "436H": {
+    "title": "ATHLETIC TRAINERS",
+    "volume": 10
+  },
+  "436M": {
+    "title": "ALARM BUSINESSES",
+    "volume": 10
+  },
+  "437B": {
+    "title": "REGULATION OF MOTOR VEHICLE REPAIRS",
+    "volume": 10
+  },
+  "437D": {
+    "title": "MOTOR VEHICLE RENTAL INDUSTRY",
+    "volume": 10
+  },
+  "439A": {
+    "title": "BARBERING AND COSMETOLOGY LICENSING ACT",
+    "volume": 10
+  },
+  "440D": {
+    "title": "NO RULES COMBAT OR SIMILAR CONTESTS",
+    "volume": 10
+  },
+  "440E": {
+    "title": "MIXED MARTIAL ARTS CONTESTS",
+    "volume": 10
+  },
+  "440G": {
+    "title": "CABLE TELEVISION SYSTEMS",
+    "volume": 10
+  },
+  "440J": {
+    "title": "TELECOMMUNICATIONS AND CABLE",
+    "volume": 10
+  },
+  "443A": {
+    "title": "DEBT COLLECTION PRACTICES",
+    "volume": 10
+  },
+  "443B": {
+    "title": "COLLECTION AGENCIES",
+    "volume": 10
+  },
+  "446D": {
+    "title": "DEGREE GRANTING INSTITUTIONS",
+    "volume": 10
+  },
+  "446E": {
+    "title": "UNACCREDITED DEGREE GRANTING INSTITUTIONS",
+    "volume": 10
+  },
+  "448A": {
+    "title": "ESCORT AGENCIES",
+    "volume": 10
+  },
+  "448B": {
+    "title": "DIETITIANS",
+    "volume": 10
+  },
+  "448D": {
+    "title": "DENTAL SERVICE ORGANIZATIONS",
+    "volume": 10
+  },
+  "448E": {
+    "title": "ELECTRICIANS AND PLUMBERS",
+    "volume": 10
+  },
+  "448F": {
+    "title": "ELECTROLOGISTS",
+    "volume": 10
+  },
+  "448H": {
+    "title": "ELEVATOR MECHANICS",
+    "volume": 10
+  },
+  "451A": {
+    "title": "HEARING AID DEALERS AND FITTERS",
+    "volume": 10
+  },
+  "451D": {
+    "title": "HEALTH CARE PROFESSIONALS",
+    "volume": 10
+  },
+  "451J": {
+    "title": "LICENSED MARRIAGE AND FAMILY THERAPISTS",
+    "volume": 10
+  },
+  "451K": {
+    "title": "GENETIC COUNSELORS",
+    "volume": 10
+  },
+  "453B": {
+    "title": "INTERSTATE MEDICAL LICENSURE COMPACT",
+    "volume": 10
+  },
+  "453D": {
+    "title": "MENTAL HEALTH COUNSELORS",
+    "volume": 10
+  },
+  "453J": {
+    "title": "CONVERSION THERAPY PROHIBITED FOR SEXUAL",
+    "volume": 10
+  },
+  "454D": {
+    "title": "REAL ESTATE COLLECTION SERVICING AGENTS",
+    "volume": 10
+  },
+  "454F": {
+    "title": "SECURE AND FAIR ENFORCEMENT FOR MORTGAGE",
+    "volume": 10
+  },
+  "454M": {
+    "title": "MORTGAGE SERVICERS",
+    "volume": 10
+  },
+  "457A": {
+    "title": "NURSE AIDES",
+    "volume": 10
+  },
+  "457B": {
+    "title": "NURSING HOME ADMINISTRATORS ACT",
+    "volume": 10
+  },
+  "457G": {
+    "title": "OCCUPATIONAL THERAPY PRACTICE",
+    "volume": 10
+  },
+  "457J": {
+    "title": "MIDWIVES",
+    "volume": 10
+  },
+  "460J": {
+    "title": "PEST CONTROL OPERATORS",
+    "volume": 10
+  },
+  "461J": {
+    "title": "PHYSICAL THERAPY PRACTICE ACT",
+    "volume": 10
+  },
+  "462A": {
+    "title": "PILOTAGE",
+    "volume": 10
+  },
+  "463E": {
+    "title": "PODIATRISTS",
+    "volume": 10
+  },
+  "465D": {
+    "title": "BEHAVIOR ANALYSTS",
+    "volume": 10
+  },
+  "466D": {
+    "title": "respiratory therapists",
+    "volume": 10
+  },
+  "466J": {
+    "title": "RADIOLOGIC TECHNOLOGY",
+    "volume": 10
+  },
+  "466K": {
+    "title": "REAL ESTATE APPRAISERS",
+    "volume": 10
+  },
+  "466L": {
+    "title": "APPRAISAL MANAGEMENT COMPANIES",
+    "volume": 10
+  },
+  "466M": {
+    "title": "APPRAISAL MANAGEMENT COMPANIES",
+    "volume": 10
+  },
+  "467A": {
+    "title": "RENTAL AGENCIES",
+    "volume": 10
+  },
+  "467B": {
+    "title": "SOLICITATION OF FUNDS FROM THE PUBLIC",
+    "volume": 10
+  },
+  "467D": {
+    "title": "SOCIAL WORKERS",
+    "volume": 10
+  },
+  "467E": {
+    "title": "SOCIAL WORKERS",
+    "volume": 10
+  },
+  "468B": {
+    "title": "BONDING OF SOLAR ENERGY DEVICE DEALERS",
+    "volume": 10
+  },
+  "468E": {
+    "title": "SPEECH PATHOLOGISTS AND AUDIOLOGISTS",
+    "volume": 10
+  },
+  "468J": {
+    "title": "TRAVEL AGENCIES",
+    "volume": 10
+  },
+  "468K": {
+    "title": "TRAVEL AGENCIES",
+    "volume": 10
+  },
+  "468L": {
+    "title": "TRAVEL AGENCIES",
+    "volume": 10
+  },
+  "468M": {
+    "title": "ACTIVITY PROVIDERS AND ACTIVITY DESKS",
+    "volume": 10
+  },
+  "477E": {
+    "title": "FAIR CREDIT EXTENSION",
+    "volume": 11
+  },
+  "480B": {
+    "title": "MEDIA PUBLICATIONS DISCLOSURE ACT",
+    "volume": 11
+  },
+  "480D": {
+    "title": "COLLECTION PRACTICES",
+    "volume": 11
+  },
+  "480E": {
+    "title": "MORTGAGE RESCUE FRAUD PREVENTION ACT",
+    "volume": 11
+  },
+  "480F": {
+    "title": "CHECK CASHING",
+    "volume": 11
+  },
+  "480J": {
+    "title": "INSTALLMENT LOANS",
+    "volume": 11
+  },
+  "481A": {
+    "title": "UNIFORM DECEPTIVE TRADE PRACTICE ACT",
+    "volume": 11
+  },
+  "481B": {
+    "title": "UNFAIR AND DECEPTIVE PRACTICES",
+    "volume": 11
+  },
+  "481C": {
+    "title": "DOOR-TO-DOOR SALE",
+    "volume": 11
+  },
+  "481D": {
+    "title": "GOING OUT OF BUSINESS SALES",
+    "volume": 11
+  },
+  "481E": {
+    "title": "UNIFORM ATHLETE AGENTS ACT",
+    "volume": 11
+  },
+  "481F": {
+    "title": "SALE OF PRINTS",
+    "volume": 11
+  },
+  "481G": {
+    "title": "OFFICE MACHINE PRODUCTS DEALERSHIPS",
+    "volume": 11
+  },
+  "481H": {
+    "title": "WATER TREATMENT UNITS",
+    "volume": 11
+  },
+  "481I": {
+    "title": "MOTOR VEHICLE EXPRESS WARRANTY ENFORCEMENT",
+    "volume": 11
+  },
+  "481J": {
+    "title": "USED MOTOR VEHICLE SALES AND WARRANTIES",
+    "volume": 11
+  },
+  "481K": {
+    "title": "ASSISTIVE TECHNOLOGY WARRANTY ACT",
+    "volume": 11
+  },
+  "481L": {
+    "title": "MOTOR VEHICLE LEASE DISCLOSURE ACT",
+    "volume": 11
+  },
+  "481M": {
+    "title": "LEASE-PURCHASE AGREEMENTS FOR PERSONAL PROPERTY",
+    "volume": 11
+  },
+  "481N": {
+    "title": "340B Drug Discount Program",
+    "volume": 11
+  },
+  "481P": {
+    "title": "TELEMARKETING FRAUD PREVENTION ACT",
+    "volume": 11
+  },
+  "481R": {
+    "title": "VEHICLE PROTECTION PRODUCT WARRANTORS",
+    "volume": 11
+  },
+  "481T": {
+    "title": "RELATING TO THE ADVERTISING OF LIVE MUSICAL PERFORMANCES",
+    "volume": 11
+  },
+  "481X": {
+    "title": "SERVICE CONTRACTS",
+    "volume": 11
+  },
+  "481Z": {
+    "title": "REVISED UNIFORM ATHLETE AGENTS ACT",
+    "volume": 11
+  },
+  "482B": {
+    "title": "TRADE SECRETS",
+    "volume": 11
+  },
+  "482C": {
+    "title": "COPYRIGHTS IN SOUND RECORDINGS",
+    "volume": 11
+  },
+  "482D": {
+    "title": "GOLD AND SILVER STAMPING",
+    "volume": 11
+  },
+  "482E": {
+    "title": "FRANCHISE INVESTMENT LAW",
+    "volume": 11
+  },
+  "482P": {
+    "title": "PUBLICITY RIGHTS",
+    "volume": 11
+  },
+  "485A": {
+    "title": "UNIFORM SECURITIES ACT",
+    "volume": 11
+  },
+  "486A": {
+    "title": "WEIGHT OF BREAD",
+    "volume": 11
+  },
+  "486B": {
+    "title": "UNFAIR TRADE PRACTICES BY PETROLEUM INDUSTRY",
+    "volume": 11
+  },
+  "486D": {
+    "title": "PETROLEUM PRODUCT ACCOUNTING ACT",
+    "volume": 11
+  },
+  "486E": {
+    "title": "FUEL DISTRIBUTION",
+    "volume": 11
+  },
+  "486H": {
+    "title": "GASOLINE DEALERS",
+    "volume": 11
+  },
+  "486I": {
+    "title": "PETROLEUM INDUSTRY INFORMATION REPORTING",
+    "volume": 11
+  },
+  "486J": {
+    "title": "ENERGY INDUSTRY INFORMATION REPORTING ACT",
+    "volume": 11
+  },
+  "486K": {
+    "title": "HOTELS",
+    "volume": 11
+  },
+  "486M": {
+    "title": "PAWNBROKERS AND SECONDHAND DEALERS",
+    "volume": 11
+  },
+  "486N": {
+    "title": "HEALTH CLUBS",
+    "volume": 11
+  },
+  "486P": {
+    "title": "TOBACCO PRODUCTS REPORTING",
+    "volume": 11
+  },
+  "487A": {
+    "title": "LANGUAGE OF CONSUMER TRANSACTIONS",
+    "volume": 11
+  },
+  "487D": {
+    "title": "RETAIL MERCHANT CLUB CARDS",
+    "volume": 11
+  },
+  "487G": {
+    "title": "UNIFORM EMPLOYEE AND STUDENT",
+    "volume": 11
+  },
+  "487J": {
+    "title": "PERSONAL INFORMATION PROTECTION",
+    "volume": 11
+  },
+  "487N": {
+    "title": "SECURITY BREACH OF PERSONAL INFORMATION",
+    "volume": 11
+  },
+  "487R": {
+    "title": "DESTRUCTION OF PERSONAL INFORMATION RECORDS",
+    "volume": 11
+  },
+  "489D": {
+    "title": "MONEY TRANSMITTERS MODERNIZATION ACT",
+    "volume": 11
+  },
+  "489E": {
+    "title": "UNIFORM ELECTRONIC TRANSACTIONS ACT",
+    "volume": 11
+  },
+  "489J": {
+    "title": "MISCELLANEOUS BUSINESS PROVISIONS",
+    "volume": 11
+  },
+  "489M": {
+    "title": "INTERNATIONAL TRADE AGREEMENTS",
+    "volume": 11
+  },
+  "489N": {
+    "title": "INTERNATIONAL MATCHMAKING ORGANIZATIONS",
+    "volume": 11
+  },
+  "489P": {
+    "title": "CONSUMER CREDIT REPORTING AGENCIES",
+    "volume": 11
+  },
+  "489X": {
+    "title": "ADULT PRODUCTS",
+    "volume": 11
+  },
+  "502C": {
+    "title": "FAMILY CHILD CARE HOMES",
+    "volume": 12
+  },
+  "503B": {
+    "title": "TIME SHARE COMMISSIONERS OF DEEDS",
+    "volume": 12
+  },
+  "507D": {
+    "title": "NONCONSENSUAL COMMON LAW LIENS AND FRIVOLOUS",
+    "volume": 12
+  },
+  "508C": {
+    "title": "UNIFORM ENVIRONMENTAL COVENANTS ACT",
+    "volume": 12
+  },
+  "508D": {
+    "title": "MANDATORY SELLER DISCLOSURES IN REAL ESTATE",
+    "volume": 12
+  },
+  "514A": {
+    "title": "CONDOMINIUM PROPERTY REGIMES",
+    "volume": 12
+  },
+  "514B": {
+    "title": "CONDOMINIUMS",
+    "volume": 12
+  },
+  "514C": {
+    "title": "LEASE TO FEE CONVERSIONS FOR",
+    "volume": 12
+  },
+  "514D": {
+    "title": "financing for condominiums",
+    "volume": 12
+  },
+  "514E": {
+    "title": "TIME SHARING PLANS",
+    "volume": 12
+  },
+  "516D": {
+    "title": "RESIDENTIAL LEASEHOLD CONDOMINIUMS AND COOPERATIVES",
+    "volume": 12
+  },
+  "517D": {
+    "title": "UNIFORM MANAGEMENT OF INSTITUTIONAL FUNDS ACT",
+    "volume": 12
+  },
+  "517E": {
+    "title": "UNIFORM PRUDENT MANAGEMENT OF INSTITUTIONAL FUNDS ACT",
+    "volume": 12
+  },
+  "520A": {
+    "title": "LANDOWNER's LIABILITY for access",
+    "volume": 12
+  },
+  "523A": {
+    "title": "UNCLAIMED PROPERTY",
+    "volume": 12
+  },
+  "531B": {
+    "title": "DISPOSITION OF REMAINS",
+    "volume": 12
+  },
+  "534A": {
+    "title": "UNIFORM SIMULTANEOUS DEATH ACT",
+    "volume": 12
+  },
+  "551A": {
+    "title": "OFFICE OF THE PUBLIC GUARDIAN",
+    "volume": 12
+  },
+  "551D": {
+    "title": "UNIFORM DURABLE POWER OF ATTORNEY ACT",
+    "volume": 12
+  },
+  "551E": {
+    "title": "UNIFORM POWER OF ATTORNEY ACT",
+    "volume": 12
+  },
+  "551G": {
+    "title": "UNIFORM ADULT GUARDIANSHIP AND PROTECTIVE PROCEEDINGS JURISDICTION ACT",
+    "volume": 12
+  },
+  "553A": {
+    "title": "UNIFORM TRANSFERS TO MINORS ACT",
+    "volume": 12
+  },
+  "554A": {
+    "title": "UNIFORM TRUSTEES' POWERS ACT",
+    "volume": 12
+  },
+  "554B": {
+    "title": "UNIFORM CUSTODIAL TRUST ACT",
+    "volume": 12
+  },
+  "554C": {
+    "title": "UNIFORM PRUDENT INVESTOR ACT",
+    "volume": 12
+  },
+  "554D": {
+    "title": "UNIFORM TRUST CODE",
+    "volume": 12
+  },
+  "554G": {
+    "title": "PERMITTED TRANSFERS IN TRUST",
+    "volume": 12
+  },
+  "556A": {
+    "title": "UNIFORM FIDUCIARY ACCESS TO DIGITAL ASSETS ACT",
+    "volume": 12
+  },
+  "557A": {
+    "title": "UNIFORM PRINCIPAL AND INCOME ACT",
+    "volume": 12
+  },
+  "571D": {
+    "title": "JUVENILE JUSTICE INTERAGENCY BOARD",
+    "volume": 12
+  },
+  "572B": {
+    "title": "CIVIL UNIONS",
+    "volume": 12
+  },
+  "572C": {
+    "title": "RECIPROCAL BENEFICIARIES",
+    "volume": 12
+  },
+  "572D": {
+    "title": "UNIFORM PREMARITAL AGREEMENT ACT",
+    "volume": 12
+  },
+  "576B": {
+    "title": "UNIFORM INTERSTATE FAMILY SUPPORT ACT",
+    "volume": 12
+  },
+  "576D": {
+    "title": "CHILD SUPPORT ENFORCEMENT",
+    "volume": 12
+  },
+  "576E": {
+    "title": "ADMINISTRATIVE PROCESS FOR",
+    "volume": 12
+  },
+  "577A": {
+    "title": "LEGAL CAPACITY OF MINOR REGARDING MEDICAL CARE",
+    "volume": 12
+  },
+  "577D": {
+    "title": "PRIMARY MEDICAL CARE FOR MINORS WITHOUT SUPPORT",
+    "volume": 12
+  },
+  "577E": {
+    "title": "COMMISSION ON FATHERHOOD",
+    "volume": 12
+  },
+  "582D": {
+    "title": "INTERSTATE COMPACT FOR JUVENILES",
+    "volume": 12
+  },
+  "583A": {
+    "title": "UNIFORM CHILD-CUSTODY JURISDICTION",
+    "volume": 12
+  },
+  "584A": {
+    "title": "uniform parentage act",
+    "volume": 12
+  },
+  "586C": {
+    "title": "UNIFORM RECOGNITION AND ENFORCEMENT OF CANADIAN DOMESTIC-VIOLENCE PROTECTION ORDERS ACT",
+    "volume": 12
+  },
+  "587A": {
+    "title": "CHILD PROTECTIVE ACT",
+    "volume": 12
+  },
+  "587D": {
+    "title": "SAFE PLACE FOR NEWBORNS",
+    "volume": 12
+  },
+  "604A": {
+    "title": "ENVIRONMENTAL COURTS",
+    "volume": 13
+  },
+  "604C": {
+    "title": "COMMUNITY OUTREACH COURT",
+    "volume": 13
+  },
+  "621C": {
+    "title": "WITNESS IMMUNITY",
+    "volume": 13
+  },
+  "624D": {
+    "title": "UNIFORM INTERSTATE DEPOSITIONS AND DISCOVERY ACT",
+    "volume": 13
+  },
+  "634D": {
+    "title": "SERVICE OF PROCESS",
+    "volume": 13
+  },
+  "634F": {
+    "title": "CITIZEN PARTICIPATION IN GOVERNMENT",
+    "volume": 13
+  },
+  "634G": {
+    "title": "HAWAII PUBLIC EXPRESSION PROTECTION ACT",
+    "volume": 13
+  },
+  "634J": {
+    "title": "VEXATIOUS LITIGANTS",
+    "volume": 13
+  },
+  "634L": {
+    "title": "ABUSIVE LITIGATION",
+    "volume": 13
+  },
+  "636C": {
+    "title": "UNIFORM ENFORCEMENT OF FOREIGN JUDGMENTS ACT",
+    "volume": 13
+  },
+  "651C": {
+    "title": "UNIFORM FRAUDULENT TRANSFER ACT",
+    "volume": 13
+  },
+  "657D": {
+    "title": "CIVIL RELIEF FOR STATE MILITARY FORCES",
+    "volume": 13
+  },
+  "658A": {
+    "title": "UNIFORM ARBITRATION ACT",
+    "volume": 13
+  },
+  "658B": {
+    "title": "UNIFORM FOREIGN-MONEY CLAIMS ACT",
+    "volume": 13
+  },
+  "658C": {
+    "title": "UNIFORM FOREIGN MONEY-JUDGMENTS",
+    "volume": 13
+  },
+  "658D": {
+    "title": "INTERNATIONAL ARBITRATION",
+    "volume": 13
+  },
+  "658F": {
+    "title": "UNIFORM FOREIGN-COUNTRY MONEY",
+    "volume": 13
+  },
+  "658G": {
+    "title": "HAWAII UNIFORM COLLABORATIVE LAW ACT",
+    "volume": 13
+  },
+  "658H": {
+    "title": "UNIFORM MEDIATION ACT",
+    "volume": 13
+  },
+  "658J": {
+    "title": "UNIFORM FAMILY LAW ARBITRATION ACT",
+    "volume": 13
+  },
+  "661B": {
+    "title": "REDRESS FOR WRONGFUL CONVICTION AND IMPRISONMENT",
+    "volume": 13
+  },
+  "662D": {
+    "title": "VOLUNTEER SERVICE; IMMUNITY",
+    "volume": 13
+  },
+  "662E": {
+    "title": "CLAIMS AGAINST GOVERNMENT ARISING OUT OF",
+    "volume": 13
+  },
+  "663A": {
+    "title": "CIVIL LIABILITY FOR SHOPLIFTING",
+    "volume": 13
+  },
+  "663B": {
+    "title": "EQUINE ACTIVITIES",
+    "volume": 13
+  },
+  "663D": {
+    "title": "DRUG DEALER LIABILITY",
+    "volume": 13
+  },
+  "663E": {
+    "title": "DRUG DEALER LIABILITY",
+    "volume": 13
+  },
+  "663J": {
+    "title": "LIABILITY FOR COERCION INTO SEX TRAFFICKING AND SEXUAL EXPLOITATION",
+    "volume": 13
+  },
+  "663M": {
+    "title": "YEAR 2000 ERRORS IN COMPUTER-BASED SYSTEMS",
+    "volume": 13
+  },
+  "668A": {
+    "title": "uniform partition of heirs property act",
+    "volume": 13
+  },
+  "671D": {
+    "title": "HEALTH CARE PEER REVIEW",
+    "volume": 13
+  },
+  "672B": {
+    "title": "DESIGN CLAIM CONCILIATION PANEL",
+    "volume": 13
+  },
+  "672E": {
+    "title": "CONTRACTOR REPAIR ACT",
+    "volume": 13
+  },
+  "708A": {
+    "title": "MONEY LAUNDERING",
+    "volume": 14
+  },
+  "712A": {
+    "title": "FORFEITURE",
+    "volume": 14
+  },
+  "801D": {
+    "title": "RIGHTS OF VICTIMS AND WITNESSES IN",
+    "volume": 14
+  },
+  "801G": {
+    "title": "ADDRESS CONFIDENTIALITY PROGRAM",
+    "volume": 14
+  },
+  "801K": {
+    "title": "EYEWITNESS IDENTIFICATION PROCEDURES",
+    "volume": 14
+  },
+  "802E": {
+    "title": "COURT ADVISEMENT OF ALIENS ENTERING GUILTY PLEA",
+    "volume": 14
+  },
+  "806D": {
+    "title": "CRIMINAL PROCESS RECORDS",
+    "volume": 14
+  },
+  "844D": {
+    "title": "FORENSIC IDENTIFICATION",
+    "volume": 14
+  },
+  "844G": {
+    "title": "SEXUAL ASSAULT EVIDENCE COLLECTION KITS",
+    "volume": 14
+  },
+  "846C": {
+    "title": "NATIONAL CRIME PREVENTION AND PRIVACY COMPACT",
+    "volume": 14
+  },
+  "846D": {
+    "title": "JUVENILE JUSTICE INFORMATION SYSTEM",
+    "volume": 14
+  },
+  "846E": {
+    "title": "REGISTRATION OF SEX OFFENDERS AND OTHER COVERED",
+    "volume": 14
+  },
+  "846F": {
+    "title": "INTERNET CRIMES AGAINST CHILDREN",
+    "volume": 14
+  }
+}

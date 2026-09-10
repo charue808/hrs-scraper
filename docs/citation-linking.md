@@ -1,7 +1,7 @@
 # Citation Linking
 
 **Last updated**: 2026-09-09
-**Status**: design, not yet implemented
+**Status**: implemented — `src/citations.ts`, `src/resolver.ts`. Rendering is a preview only.
 
 The primary outcome of this project: the HRS as published is a set of flat
 `.htm` files in which every reference to another statute is dead text. Turning
@@ -15,21 +15,22 @@ matcher so the matcher can be tested against it.
 
 ## Evidence base
 
-Measured against the 757-section sample in `data/parsed` (357 `docType: "hrs"`,
-371,668 chars of body text). **This sample is Volume 1 heavy** — it over-weights
-chapters 1–42 and the six non-HRS directories, and contains zero examples of the
-colon/article form (`§431:1-100`) that covers ~3,000 files elsewhere in the
-corpus. Counts below are therefore indicative of *shape*, not of frequency
-across the full corpus. Re-run the profiling after the full scrape before
-treating any count as final.
+**Re-profiled 2026-09-09 against the full corpus**, replacing the earlier
+757-section sample. Every count below is measured, not estimated.
 
-**Update 2026-09-09** — the full scrape is complete: 23,373 sections in
-`data/parsed`, including **3,129 colon/article numbers**. The blind spot noted
-below is now measurable. Every count in this document still comes from the old
-757-section sample and none of them have been revisited yet; that re-profiling
-is step 4 in `progress.md`.
+| | |
+|---|---|
+| Sections | 23,373 |
+| Body text | 32,222,208 chars (87× the old sample) |
+| Annotation text | 5,301,692 chars |
+| Cross References entries | 1,805 |
+| Resolver index | 22,972 HRS section numbers + 1,114 chapters |
 
----
+The chapter index comes from `manifest.json`, **not** from the parsed sections.
+293 chapters are index-only directories whose sections were all repealed: the
+chapter page still exists and is still a valid link target, but no section file
+carries that chapter number. Building the index from parsed sections silently
+loses all 293 and makes those citations look unresolvable.
 
 ## The core design decision: resolve, don't match
 
@@ -72,55 +73,60 @@ identity/text split `source-anomalies.md` applies to headings.
 
 ## Forms observed
 
-### HRS section references
+Keyword volume across body text:
 
-| Form | Example | Notes |
-|---|---|---|
-| `section C-S` | `section 26-34` | the common case |
-| `section C-S` with letter chapter | `section 6E-43`, `section 10H-4` | chapter carries a letter suffix |
-| decimal | `section 441-5.5`, `section 11-15.3` | see period hazard below |
-| subsection | `section 11-17(a)`, `section 231-3(b)` | target is the section; `(a)` is not separately addressable |
-| elided list | `sections 92-3, 92-7, and 92-9` | items 2..n have no keyword |
-| conjunction | `sections 11-25 and 11-26` | two separate links |
-| range | `sections 11-1 to 11-9` | see open questions |
-| `§` symbol | `§6E-8`, `§§14` | 36 occurrences in sample; `§§` marks a plural |
-| chapter | `chapter 25`, `chapter 91`, `chapter 431K` | resolves to a chapter index page |
-| colon/article | `§431:1-100` | **absent from this sample**; ~3,000 files corpus-wide |
+| Form | Count |
+|---|---|
+| `section N…` | 16,503 |
+| `sections N…` (plural, opens a list) | 1,506 |
+| `chapter(s) N` | 6,085 |
+| `§` / `§§` | 2,803 |
+| colon/article form (`431:10A-104`) | 3,425 |
+| `this section` / `chapter` / `part` / `subsection` | 27,685 |
+
+The self-reference count is the single largest category in the corpus and is
+excluded for free by requiring a digit after the keyword.
+
+Forms that must be excluded rather than resolved:
+
+| Form | Count |
+|---|---|
+| `of the …Act` | 529 |
+| `United States Code` / `U.S.C.` | 813 |
+| `C.F.R.` / Code of Federal Regulations | 366 |
+| `Public Law` | 151 |
 
 ### Cross References annotations
 
-Already extracted as a separate field, and denser in citations than the body —
-41 entries in the sample, nearly all ending in one:
+1,805 entries, of which **1,038 (58%) contain at least one citation**. The
+earlier sample suggested "nearly all"; at full scale it is closer to half, and
+the rest are prose pointers with no number.
 
-```
-Taking a monk seal prohibited, see §195D-4.5.
-Reapportionment, see chapter 25.
-```
-
-These are the highest-value, lowest-risk linking target: short, uniform, and
-almost pure citation. Worth doing first as a proving ground for the resolver.
-
----
+They remain the best proving ground: 1,781 candidates resolve at **95.7%** with
+only 6 unresolved (0.34%) — the cleanest ratio anywhere in the corpus.
 
 ## Hazards
 
-Each of these is a real case from the sample, and each one breaks a naive
+Each of these is a real case from the corpus, and each one breaks a naive
 pattern.
 
-### 1. The period is ambiguous — and it is close to a coin flip
+### 1. The period is ambiguous — 2:1, not a coin flip
 
-This is the single most dangerous case. `section 11-97. A person who...` ends a
+This is still the most dangerous case. `section 11-97. A person who...` ends a
 sentence. `section 6E-43.6` is a decimal section number. The character is
 identical.
 
-Measured in the sample, on the pattern `section \d+[A-Z]?-\d+[A-Z]?\.`:
+Measured across the **full corpus**, on the pattern `section \d+[A-Z]?-\d+[A-Z]?\.`:
 
-| | count |
-|---|---|
-| period is sentence-end | 34 |
-| period is a decimal point | 29 |
+| | count | share |
+|---|---|---|
+| period is sentence-end | 2,606 | 65.4% |
+| period is a decimal point | 1,381 | 34.6% |
 
-**A matcher that guesses either way is wrong roughly half the time.**
+The old sample read 34 / 29 and this document called it "near a coin flip." At
+scale it is closer to 2:1 — the sample over-weighted decimals. **The rule does
+not change**: a matcher that always consumes the period is wrong a third of the
+time, and one that never consumes it is wrong two thirds of the time.
 
 Rule: consume `.` into the number **only when the next character is a digit**.
 This also handles the compound case correctly — in `section 6E-43.6.` the first
@@ -143,28 +149,51 @@ A bare number with no chapter-section hyphen, followed by `of the <Proper Noun>
 Act`, is an external citation. Linking `section 203` to HRS chapter 203 would be
 a confident, wrong, legally misleading link.
 
-The trailing context has to be inspected before emitting. The two guards that
-cover the observed cases:
+**The bare-number rule is now proven, not assumed.** Every one of the 22,972 HRS
+section numbers contains a hyphen — zero exceptions. So "a bare number is not an
+HRS section reference" is a property of the corpus, not a heuristic. 4,903 body
+candidates are rejected on that rule alone.
 
-- a bare number (no `C-S` hyphen structure) is **not** an HRS section reference
-  by default — HRS citations are always chapter-section
-- an immediately following `of the …Act` / `of the Act of <date>` suppresses the
-  candidate regardless of shape
+**The danger is concentrated in `chapter N`, not in `section C-S`.** Measured
+against foreign-law markers immediately adjacent to the citation:
 
-Related federal forms present in the sample and to be excluded: `Public Law`,
-`United States Code` / `U.S.C.`, `C.F.R.`, `Title 40 United States Code 187`.
+| | candidates | foreign-adjacent |
+|---|---|---|
+| `section C-S` | 16,794 | 1 (0.01%) |
+| `chapter N` | 6,160 | 38 (0.62%) |
+
+And the single section hit is a false alarm: `section 490:1-201 of the Uniform
+Commercial Code` is correct, because HRS chapter 490 *is* Hawaii's UCC. So the
+chapter-section shape is effectively collision-free with federal citation
+numbering, while a bare chapter number is not:
+
+```
+title 12 United States Code chapter 53, subchapter V
+chapter 11 of the Internal Revenue Code
+subchapters I and II of Chapter 37 of Title 38 of the United States Code
+Social Security Act (August 14, 1935, Chapter 531, 49 Stat. 620)
+```
+
+All 38 are `chapter N` adjacent to a named foreign code. The guard has to look
+**both directions** — `<foreign code> chapter N` and `chapter N of <foreign
+code>` are both common.
+
+Related federal forms to exclude: `Public Law` (151), `United States Code` /
+`U.S.C.` (813), `C.F.R.` (366).
 
 Some of these deserve links *eventually* — HHCA §203 is in this corpus, under
 `06-HHCA` — but only via a deliberate cross-document mapping, never by falling
-through to the HRS namespace.
+through to the HRS namespace. **149 non-HRS section numbers are bare** (`2`,
+`5`, `215`) and **89 collide outright** with HRS numbers (`1-2` is both HRS §1-2
+and CONST §1-2), so the two namespaces must stay separate in the index. Merging
+them is how `section 2` acquires a confident link to the Admission Act.
 
 ### 3. Self-references are not citations
 
 `this section`, `this chapter`, `this part` are by far the most common thing
-following the keyword (28 of the sample's `section <lowercase-word>` hits are
-`section shall`, i.e. the tail of "this section shall"). They must not be
-linked, and they are excluded for free by requiring a digit to follow the
-keyword.
+following the keyword — **27,685 occurrences**, more than every real citation in
+the corpus combined. They must not be linked, and they are excluded for free by
+requiring a digit to follow the keyword.
 
 Whether "this section" should link to the current page's own anchor is an open
 question — see below. Default: no.
@@ -180,19 +209,112 @@ Care needed: the list ends at the first token that is not a citation, and
 `sections 11-26 and 11-51, and the proceedings shall be had` shows that a comma
 followed by `and` does *not* always continue the list.
 
-### 5. Non-breaking hyphens
+### 5. Non-breaking hyphens — already handled upstream
 
-The corpus writes section numbers with U+2011 (non-breaking hyphen) throughout,
-not only in headings. `parser.ts` already normalizes hyphen variants for heading
-matching; the citation detector must use the same normalization, and must not
-normalize U+2013 (en dash), which is prose punctuation.
+The corpus writes section numbers with U+2011 throughout. `parser.ts` normalizes
+hyphen variants in `clean()` before any text reaches `bodyText`, and a scan of
+the full corpus confirms **zero** remaining U+2010/2011/2012 in parsed bodies.
+The detector inherits this for free. U+2013 (en dash) is prose punctuation and
+is correctly left alone.
 
 ### 6. Article-form numbers use a colon
 
-`§431:1-100` — the colon separates chapter from article. Absent from this
-sample but present in ~3,000 files. A pattern built only against Volume 1 will
-miss all of them, which is the most likely way for this work to look finished
-while being 12% wrong.
+`§431:1-100` — the colon separates chapter from article. This was the sample's
+blind spot; the full corpus has **3,425 occurrences in body text** across 3,129
+sections. A pattern built only against Volume 1 misses all of them, which was
+the most likely way for this work to look finished while being 12% wrong.
+
+### 7. Hawaii Administrative Rules look exactly like HRS sections
+
+New in the full-corpus profile, and the most dangerous find. HAR citations use a
+**title-chapter-section** form whose first two components are character-identical
+to an HRS chapter-section number:
+
+```
+This section and §13-300-51, Hawaii administrative rules (HAR)
+violated Hawaii administrative rule §12-46-108
+the validity of §3-122-66 (repealed), Hawaii administrative rules
+```
+
+A detector anchored on the HRS shape matches `13-300` and silently drops the
+trailing `-51`, producing a confident link to an HRS section that has nothing to
+do with the rule being cited.
+
+**The third component is the tell.** A trailing `-NN` after an otherwise valid
+HRS-shaped number means the citation is not an HRS section. 51 occurrences in
+annotations (48 of them within a window of an explicit "Hawaii administrative
+rule" marker) and 5 in body text — small, but each one is a wrong link in a
+legal document, which is the failure this design exists to prevent.
+
+### 8. Annotations cite superseded numbering
+
+`H.R.S. §711-77` in the Penal Code commentary refers to the **pre-1972** code,
+not to the current §711-77. 164 citations in annotations carry an `H.R.S.` or
+`R.L.H.` prefix, which in that context marks the *former* compilation rather
+than the current one.
+
+Resolving these against today's index produces a link that is confidently wrong
+in the most misleading possible way: it points at a real section that says
+something unrelated. The `H.R.S.`/`R.L.H.` prefix inside an annotation should
+suppress the candidate.
+
+---
+
+---
+
+## Results
+
+`bun run profile-citations` runs the detector over the corpus and reports the
+quality metric. Rejections are reported **by reason**, not as one total: "bare
+number" is the detector working correctly, "unresolved" is its to-do list, and
+collapsing them hides whether the number is falling for the right reason.
+
+### Body text
+
+| | count | share |
+|---|---|---|
+| Candidates detected | 30,850 | |
+| **Linked** | 25,555 | 82.84% |
+| Rejected: bare number, no `C-S` shape | 5,068 | 16.4% |
+| Rejected: foreign law (hazard 2) | 54 | 0.18% |
+| Rejected: administrative rules (hazard 7) | 11 | 0.04% |
+| Rejected: superseded numbering (hazard 8) | 4 | 0.01% |
+| **Unresolved** | 158 | 0.51% |
+
+158 unresolved across 32 million characters. Triaged into the three buckets:
+
+- **Genuine external references** — federal citations that look HRS-shaped:
+  `1395i-3` and `1320a-7` (Social Security Act), `9601-9675` (CERCLA),
+  `1400Z-1`, `80a-1`. These are correct rejections.
+- **References to repealed sections** — `291-4.4`, `291-4.5` ("as that section
+  was in effect on December 31…"), `445-222`, `57-43`. The statute is
+  deliberately pointing at text that no longer exists. Also correct rejections,
+  and arguably worth surfacing to the reader as such rather than silently
+  leaving plain.
+- **Detector gaps** — the smallest bucket, and the one that is actually a bug.
+
+The headline: **the residual error rate is dominated by things that *should not*
+be linked**, which is what the resolve-don't-match design was for.
+
+### Annotations
+
+Much noisier than body text, and they are not one population:
+
+| Block | Candidates | Linked | Unresolved |
+|---|---|---|---|
+| Cross References | 2,192 | 94.98% | 0.55% |
+| Attorney General Opinions | 173 | 68.79% | 1.16% |
+| Case Notes | 3,439 | 79.01% | 3.72% |
+| Commentary | 1,734 | 72.26% | 6.06% |
+
+**Hazards 7 and 8 are what make Case Notes and Commentary usable.** Before those
+guards, Case Notes ran at 7.24% unresolved and Commentary at 10.92%; the two
+guards roughly halve both, and — more importantly — the citations they remove
+would otherwise have become *wrong links* rather than unresolved ones. Case Notes
+alone carries 55 administrative-rule citations and 81 superseded ones.
+
+`crossReferences` remains the cleanest population at **95%** — confirmation that
+it was the right proving ground.
 
 ---
 
@@ -240,8 +362,17 @@ with links.
 4. **Cross-document targets.** HHCA, the constitutions and the Organic Act are
    in the corpus but numbered as prefixed identifiers, and they are cited from
    HRS text. Linking them requires the proper-citation work already noted as a
-   gap.
-5. ~~**Where does rendering live?**~~ **Decided 2026-09-09**: a Bun build step
+   gap. The profile sharpened the risk: **89 non-HRS numbers collide outright
+   with HRS numbers** and 149 are bare. Until that mapping exists, the two
+   namespaces stay separate and non-HRS citations stay plain — the failure mode
+   is `section 2` acquiring a confident link to the Admission Act.
+5. **Repealed-section references.** A visible share of the unresolved pile is
+   the statute deliberately pointing at text that no longer exists —
+   `section 291-4.4 as that section was in effect on December 31, 2001`. There
+   is nothing to link, but leaving it as undifferentiated plain text loses the
+   fact that we *know* why. Worth considering a marked-but-unlinked treatment,
+   which interacts with the editorial-note channel in `source-anomalies.md`.
+6. ~~**Where does rendering live?**~~ **Decided 2026-09-09**: a Bun build step
    reads `data/parsed`, resolves citations, and writes static HTML. Pages are
    rendered from the structured fields, never from `bodyHtml` — that is what
    gives us control over the markup for the accessibility rules above. See
@@ -251,9 +382,15 @@ with links.
 
 ## Suggested order
 
-1. Profile the **full** corpus once the scrape completes; revisit every count here.
-2. Build the resolver + known-section index off the manifest.
-3. Run detection over Cross References annotations first — short, uniform,
-   high signal, easy to eyeball.
-4. Extend to body text, tracking the unresolved-candidate count as the metric.
-5. Decide the storage question (open question 2) before emitting any markup.
+1. ~~Profile the full corpus~~ — done 2026-09-09; every count above is measured.
+2. Build the resolver + known-section index off the manifest. Two things the
+   profile settled: chapters must come from the manifest (293 are index-only),
+   and the HRS and non-HRS namespaces must stay separate (89 numbers collide).
+3. Run detection over `crossReferences` first — 95.7% resolve, 1,805 entries,
+   short and uniform enough to eyeball the whole output.
+4. Extend to body text. The prototype baseline to beat is 82.9% resolved / 0.6%
+   unresolved, with the residual dominated by correct rejections.
+5. Only then annotations, and only with hazards 7 and 8 implemented — Case Notes
+   and Commentary carry HAR citations and superseded numbering that will
+   otherwise produce confidently wrong links.
+6. Decide the storage question (open question 2) before emitting any markup.

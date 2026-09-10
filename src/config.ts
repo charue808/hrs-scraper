@@ -234,5 +234,7 @@ export const PARSED_DIR = `${DATA_DIR}/parsed`;
 export const HTML_DIR = `${DATA_DIR}/html`;
 /** Reviewed record of errors in the published source. See docs/source-anomalies.md. */
 export const CORRECTIONS_PATH = `${DATA_DIR}/corrections.json`;
+/** Chapter number -> title, built from the chapter index pages by `bun run chapters`. */
+export const CHAPTERS_PATH = `${DATA_DIR}/chapters.json`;
 
 export const DATABASE_URL = process.env.DATABASE_URL;

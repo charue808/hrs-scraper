@@ -2,13 +2,15 @@
 
 **Last updated**: 2026-09-09
 
-## Status: Corpus scraped, parsed clean, corrections applied; ready for the baseline commit
+## Status: Citations resolve and render; ready to widen the renderer
 
-The full scrape completed with zero failures. QA surfaced five parser defects
-and one genuine error in the published source; all six are resolved and the
-corpus re-parsed — 23,373 sections, no duplicate section numbers, 69 tests.
+The corpus is scraped, parsed, committed, and citation-linked. The detector runs
+at 82.84% linked / 0.51% unresolved over body text, `crossReferences` at 95%,
+and a preview renderer turns a chapter into static HTML with the links live.
+106 tests.
 
-Next: commit the baseline corpus, then re-profile citations against it.
+Next: the static site build proper — all chapters, chapter index pages, then
+Pagefind.
 
 The destination changed on 2026-09-09: the product is a **static site**, not a
 Postgres database. See the session note below and Storage & Delivery in
@@ -16,6 +18,108 @@ Postgres database. See the session note below and Storage & Delivery in
 
 This document records what changed and why. `project-plan.md` is the design
 reference for the system as built.
+
+## 2026-09-09 — Citation linking implemented; preview renderer
+
+Built the slice the profile was for: resolver, detector, and a renderer crude
+enough to throw away but real enough to review by eye.
+
+- **`src/resolver.ts`** — the known-section index. Chapters come from the
+  manifest (293 are index-only), the HRS and non-HRS namespaces stay separate
+  (89 numbers collide), and `data/corrections.json` supplies aliases so a
+  citation to a number the source got wrong still resolves.
+- **`src/citations.ts`** — detect, resolve, emit. Every guard maps to a numbered
+  hazard in `citation-linking.md`. Rejections carry a reason, because "bare
+  number" and "unresolved" mean opposite things.
+- **`src/render.ts`** — one chapter to static HTML. No JavaScript, link text is
+  the citation itself, `aria-label` carries the target's title, unresolved
+  citations stay plain text.
+- **`bun run profile-citations`** — the quality metric, reported by reject reason.
+
+Result: **82.84% linked, 0.51% unresolved** over 30,850 body candidates.
+`crossReferences` 95%. Case Notes and Commentary improved from 7.24%/10.92%
+unresolved to 3.72%/6.06% once hazards 7 and 8 were implemented — and the
+citations those guards remove would otherwise have become wrong links.
+
+### One rule loosened, deliberately
+
+The foreign-law guard now applies to **chapter references only**. Measured: of
+16,794 chapter-section references exactly one sat next to a foreign-law marker,
+and it was a *correct* citation — `section 490:1-201 of the Uniform Commercial
+Code`, because HRS chapter 490 is Hawaii's UCC. Hawaii adopts uniform codes under
+their own names, so a name-based guard misfires on them; a hyphenated section
+number is already validated by the index, which is the stronger check.
+
+### Four defects the renderer surfaced
+
+Building the renderer early paid for itself immediately — none of these were
+visible in the counts.
+
+1. **100 titles swallowed their opening subsection marker.** Word writes
+   `<b>§26-12 Department of education. </b>(a)<b> </b>The department...`, and
+   `(a)` is short enough to look like one of the connectors that hold a split
+   heading together. The title gained `. (a)` *and the body lost the marker
+   entirely*. Two sections split it further into `(`, `a`, `)` runs, which no
+   per-run check can see, so it is now stripped from the assembled heading.
+2. **Chapter titles existed nowhere in the static pipeline.** They are parsed
+   from the index pages but were only ever written to Postgres. With the database
+   demoted to a side tool, nothing labelled a chapter or filled the accessible
+   name of a `chapter 91` link. `bun run chapters` now builds
+   `data/chapters.json` from the cached index HTML.
+3. **252 chapters had no title** because their banner is bracketed —
+   `[CHAPTER 30]`, and the variant `[CHAPTER 56 PUBLIC OFF-STREET PARKING
+   FACILITIES]` with the title inside the bracket. The same uncodified-bracket
+   convention as section headings.
+4. **38 chapters were titled `OLD` or `NEW`.** A superseded banner precedes the
+   live one — `CHAPTER 14 [OLD]` … `CHAPTER 14 [NEW]` — exactly as `[OLD]` part
+   banners precede section headings, and the first match won. Titles that begin
+   with a digit ("911 SERVICES", "340B Drug Discount Program") were also being
+   rejected by a guard meant to skip the section listing.
+
+Six chapters remain untitled: three reserved ranges
+(`[CHAPTERS 807 to 830 RESERVED.]`) and the three non-HRS directories. All
+correct.
+
+## 2026-09-09 — Citations re-profiled against the full corpus
+
+`citation-linking.md` was written against a 757-section, Volume-1-heavy sample.
+Re-profiled against all 23,373 sections (32.2M chars of body text, 87× the
+sample). Every count in that document is now measured. What changed:
+
+- **The period hazard is 2:1, not a coin flip.** 2,606 sentence-ends against
+  1,381 decimals (65/35); the sample read 34/29 and over-weighted decimals. The
+  rule is unchanged — consume `.` only when a digit follows — but the framing was
+  wrong.
+- **The bare-number rule is now proven.** All 22,972 HRS section numbers contain
+  a hyphen, zero exceptions. "A bare number is not an HRS section reference" is a
+  property of the corpus rather than a heuristic.
+- **The federal-collision danger is in `chapter N`, not `section C-S`.** Of
+  16,794 section references, 1 sits next to a foreign-law marker — and that one
+  (`section 490:1-201 of the Uniform Commercial Code`) is correct, since HRS
+  chapter 490 *is* Hawaii's UCC. Of 6,160 chapter references, 38 are genuinely
+  foreign (`chapter 11 of the Internal Revenue Code`).
+- **Two new hazards, neither in the original spec.** Hawaii Administrative Rules
+  use a title-chapter-section form character-identical to an HRS number in its
+  first two components (`§13-300-51`), so a detector drops the third component
+  and links confidently to the wrong thing; and annotations cite superseded
+  numbering (`H.R.S. §711-77` means the pre-1972 code), which resolves against
+  today's index to a real section that says something unrelated.
+- **293 chapters are index-only directories** whose sections were all repealed.
+  The chapter page is still a valid link target, so the resolver's chapter index
+  must come from `manifest.json`, not from parsed sections — building it from
+  sections loses all 293.
+- **89 non-HRS section numbers collide with HRS numbers** and 149 are bare, so
+  the two namespaces have to stay separate in the index.
+
+A throwaway prototype detector built to these rules resolves **82.9%** of 30,850
+body-text candidates with **0.6% unresolved**, and the residual is dominated by
+correct rejections (federal citations, references to repealed sections) rather
+than by grammar gaps. Annotations are far noisier — Case Notes 7.2% and
+Commentary 10.9% unresolved — which is precisely where the two new hazards live.
+`crossReferences` resolves at 95.7%, confirming it as the proving ground.
+
+No matcher was built this session; the prototype exists only to size the problem
+and is not committed.
 
 ## 2026-09-09 — Full scrape complete; QA findings
 
@@ -368,18 +472,12 @@ Three cases that only appeared once real pages went through:
 ## Next Steps
 
 1. ~~**Full scrape**~~ — done 2026-09-09, 0 failures. See above.
-2. **Fix the four defects and re-parse from local HTML**, before committing the
-   corpus. Three of them change section numbers, and the baseline commit is what
-   every future amendment diff is measured against — number churn in that diff
-   would be indistinguishable from a real legislative change. Add
-   `sourceAnomalies` to `ParsedSection` in the same pass, for the same reason:
-   an always-present field costs nothing to add while the corpus is uncommitted
-   and rewrites all 23,373 files if added later.
-3. **Commit the corpus** — the baseline snapshot every future re-scrape diffs
-   against.
-4. **Re-profile citations against the full corpus.** Every count in
-   `citation-linking.md` comes from a Volume-1-heavy sample. Revisit before
-   building the matcher.
+2. ~~**Fix the defects and re-parse from local HTML**~~ — done; five parser
+   defects fixed, corrections mechanism added, 0 duplicate section numbers.
+3. ~~**Commit the corpus**~~ — done, commits `49658a3` (code) and `d6c44db`
+   (23,373 sections). This is the baseline every future re-scrape diffs against.
+4. ~~**Re-profile citations against the full corpus.**~~ — done 2026-09-09; see
+   the session note above and the measured counts in `citation-linking.md`.
 5. **Citation linking** — the primary outcome. Suggested order is in
    `citation-linking.md`: resolver first, Cross References annotations as the
    proving ground, then body text.

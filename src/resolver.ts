@@ -1,0 +1,131 @@
+/**
+ * The known-section index, and resolution against it.
+ *
+ * This is the stage that separates this implementation from a regex one: every
+ * candidate citation is looked up against the real inventory before it becomes
+ * a link. What resolves is linked; what does not stays plain text and is
+ * counted. See `docs/citation-linking.md`.
+ */
+import { readdirSync } from "node:fs";
+import {
+  CHAPTERS_PATH,
+  MANIFEST_PATH,
+  PARSED_DIR,
+  type Manifest,
+  type ParsedSection,
+} from "./config";
+import { loadCorrections, sectionNumberAliases } from "./corrections";
+
+export interface Target {
+  /** Canonical section number, e.g. "§26-34", or chapter number, e.g. "91". */
+  number: string;
+  kind: "section" | "chapter";
+  title: string;
+  href: string;
+}
+
+export interface Index {
+  sections: Map<string, Target>;
+  chapters: Map<string, Target>;
+  /** `observed -> corrected`, from the reviewed corrections ledger. */
+  aliases: Map<string, string>;
+}
+
+/**
+ * URL slug for a section number.
+ *
+ * The colon of the article form becomes a hyphen (`431:1-100` -> `431-1-100`).
+ * That cannot collide with an ordinary section number: those are chapter-section
+ * with no hyphen inside either component, so a three-component slug is only ever
+ * produced by the article form. `parser.test.ts` asserts this.
+ */
+export function sectionSlug(sectionNumber: string): string {
+  return sectionNumber
+    .replace(/^§/, "")
+    .replace(/^([A-Z]+) §/, "$1-")
+    .replace(/:/g, "-")
+    .replace(/ \[OLD\]$/, "-old")
+    .replace(/\s+/g, "");
+}
+
+export function sectionHref(sectionNumber: string): string {
+  return `/hrs/${sectionSlug(sectionNumber)}`;
+}
+
+export function chapterHref(chapterNumber: string): string {
+  return `/hrs/chapter/${chapterNumber}`;
+}
+
+/** The bare number a citation in running text would use for this section. */
+function citationKey(sectionNumber: string): string {
+  return sectionNumber.replace(/^§/, "").replace(/ \[OLD\]$/, "");
+}
+
+/**
+ * Build the index.
+ *
+ * Two things the full-corpus profile settled:
+ *
+ * - **Chapters come from the manifest, not from parsed sections.** 293 chapters
+ *   are index-only directories whose sections were all repealed. Their chapter
+ *   page still exists and is still a valid link target; building the chapter
+ *   index from parsed sections loses every one of them.
+ * - **The HRS and non-HRS namespaces stay separate.** 89 non-HRS numbers collide
+ *   outright with HRS numbers (`1-2` is both HRS §1-2 and CONST §1-2) and 149
+ *   are bare. Merging them is how `section 2` acquires a confident link to the
+ *   Admission Act. Non-HRS documents are cited with explicit context and are not
+ *   resolvable from an HRS-shaped citation, so they are left out entirely until
+ *   the proper-citation mapping exists.
+ */
+export async function buildIndex(): Promise<Index> {
+  const sections = new Map<string, Target>();
+  const chapters = new Map<string, Target>();
+
+  for (const file of readdirSync(PARSED_DIR)) {
+    const section: ParsedSection = await Bun.file(`${PARSED_DIR}/${file}`).json();
+    if (section.docType !== "hrs") continue;
+    sections.set(citationKey(section.sectionNumber), {
+      number: section.sectionNumber,
+      kind: "section",
+      title: section.title,
+      href: sectionHref(section.sectionNumber),
+    });
+  }
+
+  // Chapter titles live on the index pages and are built into data/chapters.json
+  // by `bun run chapters`. The manifest carries no titles — it is an inventory.
+  const titlesFile = Bun.file(CHAPTERS_PATH);
+  const titles: Record<string, { title: string }> = (await titlesFile.exists())
+    ? await titlesFile.json()
+    : {};
+
+  const manifest: Manifest = await Bun.file(MANIFEST_PATH).json();
+  for (const volume of manifest.volumes) {
+    for (const chapter of volume.chapters) {
+      if (!/^\d/.test(chapter.number)) continue; // skip 01-USCON, 05-CONST, ...
+      chapters.set(chapter.number, {
+        number: chapter.number,
+        kind: "chapter",
+        title: titles[chapter.number]?.title ?? chapter.title,
+        href: chapterHref(chapter.number),
+      });
+    }
+  }
+
+  return { sections, chapters, aliases: sectionNumberAliases(await loadCorrections()) };
+}
+
+/**
+ * Look one candidate up. Returns null when nothing in the corpus matches, which
+ * is the signal to leave the text alone and count it.
+ */
+export function resolve(index: Index, number: string, kind: "section" | "chapter"): Target | null {
+  if (kind === "chapter") return index.chapters.get(number) ?? null;
+  const direct = index.sections.get(number);
+  if (direct) return direct;
+
+  // A citation to a number the source got wrong resolves through the reviewed
+  // ledger rather than falling into the unresolved pile. See source-anomalies.md.
+  const alias = index.aliases.get(`§${number}`);
+  return alias ? index.sections.get(citationKey(alias)) ?? null : null;
+}
