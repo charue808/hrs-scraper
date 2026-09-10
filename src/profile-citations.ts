@@ -12,7 +12,7 @@
 import { parseArgs } from "node:util";
 import { readdirSync } from "node:fs";
 import { PARSED_DIR, type ParsedSection } from "./config";
-import { detect, tally, type Citation } from "./citations";
+import { detect, expandRange, tally, type Citation } from "./citations";
 import { buildIndex } from "./resolver";
 
 const { values } = parseArgs({
@@ -32,6 +32,7 @@ const body: Citation[] = [];
 const xrefs: Citation[] = [];
 const annotations = new Map<string, Citation[]>();
 const unresolved = new Map<string, { n: number; sample: string }>();
+let rangeEdges = 0;
 
 const noteBucket = (heading: string): string =>
   /^case notes?$/i.test(heading) ? "Case Notes"
@@ -45,7 +46,9 @@ for (const file of readdirSync(PARSED_DIR)) {
   const section: ParsedSection = await Bun.file(`${PARSED_DIR}/${file}`).json();
 
   const record = (text: string, into: Citation[], annotation: boolean) => {
-    for (const citation of detect(text, index, { annotation })) {
+    const found = detect(text, index, { annotation });
+    rangeEdges += expandRange(found, index).length;
+    for (const citation of found) {
       into.push(citation);
       if (citation.reason !== "unresolved") continue;
       const hit = unresolved.get(citation.number);
@@ -96,6 +99,10 @@ report({ name: "crossReferences (field)", citations: xrefs });
 for (const [name, citations] of [...annotations].sort((a, b) => b[1].length - a[1].length)) {
   report({ name, citations });
 }
+
+console.log(
+  `\ngraph edges implied by ranges beyond their endpoints: ${rangeEdges.toLocaleString()}`
+);
 
 const totalUnresolved = [...unresolved.values()].reduce((sum, u) => sum + u.n, 0);
 console.log(

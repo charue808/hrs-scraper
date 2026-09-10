@@ -2,15 +2,17 @@
 
 **Last updated**: 2026-09-09
 
-## Status: Citations resolve and render; ready to widen the renderer
+## Status: Citation linking settled; ready for the site build
 
-The corpus is scraped, parsed, committed, and citation-linked. The detector runs
-at 82.84% linked / 0.51% unresolved over body text, `crossReferences` at 95%,
-and a preview renderer turns a chapter into static HTML with the links live.
-106 tests.
+All six open questions in `citation-linking.md` are closed or explicitly
+deferred. The detector runs at 82.84% linked / **0.16% unresolved** on body
+text, with `crossReferences` and Attorney General Opinions at 0.00%. 115 tests.
 
 Next: the static site build proper — all chapters, chapter index pages, then
-Pagefind.
+Pagefind. The one remaining correctness gap is cross-document targets (the 424
+non-HRS files), deliberately deferred until the site exists.
+
+
 
 The destination changed on 2026-09-09: the product is a **static site**, not a
 Postgres database. See the session note below and Storage & Delivery in
@@ -18,6 +20,51 @@ Postgres database. See the session note below and Storage & Delivery in
 
 This document records what changed and why. `project-plan.md` is the design
 reference for the system as built.
+
+## 2026-09-09 — Citation questions closed
+
+The three open questions that were still leanings are decided, and closing them
+turned up 20 wrong links.
+
+- **Ranges — endpoints in the markup, the whole span in the graph.** Rendering
+  settles itself: `sections 11-1 to 11-9` offers no text for §11-5 to attach a
+  link to, so expansion is not renderable inline. But the statute means the span,
+  and without it a section cited only inside a range looks uncited, so
+  `expandRange()` contributes 2,722 graph edges.
+- **`this section` — plain.** 27,685 occurrences; linking them would flood
+  link-list navigation and add nothing.
+- **Sections no longer in the code — marked, not linked.** 325 references point
+  at a section whose chapter still exists. Counting them as "unresolved" hid that
+  the detector was working perfectly, so they became their own bucket. Called
+  `absent-section`, not `repealed`: absence is verifiable, the reason is an
+  inference, and this project does not assert what it cannot show.
+- **Cross-document targets — deferred** until the site build is done. 306 named
+  references; the last known correctness gap.
+
+### The `Id.` back-reference — 20 wrong links
+
+Checking the residual turned up hazard 8 in a form adjacency cannot catch.
+Commentary cites in runs:
+
+```
+1. H.R.S. §703-1.  2. Id. §703-2.  3. Id. §§571-11, 571-12, 571-22.
+```
+
+`Id.` means "the same source as the previous citation", so the `H.R.S.` marker
+sits sentences away. 91 `Id. §N` citations appear in the annotations and **20
+resolved to live sections** — each a confident link to text saying something
+other than what the commentary discusses. The guard is conditional: an `Id.`
+inherits the superseded context only when the block established one earlier, so
+an ordinary back-reference still resolves.
+
+Unresolved rates after the guards:
+
+| Block | No guards | +HAR/prefix | +`Id.`/absent |
+|---|---|---|---|
+| Case Notes | 7.24% | 3.72% | **0.09%** |
+| Commentary | 10.92% | 6.06% | **1.38%** |
+| Cross References | 0.96% | 0.55% | **0.00%** |
+| Body text | 0.55% | 0.51% | **0.16%** |
 
 ## 2026-09-09 — Citation linking implemented; preview renderer
 

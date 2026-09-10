@@ -13,7 +13,18 @@ export type RejectReason =
   | "foreign-law" // adjacent to U.S.C. / IRC / a named federal Act (hazard 2)
   | "admin-rules" // a third component: Hawaii Administrative Rules (hazard 7)
   | "superseded" // H.R.S. / R.L.H. prefix: the pre-1972 code (hazard 8)
-  | "unresolved"; // shaped right, but no such section exists
+  /**
+   * The chapter exists in the corpus but the section does not — the statute is
+   * pointing at text that has been removed. Distinguished from `unresolved`
+   * because it is the detector working correctly, not a grammar gap: 325 of the
+   * 448 unresolved section references are this.
+   *
+   * Deliberately *not* called "repealed". That the section is absent from the
+   * current code is verifiable; *why* it is absent is an inference we cannot
+   * make per citation, and this project does not assert what it cannot show.
+   */
+  | "absent-section"
+  | "unresolved"; // shaped right, but nothing in the corpus matches
 
 export interface Citation {
   start: number;
@@ -71,6 +82,14 @@ const ADMIN_RULES_TAIL = /^-\d/;
 // punctuated forms it is also how the current compilation is written.
 const SUPERSEDED_BEFORE =
   /(?:H\.R\.S\.|R\.L\.H\.|\bRLH\b|Revised Laws of Hawaii)\s*(?:\d{4})?[\s,;§]*$/i;
+// `Id.` is the legal back-reference idiom: "the same source as the previous
+// citation". Commentary uses it in runs — `1. H.R.S. §703-1.  2. Id. §703-2.
+// 3. Id. §577-12.` — so the compilation marker sits sentences away and the
+// adjacency check above cannot see it. Left alone these resolve against today's
+// index and point at real sections that say something else, which is the exact
+// wrong-link failure this design exists to prevent (20 such links in the corpus).
+const ID_BEFORE = /\bId\.\s*(?:at\s+)?§*\s*$/i;
+const SUPERSEDED_ANYWHERE = /H\.R\.S\.|R\.L\.H\.|\bRLH\b|Revised Laws of Hawaii/i;
 
 export interface DetectOptions {
   /**
@@ -89,6 +108,9 @@ export interface DetectOptions {
  */
 export function detect(text: string, index: Index, options: DetectOptions = {}): Citation[] {
   const found: Citation[] = [];
+  // Where the block first names the superseded compilation, so an `Id.`
+  // back-reference can tell whether it is inheriting that context.
+  const supersededFrom = text.search(SUPERSEDED_ANYWHERE);
 
   const classify = (
     number: string,
@@ -102,6 +124,11 @@ export function detect(text: string, index: Index, options: DetectOptions = {}):
     const base = { start, end, text: text.slice(start, end), number, kind, rangeEndpoint };
 
     if (SUPERSEDED_BEFORE.test(before)) {
+      return { ...base, target: null, reason: "superseded" };
+    }
+    // An `Id.` inherits the superseded context only when the block actually
+    // established one earlier — otherwise it is an ordinary back-reference.
+    if (ID_BEFORE.test(before) && supersededFrom !== -1 && supersededFrom < start) {
       return { ...base, target: null, reason: "superseded" };
     }
     if (ADMIN_RULES_TAIL.test(after)) {
@@ -136,9 +163,15 @@ export function detect(text: string, index: Index, options: DetectOptions = {}):
     }
 
     const target = resolve(index, number, kind);
-    return target
-      ? { ...base, target, reason: null }
-      : { ...base, target: null, reason: "unresolved" };
+    if (target) return { ...base, target, reason: null };
+
+    // Chapter present, section missing: the citation is well-formed and points
+    // into the HRS, but the text it names is no longer in the code.
+    const chapter = number.split(/[-:]/)[0]!;
+    if (kind === "section" && index.chapters.has(chapter)) {
+      return { ...base, target: null, reason: "absent-section" };
+    }
+    return { ...base, target: null, reason: "unresolved" };
   };
 
   for (const match of text.matchAll(CITE)) {
@@ -196,23 +229,68 @@ export function escapeHtml(text: string): string {
  * `href="#"`.
  */
 export function linkify(text: string, index: Index, options: DetectOptions = {}): string {
-  const citations = detect(text, index, options).filter((c) => c.target);
+  const citations = detect(text, index, options).filter(
+    (c) => c.target || c.reason === "absent-section"
+  );
   let out = "";
   let at = 0;
 
   for (const citation of citations) {
     if (citation.start < at) continue; // overlapping match, keep the first
-    const label = citation.target!.title
-      ? `${citation.text}, ${citation.target!.title.replace(/\.$/, "")}`
-      : citation.text;
-    out +=
-      escapeHtml(text.slice(at, citation.start)) +
-      `<a href="${citation.target!.href}" aria-label="${escapeHtml(label)}">` +
-      `${escapeHtml(citation.text)}</a>`;
+    out += escapeHtml(text.slice(at, citation.start));
+
+    if (citation.target) {
+      const label = citation.target.title
+        ? `${citation.text}, ${citation.target.title.replace(/\.$/, "")}`
+        : citation.text;
+      out +=
+        `<a href="${citation.target.href}" aria-label="${escapeHtml(label)}">` +
+        `${escapeHtml(citation.text)}</a>`;
+    } else {
+      // Marked, not linked. The visible text is the statute's own and is not
+      // altered; the clarification is additive for assistive technology, and a
+      // non-color affordance carries it visually (WCAG 1.4.1).
+      out +=
+        `<span class="absent">${escapeHtml(citation.text)}` +
+        `<span class="sr-only"> (not in the current code)</span></span>`;
+    }
     at = citation.end;
   }
 
   return out + escapeHtml(text.slice(at));
+}
+
+/**
+ * The section numbers a range covers, beyond its two endpoints.
+ *
+ * Rendering a range links only the endpoints, because `sections 11-1 to 11-9`
+ * offers no text for §11-5 to attach to. But the statute means the whole span,
+ * so the citation graph has to carry it: without this, a section cited only
+ * inside a range looks uncited. 92.8% of the sections implied by ranges in this
+ * corpus actually exist.
+ *
+ * Only same-chapter numeric spans are expanded — a range across chapters or
+ * involving decimals is an interpretation rather than an enumeration.
+ */
+export function expandRange(citations: Citation[], index: Index): Target[] {
+  const SIMPLE = /^(\d+[A-Z]?)-(\d+)$/;
+  const extra: Target[] = [];
+
+  for (let i = 1; i < citations.length; i++) {
+    const end = citations[i]!;
+    const start = citations[i - 1]!;
+    if (!end.rangeEndpoint || end.kind !== "section") continue;
+
+    const from = start.number.match(SIMPLE);
+    const to = end.number.match(SIMPLE);
+    if (!from || !to || from[1] !== to[1]) continue;
+
+    for (let n = parseInt(from[2]!, 10) + 1; n < parseInt(to[2]!, 10); n++) {
+      const target = index.sections.get(`${from[1]}-${n}`);
+      if (target) extra.push(target);
+    }
+  }
+  return extra;
 }
 
 /** Counts for the quality metric, keyed by reject reason. */

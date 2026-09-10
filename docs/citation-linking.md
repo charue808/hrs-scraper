@@ -250,13 +250,29 @@ legal document, which is the failure this design exists to prevent.
 
 `H.R.S. §711-77` in the Penal Code commentary refers to the **pre-1972** code,
 not to the current §711-77. 164 citations in annotations carry an `H.R.S.` or
-`R.L.H.` prefix, which in that context marks the *former* compilation rather
-than the current one.
+`R.L.H.` prefix, which in that context marks the *former* compilation.
 
 Resolving these against today's index produces a link that is confidently wrong
 in the most misleading possible way: it points at a real section that says
-something unrelated. The `H.R.S.`/`R.L.H.` prefix inside an annotation should
-suppress the candidate.
+something unrelated.
+
+**The `Id.` idiom carries the marker out of adjacency range.** Commentary cites
+in runs:
+
+```
+1. H.R.S. §703-1.  2. Id. §703-2.  3. Id. §§571-11, 571-12, 571-22.
+```
+
+`Id.` means "the same source as the previous citation", so the compilation
+marker can sit several sentences away and no adjacency window will find it. 91
+`Id. §N` citations appear in the annotations and **20 of them linked to live
+sections** before this was caught — each one a confident link to text that says
+something other than what the commentary is discussing.
+
+The guard: an `Id.` citation inherits the superseded context when the same block
+established one earlier. It is deliberately conditional rather than a blanket ban
+— an `Id.` with no superseded antecedent is an ordinary back-reference and still
+resolves.
 
 ---
 
@@ -275,26 +291,48 @@ collapsing them hides whether the number is falling for the right reason.
 |---|---|---|
 | Candidates detected | 30,850 | |
 | **Linked** | 25,555 | 82.84% |
-| Rejected: bare number, no `C-S` shape | 5,068 | 16.4% |
+| Rejected: bare number, no `C-S` shape | 5,068 | 16.43% |
+| Rejected: absent from the current code | 110 | 0.36% |
 | Rejected: foreign law (hazard 2) | 54 | 0.18% |
 | Rejected: administrative rules (hazard 7) | 11 | 0.04% |
 | Rejected: superseded numbering (hazard 8) | 4 | 0.01% |
-| **Unresolved** | 158 | 0.51% |
+| **Unresolved** | 48 | 0.16% |
 
-158 unresolved across 32 million characters. Triaged into the three buckets:
+48 genuinely unresolved across 32 million characters. The rest of the former
+"unresolved" pile turned out to be the detector working correctly, and is now
+counted as such — see *Absent from the current code* below. What remains:
 
 - **Genuine external references** — federal citations that look HRS-shaped:
   `1395i-3` and `1320a-7` (Social Security Act), `9601-9675` (CERCLA),
   `1400Z-1`, `80a-1`. These are correct rejections.
-- **References to repealed sections** — `291-4.4`, `291-4.5` ("as that section
-  was in effect on December 31…"), `445-222`, `57-43`. The statute is
-  deliberately pointing at text that no longer exists. Also correct rejections,
-  and arguably worth surfacing to the reader as such rather than silently
-  leaving plain.
+- **Foreign codes** — `Cal. Evid. Code §§600-669`, and federal titles cited by
+  number.
 - **Detector gaps** — the smallest bucket, and the one that is actually a bug.
 
-The headline: **the residual error rate is dominated by things that *should not*
-be linked**, which is what the resolve-don't-match design was for.
+The headline: **the residual is dominated by things that *should not* be
+linked**, which is what the resolve-don't-match design was for.
+
+### Absent from the current code
+
+A citation can be well-formed, point unmistakably into the HRS, and still not
+resolve — because the section it names has been removed:
+
+```
+section 291-4.4 as that section was in effect on December 31, 2001
+```
+
+325 of the section references that failed to resolve are this: the **chapter
+exists, the section does not**. Counting them as "unresolved" hid the fact that
+the detector was working perfectly, so they are a bucket of their own.
+
+They are **marked but not linked**. The statute's own text is never altered; the
+clarification is additive text for assistive technology, and a dotted underline
+carries it visually (WCAG 1.4.1) rather than colour.
+
+The reason code is `absent-section`, deliberately **not** `repealed`. That the
+section is absent from the current code is verifiable; *why* it is absent is an
+inference we cannot make per citation, and this project does not assert what it
+cannot show — the same rule `source-anomalies.md` applies to corrections.
 
 ### Annotations
 
@@ -302,19 +340,37 @@ Much noisier than body text, and they are not one population:
 
 | Block | Candidates | Linked | Unresolved |
 |---|---|---|---|
-| Cross References | 2,192 | 94.98% | 0.55% |
-| Attorney General Opinions | 173 | 68.79% | 1.16% |
-| Case Notes | 3,439 | 79.01% | 3.72% |
-| Commentary | 1,734 | 72.26% | 6.06% |
+| Cross References | 2,192 | 94.94% | **0.00%** |
+| Attorney General Opinions | 173 | 68.79% | **0.00%** |
+| Case Notes | 3,439 | 78.86% | 0.09% |
+| Commentary | 1,734 | 71.45% | 1.38% |
 
-**Hazards 7 and 8 are what make Case Notes and Commentary usable.** Before those
-guards, Case Notes ran at 7.24% unresolved and Commentary at 10.92%; the two
-guards roughly halve both, and — more importantly — the citations they remove
-would otherwise have become *wrong links* rather than unresolved ones. Case Notes
-alone carries 55 administrative-rule citations and 81 superseded ones.
+**Hazards 7 and 8 are what make Case Notes and Commentary usable.** The
+progression is the argument for building the guards before linking annotations
+at all:
 
-`crossReferences` remains the cleanest population at **95%** — confirmation that
+| | Case Notes | Commentary |
+|---|---|---|
+| No guards | 7.24% | 10.92% |
+| + administrative rules, + superseded prefix | 3.72% | 6.06% |
+| + `Id.` back-reference, + absent-section | **0.09%** | **1.38%** |
+
+And the count understates it. Those guards do not merely reclassify unresolved
+candidates — they remove citations that would otherwise have become **wrong
+links**. Case Notes alone carries 55 administrative-rule citations and 111
+superseded ones; Commentary carries 151.
+
+`crossReferences` resolves at **95%** with nothing unresolved — confirmation that
 it was the right proving ground.
+
+### The citation graph
+
+Ranges contribute **2,722 edges beyond their endpoints**. Rendering links only
+the endpoints, because `sections 11-1 to 11-9` offers no text for §11-5 to
+attach to — but the statute means the whole span, so `expandRange()` supplies it
+for the graph. Without that, a section cited only inside a range would look
+uncited. Only same-chapter numeric spans are expanded; a range across chapters
+or involving decimals is an interpretation rather than an enumeration.
 
 ---
 
@@ -346,32 +402,37 @@ with links.
 
 ## Open questions
 
-1. **Ranges.** `sections 11-1 to 11-9` — link only the two endpoints, or expand
-   to every section in between? The manifest makes expansion *possible*, but the
-   expanded set is an interpretation, and a range in a statute does not always
-   correspond to the sections that currently exist. Leaning toward linking
-   endpoints only, and recording the range as structured data separately.
+1. ~~**Ranges.**~~ **Decided 2026-09-09: endpoints in the markup, the whole span
+   in the graph.** Rendering settles itself — `sections 11-1 to 11-9` offers no
+   text for §11-5 to attach a link to, so expansion is not renderable inline at
+   all. But the statute means the span, and dropping it would make a section
+   cited only inside a range look uncited, so `expandRange()` contributes those
+   2,722 edges to the graph. Same-chapter numeric spans only.
 2. ~~**Should the citation graph be stored?**~~ **Decided 2026-09-09**: the
    graph is built in memory at build time and baked into the rendered HTML.
    24,505 sections is small enough that this needs no database. Emitting it
    alongside the site as a `citations.json` (from, to, offsets, resolved) is
    still worth doing — it makes "what cites this section?" answerable for
    backlinks, and lets rendering be regenerated without re-detecting.
-3. **`this section` / `this chapter`** — link to self, or leave plain? Leaving
-   plain is safer and less noisy.
-4. **Cross-document targets.** HHCA, the constitutions and the Organic Act are
-   in the corpus but numbered as prefixed identifiers, and they are cited from
-   HRS text. Linking them requires the proper-citation work already noted as a
-   gap. The profile sharpened the risk: **89 non-HRS numbers collide outright
-   with HRS numbers** and 149 are bare. Until that mapping exists, the two
-   namespaces stay separate and non-HRS citations stay plain — the failure mode
-   is `section 2` acquiring a confident link to the Admission Act.
-5. **Repealed-section references.** A visible share of the unresolved pile is
-   the statute deliberately pointing at text that no longer exists —
-   `section 291-4.4 as that section was in effect on December 31, 2001`. There
-   is nothing to link, but leaving it as undifferentiated plain text loses the
-   fact that we *know* why. Worth considering a marked-but-unlinked treatment,
-   which interacts with the editorial-note channel in `source-anomalies.md`.
+3. ~~**`this section` / `this chapter`**~~ **Decided 2026-09-09: leave plain.**
+   27,685 occurrences, the largest single category in the corpus. Linking each to
+   its own page would add nothing a reader needs and would flood link-list
+   navigation for screen-reader users. Requiring a digit after the keyword
+   excludes them for free.
+4. **Cross-document targets.** *Deferred 2026-09-09 until the site build is
+   done.* HHCA, the constitutions and the Organic Act are in the corpus but
+   numbered as prefixed identifiers, and HRS text names them **306 times**.
+   Linking them requires the proper-citation work noted as a gap in
+   `project-plan.md`. The profile sharpened the risk: **89 non-HRS numbers
+   collide outright with HRS numbers** and 149 are bare, so until that mapping
+   exists the two namespaces stay separate and non-HRS citations stay plain —
+   the failure mode is `section 2` acquiring a confident link to the Admission
+   Act. This is the last known correctness gap in citation linking.
+5. ~~**References to sections no longer in the code.**~~ **Decided 2026-09-09:
+   marked, not linked.** See *Absent from the current code* above. The visible
+   statute text is unchanged; the clarification is additive for assistive
+   technology and carried visually by a non-colour affordance. The reason code
+   says what is verifiable (`absent-section`), not what is inferred (`repealed`).
 6. ~~**Where does rendering live?**~~ **Decided 2026-09-09**: a Bun build step
    reads `data/parsed`, resolves citations, and writes static HTML. Pages are
    rendered from the structured fields, never from `bodyHtml` — that is what
@@ -383,14 +444,12 @@ with links.
 ## Suggested order
 
 1. ~~Profile the full corpus~~ — done 2026-09-09; every count above is measured.
-2. Build the resolver + known-section index off the manifest. Two things the
-   profile settled: chapters must come from the manifest (293 are index-only),
-   and the HRS and non-HRS namespaces must stay separate (89 numbers collide).
-3. Run detection over `crossReferences` first — 95.7% resolve, 1,805 entries,
-   short and uniform enough to eyeball the whole output.
-4. Extend to body text. The prototype baseline to beat is 82.9% resolved / 0.6%
-   unresolved, with the residual dominated by correct rejections.
-5. Only then annotations, and only with hazards 7 and 8 implemented — Case Notes
-   and Commentary carry HAR citations and superseded numbering that will
-   otherwise produce confidently wrong links.
-6. Decide the storage question (open question 2) before emitting any markup.
+2. ~~Build the resolver + known-section index off the manifest~~ — done,
+   `src/resolver.ts`.
+3. ~~Run detection over `crossReferences` first~~ — done: 95% linked, nothing
+   unresolved.
+4. ~~Extend to body text~~ — done: 82.84% linked, 0.16% unresolved.
+5. ~~Only then annotations~~ — done, with hazards 7 and 8 in place. The
+   progression in *Annotations* above is the evidence that ordering mattered.
+6. **Cross-document targets** (open question 4) — the remaining correctness gap.
+7. Emit `citations.json` from `detect()` + `expandRange()` for backlinks.

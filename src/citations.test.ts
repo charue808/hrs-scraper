@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { detect, linkify, escapeHtml } from "./citations";
+import { detect, expandRange, linkify, escapeHtml } from "./citations";
 import { sectionSlug, type Index, type Target } from "./resolver";
 
 /** A small hand-built index, so these tests do not depend on the corpus. */
@@ -89,7 +89,9 @@ describe("hazard 4 — elided lists", () => {
     expect(found.map((c) => c.number)).toEqual(["11-26", "11-51"]);
   });
 
-  // Decided 2026-09-09: link the endpoints, do not expand the span.
+  // Rendering links the endpoints only — there is no text in between for a
+  // middle section to attach to. The span is carried by `expandRange` for the
+  // citation graph instead; see below.
   test("a range links both endpoints and nothing between", () => {
     const idx = index(["11-1", "11-5", "11-9"]);
     const found = detect("sections 11-1 to 11-9 are repealed", idx);
@@ -193,5 +195,78 @@ describe("slugs", () => {
 
   test("the [OLD] variant gets its own slug", () => {
     expect(sectionSlug("§431:9A-101 [OLD]")).toBe("431-9A-101-old");
+  });
+});
+
+describe("sections absent from the current code", () => {
+  // The chapter is there, the section is not: the citation is well-formed and
+  // points into the HRS, but the text it names has been removed. This is the
+  // detector working, not a grammar gap, so it is counted separately.
+  test("a missing section in a present chapter is not 'unresolved'", () => {
+    const idx = index(["291-1"], ["291"]);
+    expect(reasons("section 291-4.4 as that section was in effect", idx)).toEqual([
+      "291-4.4:absent-section",
+    ]);
+  });
+
+  test("a missing section in an absent chapter stays unresolved", () => {
+    const idx = index([], []);
+    expect(reasons("42 United States Code sections 1395i-3", idx)).toEqual([
+      "1395i-3:unresolved",
+    ]);
+  });
+
+  // Marked, not linked. The statute's own text is not altered.
+  test("renders as marked text with no link", () => {
+    const idx = index(["291-1"], ["291"]);
+    const html = linkify("under section 291-4.4 the driver", idx);
+    expect(html).not.toContain("<a ");
+    expect(html).toContain('<span class="absent">section 291-4.4');
+    expect(html).toContain('<span class="sr-only"> (not in the current code)</span>');
+  });
+});
+
+describe("range spans in the citation graph", () => {
+  // Rendering links only the endpoints — there is no text for §11-5 to attach
+  // to — but the statute means the whole span, so the graph must carry it.
+  test("expands the sections between two endpoints", () => {
+    const idx = index(["11-1", "11-2", "11-3", "11-4"]);
+    const found = detect("sections 11-1 to 11-4 apply", idx);
+    expect(expandRange(found, idx).map((t) => t.number)).toEqual(["§11-2", "§11-3"]);
+  });
+
+  test("skips sections in the span that do not exist", () => {
+    const idx = index(["11-1", "11-4"]);
+    expect(expandRange(detect("sections 11-1 to 11-4", idx), idx)).toEqual([]);
+  });
+
+  test("does not expand across chapters", () => {
+    const idx = index(["11-1", "12-1", "11-2"]);
+    expect(expandRange(detect("sections 11-1 to 12-1", idx), idx)).toEqual([]);
+  });
+
+  test("a plain list is not a range", () => {
+    const idx = index(["92-3", "92-7", "92-9", "92-5"]);
+    expect(expandRange(detect("sections 92-3, 92-7, and 92-9", idx), idx)).toEqual([]);
+  });
+});
+
+describe("hazard 8 — the Id. back-reference", () => {
+  const idx = index(["703-2", "577-12"]);
+
+  // Commentary cites in runs: "1. H.R.S. §703-1. 2. Id. §703-2." The marker is
+  // sentences away, so adjacency cannot see it.
+  test("Id. inherits a superseded antecedent from earlier in the block", () => {
+    expect(reasons("1. H.R.S. §703-1. 2. Id. §703-2. 3. Id. §577-12.", idx)).toEqual([
+      "703-1:superseded",
+      "703-2:superseded",
+      "577-12:superseded",
+    ]);
+  });
+
+  // Without an antecedent it is an ordinary back-reference and must not be
+  // suppressed — the guard is evidence-based, not a blanket ban on "Id.".
+  test("Id. with no superseded antecedent still resolves", () => {
+    expect(reasons("See Smith v. Jones, 12 H. 34. Id. §703-2.", idx)).toEqual(["703-2:linked"]);
   });
 });
