@@ -1,6 +1,6 @@
 {
   "sectionNumber": "§5-1",
-  "title": "to 3 REPEALED.",
+  "title": "REPEALED.",
   "chapterNumber": "5",
   "docType": "hrs",
   "partHeading": null,
@@ -11,7 +11,14 @@
   "annotations": [],
   "isUncodified": false,
   "isRepealed": true,
-  "numberSource": "page",
+  "covers": {
+    "start": "§5-1",
+    "end": "§5-3",
+    "raw": "to 3"
+  },
+  "titleIsSupplied": false,
+  "sourceAnomalies": [],
+  "numberSource": "page-range",
   "filename": "HRS_0005-0001.htm",
   "url": "https://data.capitol.hawaii.gov/hrscurrent/Vol01_Ch0001-0042F/HRS0005/HRS_0005-0001.htm",
   "bodyHtml": "\n\n<p class=\"RegularParagraphs\"><b>&nbsp;&nbsp;&nbsp;&nbsp; §§5-1 to 3&nbsp; REPEALED.</b>&nbsp; L 1988, c 138,\n§§2 to 4.</p>\n\n<p class=\"RegularParagraphs\">&nbsp;</p>\n\n<p class=\"RegularParagraphs\">&nbsp;</p>\n\n"

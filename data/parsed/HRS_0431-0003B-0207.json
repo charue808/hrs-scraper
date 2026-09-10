@@ -1,0 +1,21 @@
+{
+  "sectionNumber": "§431:3B-207",
+  "title": "Incident response plan.",
+  "chapterNumber": "431",
+  "docType": "hrs",
+  "partHeading": null,
+  "bodyText": "(a) As part of its information security program, each licensee shall establish a written incident response plan designed to promptly respond to and recover from any cybersecurity event that compromises the confidentiality, integrity, or availability of nonpublic information in its possession, the licensee's information systems, or the continuing functionality of any aspect of the licensee's business or operations.\n\n(b) The incident response plan shall address the following areas:\n\n(1) The internal process for responding to a cybersecurity event;\n\n(2) The goals of the incident response plan;\n\n(3) The definition of clear roles, responsibilities, and levels of decision-making authority;\n\n(4) External and internal communications and information sharing;\n\n(5) Identification of requirements for the remediation of any identified weaknesses in information systems and associated controls;\n\n(6) Documentation and reporting regarding cybersecurity events and related incident response activities; and\n\n(7) The evaluation and revision, as necessary, of the incident response plan following a cybersecurity event.",
+  "history": "[L 2021, c 112, pt of §2]",
+  "crossReferences": [],
+  "caseNotes": "",
+  "annotations": [],
+  "isUncodified": true,
+  "isRepealed": false,
+  "covers": null,
+  "titleIsSupplied": false,
+  "sourceAnomalies": [],
+  "numberSource": "page",
+  "filename": "HRS_0431-0003B-0207.htm",
+  "url": "https://data.capitol.hawaii.gov/hrscurrent/Vol09_Ch0431-0435H/HRS0431/HRS_0431-0003B-0207.htm",
+  "bodyHtml": "\n\n<p class=\"RegularParagraphs\"><b>&nbsp;&nbsp;&nbsp;&nbsp; [§431:3B-207]&nbsp; </b><b>Incident response\nplan. &nbsp;</b>(a) &nbsp;As part of its information security program, each licensee\nshall establish a written incident response plan designed to promptly respond\nto and recover from any cybersecurity event that compromises the\nconfidentiality, integrity, or availability of nonpublic information in its\npossession, the licensee's information systems, or the continuing functionality\nof any aspect of the licensee's business or operations.</p>\n\n<p class=\"RegularParagraphs\">&nbsp;&nbsp;&nbsp;&nbsp; (b) &nbsp;The incident response plan shall address\nthe following areas:</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (1)&nbsp; The internal process for responding to a\ncybersecurity event;</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (2)&nbsp; The goals of the incident response plan;</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (3)&nbsp; The definition of clear roles, responsibilities,\nand levels of decision-making authority;</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (4)&nbsp; External and internal communications and\ninformation sharing;</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (5)&nbsp; Identification of requirements for the\nremediation of any identified weaknesses in information systems and associated\ncontrols;</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (6)&nbsp; Documentation and reporting regarding\ncybersecurity events and related incident response activities; and</p>\n\n<p class=\"oneParagraph\">&nbsp;&nbsp;&nbsp;&nbsp; (7)&nbsp; The evaluation and revision, as necessary, of the\nincident response plan following a cybersecurity event. [L 2021, c 112, pt of\n§2]</p>\n\n<p class=\"RegularParagraphs\">&nbsp;</p>\n\n<p class=\"RegularParagraphs\">&nbsp;</p>\n\n"
+}
