@@ -36,6 +36,74 @@ describe("hazard 1 — the period", () => {
   });
 });
 
+describe("elided lists after a singular keyword", () => {
+  // The corpus writes singular lists constantly — `section 667-22 or 667-55`.
+  // Requiring a plural keyword dropped every number after the first, which
+  // measured at roughly 1,600 missing links across the corpus.
+  const idx = index(["667-22", "667-55", "6E-43", "6E-43.6", "712-1249", "712-1250"]);
+
+  test("a second number after `or` is linked", () => {
+    expect(reasons("required by section 667-22 or 667-55;", idx)).toEqual([
+      "667-22:linked",
+      "667-55:linked",
+    ]);
+  });
+
+  test("a decimal continuation is linked", () => {
+    expect(reasons("pursuant to section 6E-43 or 6E-43.6, or both", idx)).toEqual([
+      "6E-43:linked",
+      "6E-43.6:linked",
+    ]);
+  });
+
+  test("a comma-separated singular list is walked to the end", () => {
+    expect(reasons("in section 712-1249, or 712-1250, the court", idx)).toEqual([
+      "712-1249:linked",
+      "712-1250:linked",
+    ]);
+  });
+
+  test("the link text is the number alone, not the connector", () => {
+    const html = linkify("under section 667-22 or 667-55.", idx);
+    expect(html).toContain(">section 667-22</a>");
+    expect(html).toContain(">667-55</a>");
+    expect(html).toContain("</a> or <a");
+  });
+
+  test("a continuation that is not citation-shaped ends the list", () => {
+    expect(reasons("under section 667-22 or any rule adopted", idx)).toEqual(["667-22:linked"]);
+  });
+
+  test("a bare continuation is still rejected", () => {
+    expect(reasons("under section 667-22 or 14 others", idx)).toEqual([
+      "667-22:linked",
+      "14:bare-number",
+    ]);
+  });
+});
+
+describe("bracketed section numbers", () => {
+  // The revisor brackets material it supplied rather than the legislature
+  // enacting it, and applies that to numbers cited in running text too.
+  const idx = index(["226-55", "11-1.52"]);
+
+  test("a bracketed number in a citation resolves", () => {
+    expect(reasons("established in section [226-55] to advise", idx)).toEqual(["226-55:linked"]);
+  });
+
+  test("the brackets are part of the link text, as written", () => {
+    expect(linkify("established in section [226-55] to advise", idx)).toContain(
+      ">section [226-55]</a>"
+    );
+  });
+
+  // The opening bracket here precedes the § that starts the match, so consuming
+  // the closing one would yield the link text `§11-1.52]`.
+  test("a closing bracket is not swallowed when no opening one was", () => {
+    expect(linkify("see [§11-1.52] for the rule", idx)).toContain(">§11-1.52</a>]");
+  });
+});
+
 describe("hazard 2 — not every 'section N' is HRS", () => {
   test("a bare number is never an HRS section reference", () => {
     const idx = index(["203-1"], ["203"]);

@@ -1,7 +1,7 @@
 # Where the project stands
 
-**As of**: 2026-09-09 (paused here)
-**Head**: `5de5cff` — 115 tests, typecheck clean, working tree clean
+**As of**: 2026-09-10
+**Head**: 161 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -9,7 +9,7 @@ yet, and where the loose threads are. The other documents go deeper:
 | Document | What it is for |
 |---|---|
 | [`project-plan.md`](project-plan.md) | Architecture and reference for the system as built — site structure, filename grammar, HTML structure, data model |
-| [`citation-linking.md`](citation-linking.md) | The citation grammar, all eight hazards, and the measured results |
+| [`citation-linking.md`](citation-linking.md) | The citation grammar, all nine hazards, and the measured results |
 | [`source-anomalies.md`](source-anomalies.md) | How errors in the published statutes are recorded and presented |
 | [`progress.md`](progress.md) | Session-by-session record of what changed and why |
 
@@ -18,11 +18,14 @@ yet, and where the loose threads are. The other documents go deeper:
 ## The short version
 
 The Hawaii Revised Statutes have been scraped, parsed into structured data,
-committed as the source of truth, and cross-linked. **The corpus is done. The
-site is not.**
+committed as the source of truth, cross-linked, and **built into a static
+site**. What is missing now is search, backlinks, proper citations for the
+non-HRS documents, and a host.
 
-What works end to end today: `bun run render -- --chapter 26` produces a
-readable, linked, accessible chapter you can open in a browser.
+What works end to end today: `bun run build` turns the committed corpus into
+24,503 files in under five seconds — every section, every chapter, every volume,
+with citations resolved and **0 broken internal links** across all 24,503
+distinct hrefs.
 
 ---
 
@@ -43,6 +46,7 @@ zero failures across all 24,505 files.
 | From a range heading | 272 |
 | From the corrections ledger | 1 |
 | Duplicate section numbers | **0** |
+| Duplicate URL slugs | **0** (the build fails on collision) |
 | Size | 154 MB raw, ~33 MB gzipped, 32 MB in git |
 
 Git is the version store. A re-scrape after a legislative session diffs to
@@ -54,17 +58,18 @@ that the property still holds.
 
 ### Citation linking — trustworthy
 
-82.84% of body-text candidates become links; **0.16% are unresolved**. The
+83.31% of body-text candidates become links; **0.15% are unresolved**. The
 design is resolve-don't-match: a candidate becomes a link only when the section
 it names exists in the inventory.
 
 | Block | Linked | Unresolved |
 |---|---|---|
-| Body text | 82.84% | 0.16% |
-| Cross References | 94.94% | 0.00% |
-| Attorney General Opinions | 68.79% | 0.00% |
-| Case Notes | 78.86% | 0.09% |
-| Commentary | 71.45% | 1.38% |
+| Body text | 83.31% | 0.15% |
+| Cross References | 94.86% | 0.00% |
+| Attorney General Opinions | 69.32% | 0.00% |
+| Case Notes | 78.62% | 0.09% |
+| Commentary | 71.41% | 1.37% |
+| Legislative history | **never linked** — see hazard 9 | |
 
 The percentages that look low are correct: most of the gap is `bare-number`
 rejections, which is the detector working. All 22,972 HRS section numbers
@@ -73,30 +78,67 @@ contain a hyphen, so a bare "section 203" is never an HRS reference.
 Run `bun run profile-citations` to reproduce. It reports rejections **by
 reason**, because "bare number" and "unresolved" mean opposite things.
 
-### The renderer — a preview, not the site
+### The site — built
 
-`src/render.ts` renders one chapter to flat HTML files. It is deliberately
-crude, and exists so citation linking could be reviewed by eye rather than only
-by counts — which paid for itself immediately, surfacing four defects no count
-would have shown (see `progress.md`, 2026-09-09).
+`bun run build` reads `data/parsed` and writes the whole document set.
+`src/site.ts` owns the markup; `src/build.ts` owns reading the corpus and
+writing files.
 
-It does establish the markup rules the real build needs: no JavaScript, link
-text is the citation itself, `aria-label` carries the target's title, unresolved
-citations stay plain text, editorial notes are real text in the document flow.
+| | |
+|---|---|
+| Section pages | 23,373 |
+| Chapter pages | 1,114 |
+| Volume pages | 14 |
+| Home + stylesheet | 2 |
+| **Total files** | **24,503** |
+| Size | 218 MB raw, ~16 MB gzipped |
+| Build time | 4.7s |
+| Broken internal links | **0** of 24,503 distinct hrefs |
+
+URLs are extensionless directories (`/hrs/26-34/index.html` serves
+`/hrs/26-34`), which works on any static host without rewrite rules.
+
+The markup rules: no JavaScript on any page, link text is the citation exactly
+as written, `aria-label` carries the target's title, unresolved citations stay
+plain text, a citation into removed text is marked but not linked, editorial
+notes are real text in the document flow. Every page carries a breadcrumb, and
+section pages carry previous/next within the chapter.
+
+Reviewing the build's output by eye is what found hazard 9 — the same thing that
+happened with the preview renderer in 2026-09-09, and the second time in a row
+that reading real pages beat reading counts. Reading it *again* with a second
+pair of eyes found four more things, all now fixed: bracketed PART banners
+dropped on 298 sections, part banners rendered twice on 1,243, ~1,600 citations
+in singular-keyword lists never linked, and a "not yet codified" label the
+corpus does not support.
+
+Statute bodies are rendered with the HRS outline — `(a)` → `(1)` → `(A)` → `(i)`
+— as indentation. The enumerators are enacted text, so they stay visible and the
+structure is carried by indent rather than by `<ol>` markers, which would either
+duplicate or replace them. Depth comes from the order each marker kind first
+appears, so a section that starts at `(1)` is not indented as though a level were
+missing.
 
 ---
 
 ## What is not built
 
-1. **The site build.** All chapters, chapter index pages, real URLs. The
-   renderer handles one chapter into flat files with rewritten links.
-2. **Pagefind.** No search at all yet.
-3. **`citations.json`.** The graph is computed but not emitted, so there are no
+1. **Pagefind.** No search at all yet. The build is the input it needs.
+2. **`citations.json`.** The graph is computed but not emitted, so there are no
    backlinks — "what cites this section?" is unanswerable. `detect()` plus
-   `expandRange()` already produce everything needed.
-4. **Cross-document linking.** See the correctness gap below.
-5. **A host.** Not blocking: a paid Cloudflare plan clears the ~24,600 file
-   output. Only the free tiers (20,000) do not.
+   `expandRange()` already produce everything needed, and the build already
+   walks every section, so emitting it is nearly free from here.
+3. **Cross-document linking.** See the correctness gap below.
+4. **A host.** Not blocking, and now measured: the build emits **24,503 files**.
+   A paid Cloudflare plan (100,000) clears it; both free tiers (20,000) do not.
+5. **Division/Title navigation.** The site navigates by volume, which is a
+   printing artifact. The index pages carry the real structure —
+   `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — and it is not
+   extracted yet.
+6. **Chapter index section listings.** Only the title, notes and annotations are
+   taken from an index page. The listing itself would make a good coverage check
+   against the files actually discovered. Not needed for the build: chapter
+   contents are derived from the parsed sections, which carry real titles.
 
 ---
 
@@ -123,9 +165,12 @@ between the current state and "citations are correct".
 
 Small, and none of them block the site build.
 
-- **36 sections have an empty `bodyText`.** Surfaced in the first QA pass and
-  never chased. Probably banner or repeal-note pages — but "probably" is not
-  good enough for a committed baseline.
+- ~~**36 sections have an empty `bodyText`.**~~ **Closed 2026-09-10.** All 36
+  are intentionally content-free: 23 are `Renumbered as §X.` and 13 are
+  `Reserved.` No body is the correct parse. Chasing it did surface something
+  real, now fixed — those titles are themselves citations, and the renderer was
+  escaping rather than linking them, so 23 pages whose only content is a pointer
+  were dead ends.
 - **48 genuinely unresolved body-text citations** remain, mostly foreign codes
   (`Cal. Evid. Code §§600-669`, federal titles cited by number). Worth a periodic
   look; the number is the metric.
@@ -146,7 +191,7 @@ Small, and none of them block the site build.
 
 ```bash
 bun install
-bun test                                  # 115 tests
+bun test                                  # 161 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)
@@ -154,7 +199,9 @@ bun run reparse                           # rebuild data/parsed from cached HTML
 bun run reparse -- --dry-run              # what would change, writing nothing
 bun run chapters                          # chapter titles -> data/chapters.json
 bun run profile-citations                 # the citation quality metric
-bun run render -- --chapter 26            # preview a chapter -> build/preview/
+bun run build                             # the whole site -> build/site/ (~5s)
+bun run build -- --chapter 26             # one chapter, for reviewing by eye
+bun run serve                             # browse build/site at localhost:3000
 ```
 
 `--db`, `bun run migrate` and `sql/schema.sql` still work but are a side tool for
@@ -192,6 +239,29 @@ arguments. Each is documented in full where noted.
   always-present field rewrites all 23,373 files; free while uncommitted, and it
   buries the first real amendment diff afterwards. (`config.ts`,
   `SECTION_FIELD_ORDER`)
+- **Brackets mark revisor-supplied material, not uncodified sections.** The
+  corpus says so in its own Revision Notes, and 33.6% of sections carry a
+  bracketed heading — far too many to be awaiting codification. The convention
+  runs through headings, catchlines, PART banners and numbers cited in running
+  text, and missing it costs something at every one of those sites. The field is
+  still called `isUncodified`; the name is wrong and renaming it rewrites all
+  23,373 files. (`project-plan.md`, The bracket convention)
+- **A list keyword is not always plural.** `section 667-22 or 667-55` is ordinary
+  HRS drafting. Gating list continuation on `sections` dropped roughly 1,600
+  links. (`citation-linking.md`, hazard 4)
+- **Legislative history is not a set of pointers into the current code.** Every
+  section number in it is a number in a *former* compilation. Linking them
+  produced 971 confidently wrong links; the other 4,251 were sections linking to
+  themselves. History is rendered as plain text.
+  (`citation-linking.md`, hazard 9)
+- **A rendered block that nothing measures is where the next defect hides.**
+  `profile-citations` covered body text and annotations but never `history`, so
+  5,222 links went unmeasured for a session. It now reports history as its own
+  block precisely because the site does not link it.
+- **`partHeading` marks only where a part begins.** It is null on every section
+  after the first one in that part — 44 of chapter 26's 47. Grouping a chapter's
+  contents by "the value changed" starts a fresh unlabelled list under each
+  part's first section; the heading has to be carried forward.
 - **We do not assert what we cannot show.** Corrections need evidence and a human
   reviewer; a citation into removed text is labelled `absent-section`, not
   `repealed`, because absence is verifiable and the reason is not.

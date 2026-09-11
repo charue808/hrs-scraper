@@ -30,6 +30,16 @@ console.log(
 type Bucket = { name: string; citations: Citation[] };
 const body: Citation[] = [];
 const xrefs: Citation[] = [];
+/**
+ * Legislative history, which the site deliberately does not link.
+ *
+ * Profiled anyway, and precisely because it is not linked: this block went
+ * unmeasured while the preview renderer linked it, which is how 971 wrong links
+ * survived. The numbers here are what *would* be linked if the policy changed.
+ */
+const history: Citation[] = [];
+/** Of those, how many point somewhere other than the citing section's own page. */
+let historyCrossLinks = 0;
 const annotations = new Map<string, Citation[]>();
 const unresolved = new Map<string, { n: number; sample: string }>();
 let rangeEdges = 0;
@@ -64,6 +74,15 @@ for (const file of readdirSync(PARSED_DIR)) {
   };
 
   record(section.bodyText, body, false);
+  // History is tallied but deliberately kept out of `record()`: that path feeds
+  // the `unresolved` to-do list and the range-expansion edge count, both of
+  // which describe blocks the site actually links. History is not one, so its
+  // 1,299 unresolved candidates are not work owed and its ranges are not graph
+  // edges.
+  for (const citation of detect(section.history, index)) {
+    history.push(citation);
+    if (citation.target && citation.target.number !== section.sectionNumber) historyCrossLinks++;
+  }
   for (const entry of section.crossReferences) record(entry, xrefs, true);
   for (const note of section.annotations) {
     const key = noteBucket(note.heading);
@@ -93,6 +112,13 @@ function report({ name, citations }: Bucket): void {
 
 console.log("=== body text ===");
 report({ name: "bodyText", citations: body });
+
+console.log("\n=== legislative history (rendered as plain text, never linked) ===");
+report({ name: "history", citations: history });
+console.log(
+  `${" ".repeat(28)}of those, ${historyCrossLinks.toLocaleString()} would point at a ` +
+    `section other than the citing one — all of them wrong. See docs/citation-linking.md, hazard 9.`
+);
 
 console.log("\n=== annotations ===");
 report({ name: "crossReferences (field)", citations: xrefs });

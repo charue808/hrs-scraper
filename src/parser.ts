@@ -209,7 +209,14 @@ function leadingBoldText(runs: Run[]): string {
 }
 
 const HEADING_RE = /^\[?\s*§+\s*([0-9][0-9A-Za-z:.\-]*[0-9A-Za-z])\s*\]?\s+(.*)$/;
-const STRUCTURAL_RE = /^(PART|SUBPART|ARTICLE|DIVISION|TITLE|CHAPTER)\s+[IVXLCDM0-9]/i;
+// The leading bracket is not optional decoration: the HRS brackets material
+// supplied by the revisor rather than enacted, and it applies that convention to
+// structural banners exactly as it does to section headings above. Both whole-
+// banner (`[PART IV. THE EXECUTIVE BUDGET]`) and partial (`[PART VII.] ROUTINE
+// REPAIR AND MAINTENANCE`) forms occur. Without the `\[?` this misses 298
+// sections across 119 chapters — chapter 37 shows 4 of its 7 parts — and the
+// banner text is left stranded in the body as a stray paragraph.
+const STRUCTURAL_RE = /^\[?\s*(PART|SUBPART|ARTICLE|DIVISION|TITLE|CHAPTER)\s+[IVXLCDM0-9]/i;
 
 // A section number as written in running text. Ending the class on an
 // alphanumeric is what keeps a sentence-ending period out of the number:
@@ -441,11 +448,16 @@ export function parseSection(
   // A PART/ARTICLE banner sits above the section heading when one is present.
   // With no heading at all, the opening paragraph is itself the banner.
   const bannerEnd = headingIndex === -1 ? 1 : headingIndex;
-  for (const paragraph of body.paragraphs.slice(0, bannerEnd)) {
-    if (STRUCTURAL_RE.test(paragraph)) {
-      partHeading = paragraph;
-      break;
-    }
+  for (let i = 0; i < Math.min(bannerEnd, body.paragraphs.length); i++) {
+    const paragraph = body.paragraphs[i]!;
+    if (!STRUCTURAL_RE.test(paragraph)) continue;
+    partHeading = paragraph;
+    // The banner is *moved* into `partHeading`, not copied. That field exists so
+    // the banner can be presented as structure; leaving it in the body as well
+    // renders it twice, which it was doing on 1,243 of the 1,247 sections that
+    // carried one.
+    body.paragraphs[i] = "";
+    break;
   }
 
   let bodyText = body.paragraphs.filter(Boolean).join("\n\n");
@@ -503,12 +515,83 @@ export function parseSection(
   };
 }
 
+interface IndexEntry {
+  text: string;
+  classes: string[];
+}
+
 /**
- * Parse a chapter index page for the chapter's title.
+ * The chapter's own notes and annotation blocks.
+ *
+ * Scope is everything after the live `CHAPTER n` banner — see
+ * `ParsedChapterIndex` for why the boundary matters. Prose stops at the section
+ * listing; annotation blocks are read with the same `XNotesHeading` / `XNotes`
+ * vocabulary as section pages, and a block is continued only by an `XNotes`
+ * paragraph. That last rule is what keeps a Cross References block on a long
+ * index page from swallowing the 2,000-paragraph listing behind it.
+ */
+function chapterContent(
+  entries: IndexEntry[],
+  bannerIndex: number,
+  titleIndex: number,
+  chapterNumber: string
+): { notes: string; annotations: Annotation[] } {
+  if (bannerIndex === -1) return { notes: "", annotations: [] };
+
+  // What opens the section listing: the `Section` column header, a PART or
+  // ARTICLE banner, or a listing line itself (`431:1-100 Short title`).
+  const LISTING = new RegExp(
+    String.raw`^section$|^(?:part|article)\b|^\[?${chapterNumber}[-:]`,
+    "i"
+  );
+
+  const notes: string[] = [];
+  const annotations: Annotation[] = [];
+  let open: { heading: string; paragraphs: string[] } | null = null;
+  let inListing = false;
+
+  for (let i = bannerIndex + 1; i < entries.length; i++) {
+    const entry = entries[i]!;
+    if (i === titleIndex) continue;
+
+    if (entry.classes.includes("XNotesHeading")) {
+      open = { heading: entry.text, paragraphs: [] };
+      annotations.push({ heading: entry.text, text: "" });
+      continue;
+    }
+    if (open) {
+      if (entry.classes.includes("XNotes")) {
+        open.paragraphs.push(entry.text);
+        annotations[annotations.length - 1]!.text = open.paragraphs.join("\n");
+        continue;
+      }
+      open = null;
+    }
+    if (inListing) continue;
+    if (LISTING.test(entry.text)) {
+      inListing = true;
+      continue;
+    }
+    notes.push(entry.text);
+  }
+
+  return {
+    notes: notes.join("\n\n"),
+    annotations: annotations.filter((a) => a.text),
+  };
+}
+
+/**
+ * Parse a chapter index page for the chapter's title, notes and annotations.
  *
  * Index pages open with `CHAPTER <number>` followed by the title, though some
  * are preceded by division/title banners and a table of contents for the whole
  * title, so the `CHAPTER` line is located rather than assumed to be first.
+ *
+ * Everything after that banner belongs to the chapter; everything before it
+ * belongs to the division/title above it or to a superseded `[OLD]` banner.
+ * That boundary is what makes `notes` and `annotations` attributable — see
+ * `ParsedChapterIndex`.
  */
 export function parseChapterIndex(
   html: string,
@@ -522,13 +605,23 @@ export function parseChapterIndex(
   const section = $("div.WordSection1");
   const root = section.length ? section : $("body");
 
-  const paragraphs = root
+  // Class is carried alongside the text because the annotation vocabulary
+  // (`XNotesHeading` / `XNotes`) is what separates a chapter's notes from its
+  // section listing, exactly as it does on a section page.
+  const entries = root
     .find("p")
-    .map((_, el) => clean($(el).text()))
+    .map((_, el) => ({
+      text: clean($(el).text()),
+      classes: ($(el).attr("class") ?? "").split(/\s+/),
+    }))
     .get()
-    .filter(Boolean);
+    .filter((entry) => entry.text);
+
+  const paragraphs = entries.map((entry) => entry.text);
 
   let title = "";
+  /** Index of the paragraph the title was taken from, so notes can skip it. */
+  let titleIndex = -1;
   // The banner is bracketed on uncodified chapters, exactly as section headings
   // are — `[CHAPTER 30]`. A variant puts the title inside the bracket too:
   // `[CHAPTER 56 PUBLIC OFF-STREET PARKING FACILITIES]`.
@@ -552,21 +645,36 @@ export function parseChapterIndex(
     else {
       // Otherwise the title is the next paragraph that is neither the "Section"
       // column header nor a repeat of the banner nor the start of the listing.
-      const next = paragraphs
+      const offset = paragraphs
         .slice(chapterIndex + 1)
-        .find((p) => !/^section$/i.test(p) && !BANNER.test(p));
+        .findIndex((p) => !/^section$/i.test(p) && !BANNER.test(p));
+      const next = offset === -1 ? undefined : paragraphs[chapterIndex + 1 + offset];
       // Reject only a line that opens the section listing (`138-1 Definitions`),
       // not any line starting with a digit — chapter titles can begin with one
       // ("911 SERVICES", "340B Drug Discount Program").
       const listing = new RegExp(String.raw`^\[?${paragraphs[chapterIndex]!.match(BANNER)![1]}-`, "i");
-      if (next && !listing.test(next)) title = next;
+      if (next && !listing.test(next)) {
+        title = next;
+        titleIndex = chapterIndex + 1 + offset;
+      }
     }
   }
   title = title.replace(/^\[/, "").replace(/\]$/, "").trim();
 
+  const bannerNumber =
+    chapterIndex === -1 ? "" : paragraphs[chapterIndex]!.match(BANNER)![1]!;
+  const { notes, annotations } = chapterContent(
+    entries,
+    chapterIndex,
+    titleIndex,
+    bannerNumber
+  );
+
   return {
     chapterNumber: chapterNumber ?? extractChapterFromFilename(filename),
     title,
+    notes,
+    annotations,
     filename,
     url,
   };

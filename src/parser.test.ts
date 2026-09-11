@@ -302,6 +302,156 @@ describe("parseChapterIndex", () => {
     const index = parseChapterIndex(html, "HRS_0001-.htm", "https://x/f.htm", "1");
     expect(index.title).toBe("COMMON LAW; CONSTRUCTION OF LAWS");
   });
+
+  // 293 chapters have no sections at all — every one was repealed, so nothing in
+  // data/parsed carries their number and their index page is the only thing
+  // that says what happened. Measured: none of the 293 has a section listing,
+  // and 290 have notes.
+  test("captures the repeal note and cross references of a section-less chapter", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>CHAPTER 2</b></p>
+       <p class="RegularParagraphs"><b>STATUTE REVISION AND PUBLICATION</b></p>
+       <p class="RegularParagraphs">REPEALED. L Sp 1977 1st, c 8, §3.</p>
+       <p class="XNotesHeading">Cross References</p>
+       <p class="XNotes">For present provisions, see chapter 23G, pt. II.</p>`
+    );
+    const index = parseChapterIndex(html, "HRS_0002-.htm", "https://x/f.htm", "2");
+    expect(index.title).toBe("STATUTE REVISION AND PUBLICATION");
+    expect(index.notes).toBe("REPEALED. L Sp 1977 1st, c 8, §3.");
+    expect(index.annotations).toEqual([
+      { heading: "Cross References", text: "For present provisions, see chapter 23G, pt. II." },
+    ]);
+  });
+
+  // An index page usually opens with the division/title table of contents, which
+  // carries its own Cross References for the whole title. Those belong to the
+  // title, not to this chapter — HRS_0091-.htm is the real case.
+  test("excludes annotations belonging to the title above the chapter", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>TITLE 8. PUBLIC PROCEEDINGS</b></p>
+       <p class="RegularParagraphs">Chapter</p>
+       <p class="RegularParagraphs">91 Administrative Procedure</p>
+       <p class="XNotesHeading">Cross References</p>
+       <p class="XNotes">Alternative dispute resolution center, see chapter 613.</p>
+       <p class="RegularParagraphs"><b>CHAPTER 91</b></p>
+       <p class="RegularParagraphs"><b>ADMINISTRATIVE PROCEDURE</b></p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">91-1 Definitions</p>
+       <p class="XNotesHeading">Case Notes</p>
+       <p class="XNotes">Statutory authority is necessary.</p>`
+    );
+    const index = parseChapterIndex(html, "HRS_0091-.htm", "https://x/f.htm", "91");
+    expect(index.annotations).toEqual([
+      { heading: "Case Notes", text: "Statutory authority is necessary." },
+    ]);
+  });
+
+  // A superseded banner precedes the live one, and brings its own repeal note
+  // and cross references with it — HRS_0431-.htm. Attributing those to the live
+  // chapter would label the current Insurance Code as repealed.
+  test("excludes the notes of a superseded [OLD] banner", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>CHAPTER 431 [OLD]</b></p>
+       <p class="RegularParagraphs"><b>THE HAWAII INSURANCE LAW</b></p>
+       <p class="RegularParagraphs">REPEALED. L 1987, c 347, §1.</p>
+       <p class="XNotesHeading">Cross References</p>
+       <p class="XNotes">For disposition of repealed provisions, see the table.</p>
+       <p class="RegularParagraphs"><b>CHAPTER 431</b></p>
+       <p class="RegularParagraphs"><b>INSURANCE CODE</b></p>
+       <p class="RegularParagraphs">ARTICLE 1. DEFINITIONS</p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">431:1-100 Short title</p>`
+    );
+    const index = parseChapterIndex(html, "HRS_0431-.htm", "https://x/f.htm", "431");
+    expect(index.title).toBe("INSURANCE CODE");
+    expect(index.notes).toBe("");
+    expect(index.annotations).toEqual([]);
+  });
+
+  // A block is continued only by an XNotes paragraph. Without that rule an
+  // annotation opened before the listing swallows it — chapter 431's index page
+  // is 2,149 paragraphs long.
+  test("an annotation block does not swallow the section listing", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>CHAPTER 76</b></p>
+       <p class="RegularParagraphs"><b>CIVIL SERVICE LAW</b></p>
+       <p class="XNotesHeading">Note</p>
+       <p class="XNotes">Chapter heading amended by L 2000, c 253, §15.</p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">76-1 Purpose</p>
+       <p class="RegularParagraphs">76-2 Definitions</p>`
+    );
+    const index = parseChapterIndex(html, "HRS_0076-.htm", "https://x/f.htm", "76");
+    expect(index.annotations).toEqual([
+      { heading: "Note", text: "Chapter heading amended by L 2000, c 253, §15." },
+    ]);
+    expect(index.notes).toBe("");
+  });
+
+  test("a chapter that goes straight into its listing has no notes", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>CHAPTER 1</b></p>
+       <p class="RegularParagraphs"><b>COMMON LAW</b></p>
+       <p class="RegularParagraphs">Section</p>
+       <p class="RegularParagraphs">1-1 Common law of the State; exceptions</p>`
+    );
+    const index = parseChapterIndex(html, "HRS_0001-.htm", "https://x/f.htm", "1");
+    expect(index.notes).toBe("");
+    expect(index.annotations).toEqual([]);
+  });
+});
+
+describe("part banners", () => {
+  // The HRS brackets material supplied by the revisor rather than enacted, and
+  // applies that to structural banners as well as section headings. Missing the
+  // bracketed form dropped 298 sections across 119 chapters — chapter 37 showed
+  // 4 of its 7 parts.
+  const cases: [string, string][] = [
+    ["PART V. GENERAL FUND EXPENDITURE CEILING", "unbracketed"],
+    ["[PART IV. THE EXECUTIVE BUDGET]", "whole banner bracketed"],
+    ["[PART VII.] ROUTINE REPAIR AND MAINTENANCE", "only the designation bracketed"],
+    ["[ARTICLE 9J]", "article, bracketed"],
+  ];
+
+  for (const [banner, label] of cases) {
+    test(`captures a banner with ${label}`, () => {
+      const html = page(
+        `<p class="RegularParagraphs">${banner}</p>
+         <p class="RegularParagraphs"><b>§37-61 Short title.</b>  This part may be cited as the Act.</p>`
+      );
+      const parsed = parseSection(html, "HRS_0037-0061.htm", "https://x/f.htm");
+      expect(parsed.partHeading).toBe(banner);
+    });
+  }
+
+  // The banner is moved into partHeading, not copied. Leaving it in the body
+  // renders it twice — which it did on 1,243 of the 1,247 sections with one.
+  test("the banner is removed from bodyText rather than duplicated", () => {
+    const html = page(
+      `<p class="RegularParagraphs">PART II. ALLOTMENT SYSTEM</p>
+       <p class="RegularParagraphs"><b>§37-31 Intent and policy.</b>  It is declared to be the policy.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0037-0031.htm", "https://x/f.htm");
+    expect(parsed.partHeading).toBe("PART II. ALLOTMENT SYSTEM");
+    expect(parsed.bodyText).toBe("It is declared to be the policy.");
+  });
+
+  // A page whose only content is the banner ends up with an empty body, which
+  // is correct: the banner is the content, and it is held in partHeading.
+  test("a banner-only page keeps the banner in partHeading and empties the body", () => {
+    const html = page(`<p class="RegularParagraphs">ARTICLE 1</p>`);
+    const parsed = parseSection(html, "HRS_0431-0001-.htm", "https://x/f.htm");
+    expect(parsed.partHeading).toBe("ARTICLE 1");
+    expect(parsed.bodyText).toBe("");
+  });
+
+  test("an ordinary opening paragraph is not mistaken for a banner", () => {
+    const html = page(
+      `<p class="RegularParagraphs"><b>§1-1 Common law.</b>  The common law of England.</p>`
+    );
+    const parsed = parseSection(html, "HRS_0001-0001.htm", "https://x/f.htm");
+    expect(parsed.partHeading).toBeNull();
+  });
 });
 
 describe("range headings", () => {

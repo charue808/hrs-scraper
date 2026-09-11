@@ -92,7 +92,23 @@ export interface ParsedSection {
   partHeading: string | null;
   chapterNumber: string;
   docType: DocType;
-  isUncodified: boolean; // heading was bracketed, e.g. "[§11-1.52]"
+  /**
+   * The heading was bracketed, e.g. `[§11-1.52]`.
+   *
+   * **The name is wrong and is kept only because renaming it rewrites all
+   * 23,373 files.** Brackets do not mark an uncodified section. 7,859 sections
+   * (33.6%) carry one, and they are plainly printed in the HRS. What the corpus
+   * says in its own Revision Notes is that brackets mark material *supplied by
+   * the revisor* rather than enacted by the legislature — "Bracketed words ...
+   * added by revisor", "Part heading added by revisor pursuant to §23G-15" —
+   * and that the legislature ratifies such material by deleting the brackets.
+   * §23G-15(1) grants the revisor authority to number and renumber sections,
+   * which is what a bracketed heading records.
+   *
+   * The statute's *text* is enacted law either way; only the heading is
+   * editorial. See `docs/project-plan.md`, The bracket convention.
+   */
+  isUncodified: boolean;
   isRepealed: boolean;
   /**
    * Set when the heading covers a span of sections rather than one section.
@@ -103,7 +119,8 @@ export interface ParsedSection {
    * The heading bracketed the *title* but not the number
    * (`§604-13  [Arrest under warrant.]`), which by HRS convention marks a
    * catchline supplied editorially rather than enacted. Distinct from
-   * `isUncodified`, where the bracket encloses the whole heading.
+   * `isUncodified`, where the bracket encloses the whole heading. Both record
+   * the same convention applied at different scope.
    */
   titleIsSupplied: boolean;
   /**
@@ -127,8 +144,46 @@ export interface ParsedSection {
 export interface ParsedChapterIndex {
   chapterNumber: string;
   title: string;
+  /**
+   * Chapter-level text sitting between the banner and the section listing —
+   * in practice a repeal note (`REPEALED. L 1981, c 135, §2.`). Empty on
+   * chapters that go straight into their listing.
+   *
+   * This is the only content 293 chapters have. Their sections were all
+   * repealed, so no file in `data/parsed` carries their number and a chapter
+   * page built from parsed sections alone would render blank. Measured: none
+   * of those 293 has a section listing, and 290 have notes.
+   */
+  notes: string;
+  /**
+   * Annotation blocks belonging to the chapter itself, scoped to what follows
+   * the live `CHAPTER n` banner.
+   *
+   * The scoping is the whole point: an index page often opens with a
+   * division/title table of contents carrying its *own* Cross References
+   * (`HRS_0091-.htm` has one for TITLE 8), and a superseded `[OLD]` banner
+   * brings its own as well. Both precede the live banner and belong to
+   * something other than this chapter.
+   */
+  annotations: Annotation[];
   filename: string;
   url: string;
+}
+
+/**
+ * One entry in `data/chapters.json` — the chapter-level data that lives on a
+ * chapter index page rather than on any section. Built by `bun run chapters`.
+ *
+ * `notes` and `annotations` are omitted rather than written empty: most
+ * chapters have neither, and this file is committed and read as a diff.
+ */
+export interface ChapterRecord {
+  title: string;
+  volume: number;
+  /** Chapter-level prose, in practice a repeal note. */
+  notes?: string;
+  /** The chapter's own annotation blocks. */
+  annotations?: Annotation[];
 }
 
 /**

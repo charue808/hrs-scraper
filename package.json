@@ -9,7 +9,8 @@
     "test-parse": "bun src/test-parse.ts",
     "reparse": "bun src/reparse.ts",
     "profile-citations": "bun src/profile-citations.ts",
-    "render": "bun src/render.ts",
+    "build": "bun src/build.ts",
+    "serve": "bun src/serve.ts",
     "chapters": "bun src/chapters.ts",
     "test": "bun test"
   },

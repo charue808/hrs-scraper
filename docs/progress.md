@@ -1,16 +1,201 @@
 # HRS Scraper - Implementation Progress
 
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 
-## Status: Citation linking settled; ready for the site build
+## Status: the site builds, and reading it has been paying for itself
 
-All six open questions in `citation-linking.md` are closed or explicitly
-deferred. The detector runs at 82.84% linked / **0.16% unresolved** on body
-text, with `crossReferences` and Attorney General Opinions at 0.00%. 115 tests.
+`bun run build` turns the committed corpus into **24,503 files in ~4.6 seconds**
+— 23,373 sections, 1,114 chapters, 14 volumes, a home page and one stylesheet —
+with **0 broken internal links** across all 24,503 distinct hrefs. `bun run
+serve` browses it at localhost:3000. 161 tests.
 
-Next: the static site build proper — all chapters, chapter index pages, then
-Pagefind. The one remaining correctness gap is cross-document targets (the 424
-non-HRS files), deliberately deferred until the site exists.
+Next: Pagefind, then `citations.json` for backlinks. The one remaining
+correctness gap is still cross-document targets (the 424 non-HRS files).
+
+## 2026-09-10 (second pass) — five defects found by reading the built site
+
+The build existing is what made these findable. All five came from clicking
+around localhost, not from any metric.
+
+### The bracket convention, which we had wrong
+
+`isUncodified` rendered as "not yet codified". Nothing in the corpus supports
+that, and **7,859 sections — 33.6% — carry a bracketed heading**, which is far
+too many to be awaiting codification when they are printed in the HRS.
+
+What the corpus actually says, in its own annotations: *"Bracketed words ...
+added by revisor"* (§286C-1), *"Part heading added by revisor pursuant to
+§23G-15"* (§321-561), and Commentary describing the legislature *deleting the
+brackets* to ratify revisor-supplied material (§712A-4). §23G-15(1) grants the
+revisor authority to number and renumber sections. **Brackets mark material
+supplied by the revisor rather than enacted by the legislature.**
+
+A competing hypothesis — that bracketed sections come from acts the revisor
+split, which the history writes as `pt of §1` — was tested and **failed**: 79.8%
+of bracketed versus 70.6% of unbracketed. No signal, so it is not claimed.
+
+Pages now say "heading supplied by the revisor", scoped to the heading on
+purpose: the statute's text is enacted law either way, and a phrase like "not
+enacted" would invite exactly the wrong reading of a legal document. The field
+is still named `isUncodified` — renaming rewrites all 23,373 files, so it is
+tracked as its own commit. Written up in `project-plan.md`, The bracket
+convention.
+
+### Chapter 37 showed 4 of its 7 parts
+
+Reported as "the source lists more sections than we have". The sections were
+complete (62 parsed, 62 in the manifest) and the source's own listing does say
+`37-1 to 14 Repealed` as a single entry, which we match. The *parts* were
+missing — and the three that vanished were bracketed: `[PART IV. THE EXECUTIVE
+BUDGET]`, `[PART VI. COUNCIL ON REVENUES]`, `[PART VII.] ROUTINE REPAIR AND
+MAINTENANCE`. `STRUCTURAL_RE` had no optional leading `[`, unlike `HEADING_RE`
+directly above it. **298 sections across 119 chapters**, with the banner text
+left stranded in the body as a stray paragraph.
+
+The same investigation found a second bug: **1,243 of the 1,247 sections with a
+`partHeading` repeated it as their first body paragraph**, so it rendered twice.
+The banner is now *moved* into `partHeading`, not copied. That is also what was
+producing the doubled "ARTICLE I" on the constitution pages — not a non-HRS
+quirk after all.
+
+Together: 1,556 files changed on reparse. Empty `bodyText` went 36 → 41, the five
+new ones being banner-only pages whose entire content is now correctly held in
+`partHeading`.
+
+### Roughly 1,600 citations were never linked
+
+Scanning rendered body text for numbers that resolve against the index but carry
+no link found 343 in the first 5,002 sections. Two causes:
+
+- **A singular keyword followed by a list.** `required by section 667-22 or
+  667-55`, `pursuant to section 6E-43 or 6E-43.6`. The continuation walk was
+  gated on a plural keyword, so everything after the first number was dropped.
+  Ordinary HRS drafting; the gate was simply a wrong assumption.
+- **Bracketed numbers.** `established in section [226-55]` — the revisor
+  convention again, in running text.
+
+Removing the gate added **1,152 links to body text** (82.84% → 83.31%) with
+**unresolved unchanged at 48**, which is the shape a correct fix has. The
+bracket fix needed care: the closing bracket is matched as its own group and
+dropped when no opening one was consumed, or `[§11-1.52]` yields the link text
+`§11-1.52]`.
+
+### Statute bodies are now outlined
+
+The HRS nests `(a)` → `(1)` → `(A)` → `(i)` and every level rendered as a flat
+paragraph. Indentation rather than `<ol>`: the enumerators are enacted text, so
+list markers would either duplicate or replace them.
+
+Depth comes from the order each marker *kind* first appears in the section, not
+a fixed table — many sections start at `(1)` with no `(a)` above, and a fixed
+table would indent those as though a level were missing. Two judgement calls are
+documented rather than hidden: `(i)` is read as a letter when a lowercase level
+is open and its last marker was `h`, otherwise as a roman; and an unmarked
+paragraph keeps the current depth, which indents a trailing parent-level
+paragraph one step too far but breaks far fewer paragraphs than flattening.
+
+### Ranges: noted, not changed
+
+Raised as a research-experience question rather than a defect, and recorded as
+open question 5 in `citation-linking.md`. Current handling is correct and
+agreed — endpoints linked, span in the graph, middle not linked because there is
+no text to attach to. The options if it ever needs more are listed cheapest
+first, along with the constraint that rules out the obvious one: the site does
+not inject text the legislature did not write.
+
+### Also
+
+`src/serve.ts` — the built site uses extensionless directories, which is what a
+real static host resolves and `file://` does not, so it was not browsable off
+disk. Development only; confines every request to the output directory before
+touching the filesystem.
+
+## 2026-09-10 — The site build, and a class of wrong link it exposed
+
+### The build
+
+`src/build.ts` (the driver) and `src/site.ts` (the markup) replace
+`src/render.ts`, which was a one-chapter preview. Keeping two renderers would
+have meant two copies of the markup rules, drifting apart; `bun run build
+-- --chapter 26` covers what the preview was for.
+
+- **URLs are extensionless directories.** `/hrs/26-34/index.html` serves
+  `/hrs/26-34`, which needs no rewrite rules on any static host. Same file count
+  as flat `.html` files — directories are free.
+- **Navigation**: home → volume → chapter → section, with a breadcrumb on every
+  page and previous/next within a chapter.
+- **A slug-collision check that exits non-zero.** The scraper already guards
+  duplicate section numbers; this is the same failure one layer down, and
+  24,503 files is far too many to notice it by eye.
+- **The index is built from the corpus already in memory** rather than re-reading
+  23,373 files (`buildIndex(preloaded)`).
+
+Verified: every one of the 24,503 distinct internal hrefs resolves to a file
+that exists, and `bun run reparse -- --dry-run` still reports
+`unchanged 23373 changed 0`, so byte-stability is intact.
+
+### Hazard 9: legislative history was producing 971 confidently wrong links
+
+Reading the built pages — not the counts — turned this up, the second session
+running that reviewing real output beat reviewing metrics.
+
+The bracketed history at the end of a section records where that section has
+*lived*, not what it refers to. `§502-13`'s history reads `RL 1955, §343-7` —
+its number in the 1955 Revised Laws — and the renderer was linking it to today's
+§343-7, *Limitation of actions*. Measured across the corpus, history holds 5,222
+resolvable citations: **4,251 point at the citing section's own page and 971
+point at a different section, every one of them wrong.** Useful links: zero.
+
+Not fixable in the detector. Hazard 8's guard matches `H.R.S.`, `R.L.H.` and
+`RLH`, but history writes the marker as bare `RL 1955`; and a *former* HRS
+number is character-identical to a current one. So the decision is at block
+level: **history is rendered as plain text.** Annotations are unaffected and
+stay linked — 0 of their links sit behind a marker hazard 8 does not cover.
+
+**Why it survived a full session.** `profile-citations` measured body text,
+cross references and annotations — never `history`. The preview renderer linked
+it anyway, so 5,222 links were rendered and never counted. The profiler now
+reports history as its own block precisely because the site does not link it.
+A rendered block that nothing measures is where the next one of these hides.
+
+### Chapter index pages now yield more than a title
+
+293 chapters have no sections at all — every one was repealed, so no file in
+`data/parsed` carries their number. A chapter page built from parsed sections
+alone renders 293 blank pages.
+
+Their index pages are not blank. Chapter 2's says `REPEALED. L Sp 1977 1st, c 8,
+§3.` with a cross reference to chapter 23G — exactly the kind of dead pointer
+this project exists to link. `parseChapterIndex` now also returns `notes` and
+`annotations`, scoped to what follows the **live** `CHAPTER n` banner. That
+scoping is the whole trick: an index page often opens with a division/title
+table of contents carrying its own Cross References (chapter 91's belong to
+TITLE 8), and a superseded `[OLD]` banner brings its own as well. Measured
+across the corpus: 371 chapters have notes, 629 have their own annotations, and
+none of the 293 has a section listing.
+
+`data/chapters.json` also became deterministic. Two chapters (`01-USCON`,
+`05-CONST`) have more than one index page, and the worker pool's completion
+order decided which one won — nondeterminism in a committed file that is read as
+a diff.
+
+### Smaller things
+
+- **23 pages were dead ends.** The 36 sections with an empty `bodyText` turned
+  out to be 23 `Renumbered as §X.` and 13 `Reserved.` — not a defect, the
+  correct parse. But on those 23 the title *is* a citation and the only content
+  the page has, and the renderer was escaping it rather than linking it. Titles
+  are now linkified: 29 titles contain a citation and 28 resolve.
+- **`partHeading` marks only where a part begins** — it is null on every section
+  after the first (44 of chapter 26's 47). Grouping a chapter's contents by "the
+  value changed" started a fresh unlabelled list under each part's first
+  section. The heading is carried forward now.
+- **The resolver's non-HRS guard was a no-op.** `if (!/^\d/.test(chapter.number))
+  continue;` claimed to skip `01-USCON` and `05-CONST` — both of which begin
+  with a digit, so it skipped nothing. Harmless (the citation grammar cannot
+  produce a chapter number with letters after a hyphen, and `classify()` rejects
+  hyphenated chapter numbers first) and the documented index size of 1,114 was
+  always the real behaviour, so the comment was corrected rather than the code.
 
 
 

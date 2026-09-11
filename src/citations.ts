@@ -47,16 +47,30 @@ const BARE = String.raw`\d+[A-Z]?`;
 // Requiring a digit after the keyword excludes "this section", "this chapter"
 // and "this part" for free — 27,685 occurrences, the largest category in the
 // corpus (hazard 3).
+//
+// The optional bracket is the revisor convention again: the corpus writes
+// `established in section [226-55]` where the number itself was supplied
+// editorially. The closing bracket is matched separately so it can be dropped
+// back out of the span when no opening one was consumed — otherwise `[§11-1.52]`
+// would yield the link text `§11-1.52]`.
 const CITE = new RegExp(
-  String.raw`(?<kw>sections?|chapters?|§§?)\s*(?<num>${NUMBER}|${BARE})`,
+  String.raw`(?<kw>sections?|chapters?|§§?)\s*(?<open>\[\s*)?(?<num>${NUMBER}|${BARE})(?<close>\s*\])?`,
   "gi"
 );
 
-// Continues an elided list after a plural keyword: "sections 92-3, 92-7, and
-// 92-9" (hazard 4). `to` is included so both endpoints of a range are linked —
-// the range is not expanded to the sections in between.
+// Continues an elided list: "sections 92-3, 92-7, and 92-9" (hazard 4). `to` is
+// included so both endpoints of a range are linked — the range is not expanded
+// to the sections in between.
+//
+// This is deliberately NOT gated on the keyword being plural. The corpus writes
+// singular lists constantly — `required by section 667-22 or 667-55`,
+// `pursuant to section 6E-43 or 6E-43.6` — and requiring `sections` dropped
+// every number after the first, which measured at roughly 1,600 missing links
+// across the corpus. Nothing unsafe is admitted by this: a continuation must
+// still be citation-shaped, and it is still resolved against the inventory
+// before it becomes a link.
 const MORE = new RegExp(
-  String.raw`^(?:\s*,\s*(?:and\s+|or\s+)?|\s+and\s+|\s+or\s+|(?<range>\s+to\s+))(?:§+\s*)?(?<num>${NUMBER}|${BARE})`,
+  String.raw`^(?:\s*,\s*(?:and\s+|or\s+)?|\s+and\s+|\s+or\s+|(?<range>\s+to\s+))(?:§+\s*)?(?<open>\[\s*)?(?<num>${NUMBER}|${BARE})(?<close>\s*\])?`,
   "i"
 );
 
@@ -174,27 +188,40 @@ export function detect(text: string, index: Index, options: DetectOptions = {}):
     return { ...base, target: null, reason: "unresolved" };
   };
 
+  /**
+   * Length of a trailing `]` that should not be part of the span.
+   *
+   * The closing bracket belongs to the citation only when the opening one did.
+   * `section [226-55]` is written that way by the revisor and the whole thing is
+   * the citation; but in `[§11-1.52]` the `[` sits before the `§` that starts
+   * the match, so consuming the `]` would produce the link text `§11-1.52]`.
+   */
+  const danglingClose = (groups: Record<string, string | undefined>): number =>
+    !groups.open && groups.close ? groups.close.length : 0;
+
   for (const match of text.matchAll(CITE)) {
-    const keyword = match.groups!.kw!.toLowerCase();
-    const number = match.groups!.num!;
+    const groups = match.groups!;
+    const keyword = groups.kw!.toLowerCase();
     const kind: "section" | "chapter" = keyword.startsWith("chapter") ? "chapter" : "section";
-    const plural = keyword === "sections" || keyword === "chapters" || keyword === "§§";
 
     // The span starts at the keyword, so the link text is the whole citation —
     // `section 26-34`, not a bare `26-34`. Continuations below carry no keyword
     // and link the number alone.
-    let cursor = match.index! + match[0].length;
-    found.push(classify(number, kind, match.index!, cursor, false));
-
-    if (!plural) continue;
+    let cursor = match.index! + match[0].length - danglingClose(groups);
+    found.push(classify(groups.num!, kind, match.index!, cursor, false));
 
     // Walk the list. It ends at the first token that is not citation-shaped.
+    // Deliberately not gated on a plural keyword — see MORE.
     for (;;) {
       const more = text.slice(cursor).match(MORE);
       if (!more) break;
+      const tail = danglingClose(more.groups!);
+      const consumed = more[0].length - tail;
+      // The span starts at the number (or at its opening bracket), not at the
+      // connector — `, or ` is not part of the citation.
       const next = more.groups!.num!;
-      const start = cursor + more[0].length - next.length;
-      cursor += more[0].length;
+      const start = cursor + consumed - next.length - (more.groups!.open?.length ?? 0);
+      cursor += consumed;
       found.push(classify(next, kind, start, cursor, Boolean(more.groups!.range)));
     }
   }

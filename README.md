@@ -4,8 +4,10 @@ A TypeScript pipeline that crawls the [Hawaii Revised Statutes](https://www.capi
 parses ~24,500 statute files from raw HTML into structured data, and publishes
 them as a static, fully cross-linked document set.
 
-**Current state**: the corpus is scraped, parsed, committed and cross-linked;
-the site is not built yet. See [`docs/STATE.md`](docs/STATE.md).
+**Current state**: the corpus is scraped, parsed, committed and cross-linked,
+and the site builds — 24,503 pages in under five seconds with no broken internal
+links. Search, backlinks and a host are what remain.
+See [`docs/STATE.md`](docs/STATE.md).
 
 ## Motivation
 
@@ -27,7 +29,7 @@ Nothing a database provides *at runtime* is something this content needs.
 |---|---|
 | Source of truth | `data/parsed/*.json`, committed to the repo |
 | Version history | git — a re-scrape diffs to exactly the sections that were amended |
-| Output | 23,373 statute pages + 1,132 chapter indexes, pre-rendered HTML |
+| Output | 23,373 statute pages + 1,114 chapter pages + 14 volume pages, pre-rendered HTML |
 | Citations | resolved at build time and baked into the markup |
 | Search | [Pagefind](https://pagefind.app) — chunked index; only the search page loads JS |
 | Database | optional side tool for ad-hoc analysis, not the pipeline |
@@ -139,8 +141,11 @@ Each statute section is parsed into structured data (`bodyHtml` elided):
 
 Field notes, in the order they appear:
 
-- `isUncodified` — the heading was bracketed (`[§11-1.52]`), which the HRS uses
-  to mark sections not yet codified into the published volumes.
+- `isUncodified` — the heading was bracketed (`[§11-1.52]`). **The field name is
+  wrong**: brackets mark material *supplied by the revisor* rather than enacted
+  by the legislature, not an uncodified section — 33.6% of the corpus carries
+  one. Renaming it rewrites all 23,373 files, so it is tracked separately. The
+  rendered pages say "heading supplied by the revisor".
 - `covers` — set on the 272 pages whose heading states a span rather than one
   section (`§515-10 to 515-12 REPEALED.`). A range heading cannot say which of
   its members a given file is, so those take their number from the filename and
@@ -226,7 +231,25 @@ missing from the cache are fetched and cached, so a partial cache still yields a
 complete corpus. Duplicate section numbers are reported the same way the scraper
 reports them.
 
-### 5. Tests
+### 5. Build the site
+
+```bash
+bun run build                    # the whole corpus -> build/site/ (~5s)
+bun run build -- --chapter 26    # one chapter, for reviewing by eye
+bun run build -- --out dist
+```
+
+Emits 24,503 files: a page per section, per chapter, per volume, plus a home
+page and one stylesheet. `bun run serve` browses the result at
+`localhost:3000` — the pages are extensionless directories, which a static host
+resolves and `file://` does not. URLs are extensionless directories
+(`/hrs/26-34/index.html` serves `/hrs/26-34`), so it works on any static host
+without rewrite rules. No page loads JavaScript.
+
+The build fails loudly on a URL-slug collision — the same protection the scraper
+applies to section numbers, one layer down.
+
+### 6. Tests
 
 ```bash
 bun test
@@ -235,7 +258,8 @@ bun test
 The suite covers section-number derivation against real filenames from the
 corpus (including the article/decimal distinction and the handful of malformed
 names), heading extraction from Word's split `<b>` markup, annotation splitting,
-and chapter index parsing.
+chapter index parsing, and the rendering rules the site depends on — what gets
+linked, what deliberately does not, and how a chapter's parts are grouped.
 
 ### Optional: PostgreSQL
 
@@ -257,8 +281,8 @@ results with highlighted snippets, and `get_chapter_sections()`.
 
 ## Deployment
 
-The build emits roughly 24,600 files, which interacts with static-host file
-caps:
+The build emits **24,503 files** — measured, not estimated — which interacts
+with static-host file caps:
 
 | Host | Cap | Fits? |
 |---|---|---|
@@ -268,12 +292,12 @@ caps:
 | Workers static assets (paid) | 100,000 files per version, 25 MiB each | Yes |
 | A VPS / object storage | no practical cap | Yes |
 
-A paid Cloudflare plan on either product clears 24,600 comfortably. The free
+A paid Cloudflare plan on either product clears 24,503 comfortably. The free
 tier of both does not — which is the constraint to design around if free hosting
 is a requirement.
 
 Verify current limits before committing to a host; they move. If a cap needs
-working around, folding the 1,132 chapter indexes into fewer pages is the
+working around, folding the 1,114 chapter pages into fewer pages is the
 cheapest reduction.
 
 ## Possible Direction: An Enhanced Site
@@ -350,10 +374,12 @@ src/
   corrections.ts   — applies data/corrections.json; resolver alias table
   resolver.ts      — the known-section index, and resolution against it
   citations.ts     — detect, resolve and link citations
-  render.ts        — one chapter -> static HTML (preview)
+  site.ts          — the site's markup: page shell, section/chapter/volume pages
+  build.ts         — reads the corpus, resolves citations, writes build/site
+  serve.ts         — serves build/site locally (development only)
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 115 tests (bun test)
+  *.test.ts        — 161 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)

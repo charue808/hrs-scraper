@@ -1,6 +1,6 @@
 # HRS Scraper — Architecture & Reference
 
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 
 This was originally the pre-implementation plan. It is now the living design
 reference and describes the system as built, with the site facts corrected
@@ -26,12 +26,13 @@ Storage & Delivery below and `citation-linking.md`.
 
 ## Status
 
-The corpus is scraped, parsed, committed and cross-linked; the site is not
-built. **`STATE.md` is the current-state summary** — what is trustworthy, what
+The corpus is scraped, parsed, committed, cross-linked and **built into a
+static site** (24,503 files, 0 broken internal links).
+**`STATE.md` is the current-state summary** — what is trustworthy, what
 is missing, and where the loose threads are. This document is the design
 reference underneath it.
 
-Companion documents: `citation-linking.md` (the primary outcome, with all eight
+Companion documents: `citation-linking.md` (the primary outcome, with all nine
 hazards and the measured results) and `source-anomalies.md` (how errors in the
 published statutes are recorded and presented).
 
@@ -49,8 +50,10 @@ something this content needs. Concretely:
   history — which is strictly better than the `section_versions` table proposed
   under Known Gaps, and free. This depends on byte-stable serialization; see
   `SECTION_FIELD_ORDER` in `config.ts`.
-- **Output**: ~23,373 statute pages + 1,132 chapter indexes, pre-rendered to
-  plain HTML with citations already resolved to links. No client-side fetching,
+- **Output**: 23,373 statute pages + 1,114 chapter pages + 14 volume pages and a
+  home page, pre-rendered to plain HTML with citations already resolved to links.
+  URLs are extensionless directories (`/hrs/26-34/index.html` serves
+  `/hrs/26-34`), which needs no rewrite rules on any static host. No client-side fetching,
   no JS on statute pages — which also means nothing to fail for a screen reader.
 - **Search**: Pagefind. Its index is chunked, so a query pulls a few hundred KB
   rather than the whole corpus, and only the search page loads any JS.
@@ -64,11 +67,11 @@ Measured sizes for the full corpus: 154 MB of parsed JSON raw, ~33 MB gzipped.
 `db.ts`, `migrate.ts` and `sql/schema.sql` are kept — `--db` remains useful for
 ad-hoc analysis during development — but they are a side tool, not the pipeline.
 
-**Deployment**: the build emits roughly 24,600 files. Cloudflare raised the Pages
+**Deployment**: the build emits **24,503 files** (measured, not estimated). Cloudflare raised the Pages
 cap to 100,000 for paid plans on 2026-01-23 (requires
 `PAGES_WRANGLER_MAJOR_VERSION=4`), and Workers static assets tier the same way,
 so a paid plan on either clears it. Both free tiers stop at 20,000. If free
-hosting ever becomes a requirement, folding the 1,132 chapter indexes into fewer
+hosting ever becomes a requirement, folding the 1,114 chapter pages into fewer
 pages is the cheapest reduction. Limits move — re-check before committing.
 
 ---
@@ -240,6 +243,42 @@ A typical section page:
 <div id="pageLinks">...</div>   ← navigation chrome, stripped
 ```
 
+### The bracket convention
+
+**Brackets mark material supplied by the revisor rather than enacted by the
+legislature.** This is the single most load-bearing piece of HRS typography, and
+it shows up in four places this codebase touches: section headings
+(`[§11-1.52]`), catchlines (`§604-13 [Arrest under warrant.]`), PART/ARTICLE
+banners (`[PART IV. THE EXECUTIVE BUDGET]`) and numbers cited in running text
+(`established in section [226-55]`).
+
+The corpus states it itself, in its own annotations:
+
+- §286C-1, Revision Note — *"Bracketed words ... added by revisor."*
+- §321-561, Note — *"Part heading added by revisor pursuant to §23G-15."*
+- §712A-4, Commentary — *"Act 18, Session Laws 1999, amended this section by
+  **deleting the brackets** around 'trademark counterfeiting,'"* — the
+  legislature ratifies revisor-supplied material by removing the brackets.
+
+§23G-15(1) is the statutory authority: the revisor may *"number and renumber
+chapters, sections, and parts of sections"*. A bracketed heading is that power
+leaving a trace.
+
+**It does not mean "not yet codified."** The code and docs claimed that until
+2026-09-10; nothing in the corpus supports it, and **7,859 sections — 33.6% of
+the corpus — carry a bracketed heading**, which is far too many to be awaiting
+codification when they are printed in the HRS. A hypothesis that bracketed
+sections come from acts the revisor split (`pt of §1` in the history) was tested
+and **failed**: 79.8% of bracketed versus 70.6% of unbracketed, no real signal.
+
+The scope matters for how this is presented. Only the *heading* is editorial —
+the statute's text is enacted law either way, so the rendered label says
+"heading supplied by the revisor" and deliberately avoids any phrasing like
+"not enacted", which would invite exactly the wrong reading of a legal document.
+
+The field is still called `isUncodified`. Renaming it rewrites all 23,373 files,
+so it is a deliberate separate commit rather than a drive-by.
+
 ### Section headings
 
 Word splits the heading across several `<b>` elements and leaves the connector
@@ -257,8 +296,8 @@ first real prose run.
 Headings appear in several forms:
 
 - `§1-1  Title.` — ordinary
-- `[§11-1.52]  Title.` — brackets mark a section not yet codified
-  (`isUncodified`)
+- `[§11-1.52]  Title.` — brackets mark a heading supplied by the revisor
+  (`isUncodified`; see The bracket convention below — the field is misnamed)
 - `§431:1-100.5  Purpose.` — colon/article notation
 - `§11‑3 Application of chapter.` — written with a **non-breaking hyphen**
   (U+2011), which appears throughout the corpus and must be normalized before
@@ -315,9 +354,9 @@ is what makes iterating on the parser practical.
 discover  ──> data/manifest.json     crawl the directory listings          ~2 min
 scrape    ──> data/parsed/*.json     fetch + parse + cache HTML            ~45 min
               data/html/*.htm
-chapters  ──> data/chapters.json     chapter titles from the index pages   seconds
+chapters  ──> data/chapters.json     chapter titles + notes from indexes   seconds
 reparse   ──> data/parsed/*.json     rebuild from cached HTML              seconds
-render    ──> build/preview/*.html   one chapter, citations linked         seconds
+build     ──> build/site/**          the whole site, citations linked      ~5 s
 ```
 
 `reparse` is the loop that matters after the initial scrape: change the parser,
@@ -366,7 +405,7 @@ src/
   discover.ts      Phase 1: directory listings -> manifest
   scrape.ts        Phase 2: fetch, parse, store
   reparse.ts       rebuild data/parsed from cached HTML after a parser change
-  chapters.ts      chapter titles from index pages -> data/chapters.json
+  chapters.ts      chapter titles, notes, annotations -> data/chapters.json
 
   parser.ts        filenameToSectionNumber, extractChapterFromFilename,
                    normalizeChapterNumber, isIndexFilename,
@@ -374,14 +413,18 @@ src/
   corrections.ts   loadCorrections, applyCorrections, sectionNumberAliases
   resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
-  render.ts        one chapter -> static HTML (preview)
+  site.ts          the site's markup: page shell, section/chapter/volume pages,
+                   statutory outline depth
+  build.ts         reads the corpus, resolves citations, writes build/site
+  serve.ts         serves build/site locally (development only)
 
   profile-citations.ts   the citation quality metric
   test-parse.ts          parse one URL or local file
 
-  parser.test.ts         65 tests
-  citations.test.ts      35 tests
+  parser.test.ts         77 tests
+  citations.test.ts      44 tests
   corrections.test.ts    15 tests
+  site.test.ts           25 tests
 
 sql/schema.sql     standalone schema (side tool)
 data/              manifest.json, chapters.json, corrections.json and
@@ -427,7 +470,7 @@ phases.
 | `partHeading` | PART/ARTICLE banner above the section, if any |
 | `chapterNumber` | Normalized (`1`, `6D`, `431K`, `05-CONST`) |
 | `docType` | `hrs`, `const`, `uscon`, `hhca`, `adm`, `org`, `hnp` |
-| `isUncodified` | Heading was bracketed, `[§11-1.52]` |
+| `isUncodified` | Heading was bracketed, `[§11-1.52]` — revisor-supplied, **not** uncodified. Misnamed; see The bracket convention |
 | `isRepealed` | From the title, or a body that is a repeal note |
 | `covers` | The span a range page stands for (`§515-10 to 515-12`), else null. 272 sections |
 | `titleIsSupplied` | The bracket wrapped only the title — a catchline supplied editorially. 13 sections |
@@ -440,6 +483,34 @@ insertion order. Adding a field appends and is safe; reordering or renaming
 rewrites all 23,373 files, so it belongs in its own commit — and adding an
 always-present field after the corpus is committed churns everything and buries
 the first real amendment diff.
+
+### `ParsedChapterIndex`
+
+What a chapter index page yields, beyond the sections it lists.
+
+| Field | Notes |
+|---|---|
+| `chapterNumber` | Normalized |
+| `title` | From the `CHAPTER n` banner or the paragraph below it |
+| `notes` | Chapter-level prose between the banner and the listing — in practice a repeal note. 371 chapters |
+| `annotations` | The chapter's *own* annotation blocks. 629 chapters |
+| `filename`, `url` | Provenance |
+
+`notes` and `annotations` are scoped to what follows the **live** `CHAPTER n`
+banner, and that scoping is what makes them attributable. An index page often
+opens with a division/title table of contents carrying its own Cross References
+(`HRS_0091-.htm` has one belonging to TITLE 8), and a superseded `[OLD]` banner
+brings its own repeal note and cross references with it (`HRS_0431-.htm`).
+Both precede the live banner and belong to something other than this chapter.
+
+This matters most for the **293 chapters with no sections at all** — every
+section repealed, so nothing in `data/parsed` carries their number. Their index
+page is the only thing that says what happened, and none of the 293 has a
+section listing. Without `notes` those chapter pages would render blank.
+
+They are written into `data/chapters.json` as `ChapterRecord`, and omitted
+rather than written empty: most chapters have neither, and that file is
+committed and read as a diff.
 
 ### Database
 
@@ -500,9 +571,11 @@ bun run scrape --save-html            # full run (~45 min)
 
 bun run reparse                       # rebuild data/parsed from data/html (seconds)
 bun run reparse -- --dry-run          # report changes, write nothing
-bun run chapters                      # chapter titles -> data/chapters.json
+bun run chapters                      # chapter titles + notes -> data/chapters.json
 bun run profile-citations             # citation quality metric
-bun run render -- --chapter 26        # preview a chapter -> build/preview/
+bun run build                         # the whole site -> build/site/ (~5s)
+bun run build -- --chapter 26         # one chapter, for reviewing by eye
+bun run serve                         # browse build/site at localhost:3000
 
 # Parse a single page to sanity-check the parser
 bun run test-parse -- --file data/html/HRS_0001-0001.htm --json
@@ -524,7 +597,8 @@ Scraper flags: `--save-html`, `--limit N`, `--concurrency N`, `--db`.
 - **History prefixes** other than `L` (`CC`, `RL`, `AC`, `am L`)
 - **Annotations before the section**, not only after it
 - **Repealed sections**, including bodies that are only a bracketed repeal note
-- **Uncodified sections** marked with bracketed headings
+- **Bracketed headings, banners and numbers** — the revisor convention, applied
+  to section headings, PART/ARTICLE banners and numbers cited in running text
 - **Special directories** with their own filename prefixes
 - **Malformed filenames** (`.docx.htm`, soft hyphen, `_[OLD]`)
 - **Duplicate section numbers** — reported rather than silently overwritten
@@ -532,7 +606,7 @@ Scraper flags: `--save-html`, `--limit N`, `--concurrency N`, `--db`.
   span; the number comes from the filename and the span is recorded in `covers`
 - **Subsection markers in headings** — `<b>§26-12 Title. </b>(a)<b> </b>Text`,
   including the variant split across `(`, `a`, `)` runs
-- **Bracketed titles** — `[§440G-16 Rules.]` (uncodified) versus
+- **Bracketed titles** — `[§440G-16 Rules.]` (whole heading) versus
   `§604-13 [Arrest under warrant.]` (catchline supplied editorially)
 - **`[OLD]` / `[NEW]` banners** preceding live content, in both section pages
   and chapter index pages
@@ -566,9 +640,11 @@ Ordered by what stands between the current state and a finished site.
 
 ### To build
 
-- **The site build.** All chapters and chapter index pages at real URLs.
-  `src/render.ts` does one chapter into flat files as a review tool.
-- **Pagefind.** Not started.
+- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,503 files
+  (23,373 sections, 1,114 chapters, 14 volumes, home, stylesheet) in 4.7s with
+  0 broken internal links. `src/site.ts` owns the markup, `src/build.ts` the
+  driver.
+- **Pagefind.** Not started. The build is the input it needs.
 - **`citations.json`.** `detect()` plus `expandRange()` already produce the
   graph; nothing emits it, so backlinks ("what cites this section?") are
   unanswerable.
@@ -577,9 +653,15 @@ Ordered by what stands between the current state and a finished site.
 
 - **36 sections have an empty `bodyText`.** Never triaged. Probably banner or
   repeal-note pages, but unconfirmed.
-- **Chapter index contents.** Only the chapter title is extracted. The section
-  listing on each index page would make a good coverage check against the files
-  actually discovered — and is the natural source for a chapter page's contents.
+- **Chapter index section listings.** The title, chapter-level notes and
+  chapter-level annotations are now extracted (`ParsedChapterIndex`); the
+  *listing* still is not. It would make a good coverage check against the files
+  actually discovered. It is not needed for a chapter page's contents — those
+  are derived from the parsed sections, which carry real titles.
+- **Division/Title navigation.** The site navigates by volume, which is a
+  printing artifact of the published edition. The index pages carry the real
+  hierarchy (`DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS`) above the
+  chapter banner, and it is not extracted.
 - **Historical versions.** `hrsarchive/` holds yearly snapshots from 1999
   onward, but it exists on **`www` only** — the `data` mirror returns 500 for
   that path — so crawling it would need the Puppeteer path throughout. Probably

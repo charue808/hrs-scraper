@@ -1,7 +1,8 @@
 # Citation Linking
 
-**Last updated**: 2026-09-09
-**Status**: implemented — `src/citations.ts`, `src/resolver.ts`. Rendering is a preview only.
+**Last updated**: 2026-09-10
+**Status**: implemented — `src/citations.ts`, `src/resolver.ts`, rendered by
+`src/site.ts` across the whole built site.
 
 The primary outcome of this project: the HRS as published is a set of flat
 `.htm` files in which every reference to another statute is dead text. Turning
@@ -201,13 +202,42 @@ question — see below. Default: no.
 ### 4. Elided lists drop the keyword
 
 `sections 92-3, 92-7, and 92-9` — a matcher anchored on the word `section`
-produces one link and leaves two dead. After matching a plural keyword, the
-list must be continued across `,` / `and` / `or` separators for as long as the
-following tokens keep the citation shape.
+produces one link and leaves two dead. After matching a keyword, the list must
+be continued across `,` / `and` / `or` separators for as long as the following
+tokens keep the citation shape.
 
 Care needed: the list ends at the first token that is not a citation, and
 `sections 11-26 and 11-51, and the proceedings shall be had` shows that a comma
 followed by `and` does *not* always continue the list.
+
+**The keyword is not always plural.** *Corrected 2026-09-10.* The continuation
+walk was originally gated on `sections` / `chapters` / `§§`, on the assumption
+that a list announces itself. The corpus does not cooperate:
+
+```
+required by section 667-22 or 667-55
+pursuant to section 6E-43 or 6E-43.6, or both, as appropriate
+disposition of remains pursuant to section 531B-3 or 531B-5
+in violation of section 712-1246, 712-1248, 712-1249, or 712-1250
+```
+
+Every number after the first was dropped. Measured by scanning rendered body
+text for numbers that resolve against the index but carry no link: **343 in the
+first 5,002 sections, roughly 1,600 corpus-wide.** Removing the plurality gate
+added **1,152 links to body text** (82.84% → 83.31%) and left unresolved
+unchanged at 48 — which is the shape a correct fix has. Nothing unsafe is
+admitted: a continuation must still be citation-shaped, and it is still resolved
+against the inventory before it becomes a link.
+
+**Bracketed numbers.** The same scan found `established in section [226-55]` —
+the revisor convention (see `project-plan.md`, The bracket convention) applied to
+a number in running text. The pattern now accepts an optional bracket around the
+number, and the brackets are part of the link text because that is how the
+citation is written.
+
+The closing bracket is matched as its own group and dropped back out of the span
+when no opening one was consumed. Without that, `[§11-1.52]` — where the `[`
+precedes the `§` that starts the match — yields the link text `§11-1.52]`.
 
 ### 5. Non-breaking hyphens — already handled upstream
 
@@ -274,6 +304,51 @@ established one earlier. It is deliberately conditional rather than a blanket ba
 — an `Id.` with no superseded antecedent is an ordinary back-reference and still
 resolves.
 
+### 9. Legislative history is not a set of pointers into the current code
+
+**Found 2026-09-10, while reviewing the first full site build.** The
+bracketed history at the end of a section is a record of where that section has
+*lived*, not of what it refers to. Every section number in it is a number in a
+former compilation:
+
+```
+§502-13  [L 1903, c 30; RL 1935, §5116; RL 1945, §12716; RL 1955, §343-7; HRS §502-13]
+```
+
+`RL 1955, §343-7` is §502-13's number in the 1955 Revised Laws. Resolved against
+today's index it links to §343-7, *Limitation of actions* — a real section that
+has nothing to do with conveyances. The same shape appears as `Supp, §121-16`
+(the 1955 Supplement) and, worse, as a bare `HRS §88-64`, which is a section's
+number *before a renumbering* and is textually identical to a current citation.
+
+Measured over the whole corpus, history contains **5,222 resolvable citations**:
+
+| | count |
+|---|---|
+| Point at the citing section's own page | 4,251 |
+| Point at a **different** section | 971 |
+| **Useful to a reader** | **0** |
+
+The 971 are all wrong. The 4,251 are a section linking to itself, which is the
+same non-citation that hazard 3 excludes for `this section`.
+
+**The decision: history is rendered as plain text and never linked.** The block
+is the right unit here, not the candidate:
+
+- The detector cannot fix it. Hazard 8's guard matches `H.R.S.`, `R.L.H.` and
+  `RLH`, but history writes the marker as bare `RL 1955` — and no guard can
+  distinguish a former HRS number from a current one, because they are the same
+  string.
+- Annotations are unaffected and stay linked. They use the punctuated form, and
+  **0** of their links sit behind a marker hazard 8 does not already cover.
+- Getting it perfectly right would yield zero useful links anyway.
+
+**Why it survived so long:** `profile-citations` measured body text, cross
+references and annotations, but never `history` — so 5,222 links were rendered
+by the preview renderer and never counted. The profiler now reports history as
+its own block, precisely because the site does not link it. A block that is
+rendered but unmeasured is where the next one of these will hide.
+
 ---
 
 ---
@@ -287,16 +362,21 @@ collapsing them hides whether the number is falling for the right reason.
 
 ### Body text
 
+Re-measured 2026-09-10, after the hazard 4 correction.
+
 | | count | share |
 |---|---|---|
-| Candidates detected | 30,850 | |
-| **Linked** | 25,555 | 82.84% |
-| Rejected: bare number, no `C-S` shape | 5,068 | 16.43% |
-| Rejected: absent from the current code | 110 | 0.36% |
-| Rejected: foreign law (hazard 2) | 54 | 0.18% |
-| Rejected: administrative rules (hazard 7) | 11 | 0.04% |
+| Candidates detected | 32,057 | |
+| **Linked** | 26,707 | 83.31% |
+| Rejected: bare number, no `C-S` shape | 5,107 | 15.93% |
+| Rejected: absent from the current code | 125 | 0.39% |
+| Rejected: foreign law (hazard 2) | 55 | 0.17% |
+| Rejected: administrative rules (hazard 7) | 11 | 0.03% |
 | Rejected: superseded numbering (hazard 8) | 4 | 0.01% |
-| **Unresolved** | 48 | 0.16% |
+| **Unresolved** | 48 | 0.15% |
+
+The previous run was 30,850 candidates / 25,555 linked (82.84%) / 48 unresolved.
+The gain is entirely hazard 4: **+1,152 links, and not one more unresolved.**
 
 48 genuinely unresolved across 32 million characters. The rest of the former
 "unresolved" pile turned out to be the detector working correctly, and is now
@@ -428,12 +508,33 @@ with links.
    exists the two namespaces stay separate and non-HRS citations stay plain —
    the failure mode is `section 2` acquiring a confident link to the Admission
    Act. This is the last known correctness gap in citation linking.
-5. ~~**References to sections no longer in the code.**~~ **Decided 2026-09-09:
+5. **Enhancing ranges for research, not correctness.** *Raised 2026-09-10, open
+   by choice.* The current handling is settled and agreed: `sections 500 to 502`
+   links both endpoints, the span's implied members are carried in the graph
+   (2,722 edges), and the middle is not linked inline because there is no text
+   for §501 to attach a link to. Nothing here is wrong.
+
+   The open question is a different one — **how far should the site go to make a
+   range easy to research?** A reader who meets `sections 501-1 to 501-5` wants
+   to see all five. Today they can: both endpoints link, section pages carry
+   previous/next, and the chapter page lists the whole span. Options if that
+   ever proves insufficient, cheapest first:
+
+   - An accessible description on the range naming its size
+     (`sections 501-1 to 501-5, 5 sections`), which adds nothing visible.
+   - A generated range view listing the covered sections, linked from the range.
+   - Expanding the span into the *backlinks* of each covered section, which the
+     graph already supports and which needs no change to the statutory text.
+
+   The constraint that rules out the obvious approach: the site does not inject
+   text the legislature did not write. Anything here has to be additive markup
+   or a separate page, never words inserted into the statute.
+6. ~~**References to sections no longer in the code.**~~ **Decided 2026-09-09:
    marked, not linked.** See *Absent from the current code* above. The visible
    statute text is unchanged; the clarification is additive for assistive
    technology and carried visually by a non-colour affordance. The reason code
    says what is verifiable (`absent-section`), not what is inferred (`repealed`).
-6. ~~**Where does rendering live?**~~ **Decided 2026-09-09**: a Bun build step
+7. ~~**Where does rendering live?**~~ **Decided 2026-09-09**: a Bun build step
    reads `data/parsed`, resolves citations, and writes static HTML. Pages are
    rendered from the structured fields, never from `bodyHtml` — that is what
    gives us control over the markup for the accessibility rules above. See
@@ -448,8 +549,12 @@ with links.
    `src/resolver.ts`.
 3. ~~Run detection over `crossReferences` first~~ — done: 95% linked, nothing
    unresolved.
-4. ~~Extend to body text~~ — done: 82.84% linked, 0.16% unresolved.
+4. ~~Extend to body text~~ — done; 83.31% linked, 0.15% unresolved after the
+   hazard 4 correction of 2026-09-10.
 5. ~~Only then annotations~~ — done, with hazards 7 and 8 in place. The
    progression in *Annotations* above is the evidence that ordering mattered.
-6. **Cross-document targets** (open question 4) — the remaining correctness gap.
-7. Emit `citations.json` from `detect()` + `expandRange()` for backlinks.
+6. ~~Build the site~~ — done 2026-09-10. 23,373 section pages + 1,114 chapter
+   pages + 14 volume pages, 0 broken internal links across 24,503 hrefs.
+   Hazard 9 was found by reviewing its output.
+7. **Cross-document targets** (open question 4) — the remaining correctness gap.
+8. Emit `citations.json` from `detect()` + `expandRange()` for backlinks.

@@ -56,6 +56,10 @@ export function chapterHref(chapterNumber: string): string {
   return `/hrs/chapter/${chapterNumber}`;
 }
 
+export function volumeHref(volumeNumber: number): string {
+  return `/hrs/volume/${volumeNumber}`;
+}
+
 /** The bare number a citation in running text would use for this section. */
 function citationKey(sectionNumber: string): string {
   return sectionNumber.replace(/^§/, "").replace(/ \[OLD\]$/, "");
@@ -77,12 +81,21 @@ function citationKey(sectionNumber: string): string {
  *   resolvable from an HRS-shaped citation, so they are left out entirely until
  *   the proper-citation mapping exists.
  */
-export async function buildIndex(): Promise<Index> {
+export async function buildIndex(preloaded?: ParsedSection[]): Promise<Index> {
   const sections = new Map<string, Target>();
   const chapters = new Map<string, Target>();
 
-  for (const file of readdirSync(PARSED_DIR)) {
-    const section: ParsedSection = await Bun.file(`${PARSED_DIR}/${file}`).json();
+  // The site build already holds the whole corpus in memory; re-reading 23,373
+  // files to index what the caller is standing on is pure waste.
+  const corpus =
+    preloaded ??
+    (await Promise.all(
+      readdirSync(PARSED_DIR).map(
+        (file) => Bun.file(`${PARSED_DIR}/${file}`).json() as Promise<ParsedSection>
+      )
+    ));
+
+  for (const section of corpus) {
     if (section.docType !== "hrs") continue;
     sections.set(citationKey(section.sectionNumber), {
       number: section.sectionNumber,
@@ -102,7 +115,14 @@ export async function buildIndex(): Promise<Index> {
   const manifest: Manifest = await Bun.file(MANIFEST_PATH).json();
   for (const volume of manifest.volumes) {
     for (const chapter of volume.chapters) {
-      if (!/^\d/.test(chapter.number)) continue; // skip 01-USCON, 05-CONST, ...
+      // Every chapter directory in the corpus is a real page and a valid link
+      // target, so all 1,114 are indexed — including the six non-HRS ones,
+      // whose directory names (`01-USCON`, `05-CONST`) also begin with a digit.
+      // Keeping them costs nothing: the citation grammar cannot produce a
+      // chapter number containing letters after a hyphen, and `classify()`
+      // rejects any hyphenated chapter number as Hawaii Administrative Rules
+      // before it reaches the index. The *section* namespaces stay separate,
+      // which is where the 89 collisions actually live.
       chapters.set(chapter.number, {
         number: chapter.number,
         kind: "chapter",

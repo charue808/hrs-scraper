@@ -18,6 +18,7 @@ import {
   CHAPTERS_PATH,
   HTML_DIR,
   MANIFEST_PATH,
+  type ChapterRecord,
   type Manifest,
 } from "./config";
 import { fetchPage, pool } from "./fetcher";
@@ -39,7 +40,15 @@ const jobs = manifest.volumes.flatMap((volume) =>
   )
 );
 
-const titles = new Map<string, { title: string; volume: number }>();
+/**
+ * Results keyed by chapter, each tagged with the index page it came from.
+ *
+ * Two chapters (`01-USCON`, `05-CONST`) have more than one index page. Writing
+ * straight into a map would let the worker pool's completion order decide which
+ * one wins, which is nondeterministic — and this file is committed and read as
+ * a diff. They are reduced deterministically below instead.
+ */
+const results = new Map<string, { filename: string; record: ChapterRecord }[]>();
 let fetched = 0;
 let missing = 0;
 let untitled = 0;
@@ -65,20 +74,42 @@ await pool(jobs, 8, async ({ file, number, volume }) => {
 
   const index = parseChapterIndex(html, file.filename, file.url, number);
   if (!index.title) untitled++;
-  titles.set(number, { title: index.title, volume });
+  // Omitted rather than written as empty: the overwhelming majority of chapters
+  // have neither, and this file is committed and read as a diff.
+  const record: ChapterRecord = {
+    title: index.title,
+    volume,
+    ...(index.notes ? { notes: index.notes } : {}),
+    ...(index.annotations.length ? { annotations: index.annotations } : {}),
+  };
+  const existing = results.get(number);
+  if (existing) existing.push({ filename: file.filename, record });
+  else results.set(number, [{ filename: file.filename, record }]);
 });
+
+// Prefer a page that actually yielded a title, then the alphabetically first
+// filename — a rule that does not depend on when a worker finished.
+const titles = new Map<string, ChapterRecord>();
+for (const [number, found] of results) {
+  found.sort((a, b) => a.filename.localeCompare(b.filename));
+  titles.set(number, (found.find((f) => f.record.title) ?? found[0]!).record);
+}
 
 // Sorted by chapter number so the file is stable across runs and diffs cleanly.
 const sortKey = (n: string) =>
   (n.match(/\d+|[A-Za-z]+/g) ?? []).map((p) => (/\d/.test(p) ? p.padStart(6, "0") : p)).join("");
 const sorted = [...titles].sort((a, b) => sortKey(a[0]).localeCompare(sortKey(b[0])));
 
-const out: Record<string, { title: string; volume: number }> = {};
+const out: Record<string, ChapterRecord> = {};
 for (const [number, value] of sorted) out[number] = value;
 
 await Bun.write(CHAPTERS_PATH, `${JSON.stringify(out, null, 2)}\n`);
 
+const withNotes = [...titles.values()].filter((c) => c.notes).length;
+const withAnnotations = [...titles.values()].filter((c) => c.annotations).length;
+
 console.log(`${titles.size} chapters -> ${CHAPTERS_PATH}`);
+console.log(`${withNotes} with chapter notes, ${withAnnotations} with annotations`);
 if (fetched) console.log(`fetched ${fetched} index page(s) missing from the cache`);
 if (untitled) console.log(`${untitled} chapter(s) had no title on their index page`);
 if (missing) console.log(`${missing} index page(s) unavailable`);
