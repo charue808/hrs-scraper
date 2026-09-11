@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-10
-**Head**: 161 tests, typecheck clean
+**Head**: 169 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -101,8 +101,14 @@ URLs are extensionless directories (`/hrs/26-34/index.html` serves
 The markup rules: no JavaScript on any page, link text is the citation exactly
 as written, `aria-label` carries the target's title, unresolved citations stay
 plain text, a citation into removed text is marked but not linked, editorial
-notes are real text in the document flow. Every page carries a breadcrumb, and
-section pages carry previous/next within the chapter.
+notes are real text in the document flow. Every page carries a breadcrumb and a
+link back to its own document on the source server; section pages carry
+previous/next within the chapter.
+
+Bracketed PART/ARTICLE banners are rendered without the brackets, with
+"supplied by the revisor" in words beside them — the same trade the parser
+already makes for a bracketed section heading, and it stops the banner from
+reading as a rendering artifact.
 
 Reviewing the build's output by eye is what found hazard 9 — the same thing that
 happened with the preview renderer in 2026-09-09, and the second time in a row
@@ -191,7 +197,7 @@ Small, and none of them block the site build.
 
 ```bash
 bun install
-bun test                                  # 161 tests
+bun test                                  # 169 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)

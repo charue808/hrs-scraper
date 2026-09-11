@@ -58,6 +58,8 @@ a:hover, a:focus { background: var(--note-bg); }
 .history { color: var(--muted); font-size:.9rem; }
 .part { font-family: system-ui, sans-serif; font-size:.8rem; letter-spacing:.06em;
         text-transform: uppercase; color: var(--muted); margin: 1.5rem 0 .25rem; }
+/* The banner is uppercased; the editorial note about it is not. */
+.part .supplied { text-transform: none; letter-spacing: 0; font-style: italic; opacity: .85; }
 .note { background: var(--note-bg); border-left: 4px solid var(--note-edge);
         padding:.75rem 1rem; margin:1rem 0; font-size:.92rem; }
 .note strong { font-family: system-ui, sans-serif; }
@@ -141,6 +143,50 @@ ${opts.footer ?? ""}
 </body>
 </html>
 `;
+}
+
+/**
+ * The link back to the published source for a page.
+ *
+ * Every page that stands for a real document on `capitol.hawaii.gov` carries
+ * one, so a reader can always check this rendering against the original. It was
+ * on section pages only until 2026-09-10, which made chapter, volume and home
+ * pages look like a different site.
+ *
+ * `label` is the document as the source names it — a filename for a section or
+ * chapter index, a directory for a volume.
+ */
+export function sourceFooter(url: string | undefined, label: string): string {
+  if (!url) return "";
+  return (
+    `<footer class="wrap"><p class="meta">Source: ` +
+    `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a></p></footer>`
+  );
+}
+
+/**
+ * Render a PART/ARTICLE banner.
+ *
+ * The brackets come off for display and the fact is stated in words instead.
+ * That matches how a bracketed *section* heading is already handled — the
+ * parser strips the brackets and `isUncodified` carries the meaning — and it
+ * stops `[PART IV. THE EXECUTIVE BUDGET]` from reading as a rendering artifact,
+ * which is exactly how it read when the brackets were left in.
+ *
+ * Both forms occur: the whole banner bracketed, and only the designation
+ * (`[PART VII.] ROUTINE REPAIR AND MAINTENANCE`).
+ *
+ * The note is real text in the document flow — not a tooltip, not an icon —
+ * for the same reason the editorial note for a source anomaly is.
+ */
+export function partBanner(heading: string): string {
+  const supplied = heading.includes("[");
+  const label = heading.replace(/[\[\]]/g, "").replace(/\s+/g, " ").trim();
+  return (
+    `<p class="part">${escapeHtml(label)}` +
+    (supplied ? `<span class="supplied"> — supplied by the revisor</span>` : "") +
+    `</p>`
+  );
 }
 
 /**
@@ -307,7 +353,7 @@ export function sectionPage(
   if (flags.length) body.push(`<p class="meta">${flags.join(" · ")}</p>`);
 
   if (section.sourceAnomalies.length) body.push(anomalyNote(section));
-  if (section.partHeading) body.push(`<p class="part">${escapeHtml(section.partHeading)}</p>`);
+  if (section.partHeading) body.push(partBanner(section.partHeading));
   if (section.bodyText) body.push(paragraphs(section.bodyText, index, "", false, true));
   // Legislative history is NOT linkified. Measured over the whole corpus, its
   // 5,222 resolvable citations break down as 4,251 pointing at the section's own
@@ -354,9 +400,7 @@ export function sectionPage(
             "next"
           )}</nav>`
         : "",
-    footer:
-      `<footer class="wrap"><p class="meta">Source: ` +
-      `<a href="${escapeHtml(section.url)}">${escapeHtml(section.filename)}</a></p></footer>`,
+    footer: sourceFooter(section.url, section.filename),
   });
 }
 
@@ -365,7 +409,9 @@ export function chapterPage(
   record: ChapterRecord | undefined,
   volume: number,
   sections: ParsedSection[],
-  index: Index
+  index: Index,
+  /** The chapter's index page on the source server. Two chapters have none. */
+  source?: { url: string; filename: string }
 ): string {
   const label = chapterLabel(chapterNumber, record);
   const body: string[] = [`<h1>${escapeHtml(label)}</h1>`];
@@ -398,7 +444,7 @@ export function chapterPage(
         listOpen = false;
       }
       openPart = section.partHeading;
-      rows.push(`<p class="part">${escapeHtml(openPart)}</p>`);
+      rows.push(partBanner(openPart));
     }
     if (!listOpen) {
       rows.push(`<ol class="toc">`);
@@ -424,6 +470,7 @@ export function chapterPage(
       { label: label },
     ],
     body: body.join("\n"),
+    footer: sourceFooter(source?.url, source?.filename ?? ""),
   });
 }
 
@@ -437,7 +484,8 @@ export function chapterLabel(chapterNumber: string, record?: ChapterRecord): str
 export function volumePage(
   volume: number,
   range: string,
-  chapters: { number: string; record?: ChapterRecord; sections: number }[]
+  chapters: { number: string; record?: ChapterRecord; sections: number }[],
+  source?: { url: string; dirName: string }
 ): string {
   const rows = chapters
     .map((c) => {
@@ -470,12 +518,14 @@ export function volumePage(
       `<h1>Volume ${volume}</h1>\n` +
       `<p class="meta">Chapters ${escapeHtml(range)} · ${chapters.length} chapters</p>\n` +
       `<ul class="toc">${rows}</ul>`,
+    footer: sourceFooter(source?.url, source?.dirName ?? ""),
   });
 }
 
 export function homePage(
   volumes: { number: number; range: string; chapters: number }[],
-  stats: { sections: number; chapters: number }
+  stats: { sections: number; chapters: number },
+  sourceUrl?: string
 ): string {
   const rows = volumes
     .map(
@@ -500,6 +550,7 @@ citation is linked only when the section it names exists in the corpus — what
 does not resolve is left as plain text rather than guessed at.</p>
 <h2>Volumes</h2>
 <ul class="toc">${rows}</ul>`,
+    footer: sourceFooter(sourceUrl, "capitol.hawaii.gov/hrscurrent"),
   });
 }
 

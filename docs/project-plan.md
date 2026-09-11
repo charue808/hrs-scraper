@@ -414,7 +414,7 @@ src/
   resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
   site.ts          the site's markup: page shell, section/chapter/volume pages,
-                   statutory outline depth
+                   statutory outline depth, part banners, source footers
   build.ts         reads the corpus, resolves citations, writes build/site
   serve.ts         serves build/site locally (development only)
 
@@ -424,7 +424,7 @@ src/
   parser.test.ts         77 tests
   citations.test.ts      44 tests
   corrections.test.ts    15 tests
-  site.test.ts           25 tests
+  site.test.ts           33 tests
 
 sql/schema.sql     standalone schema (side tool)
 data/              manifest.json, chapters.json, corrections.json and

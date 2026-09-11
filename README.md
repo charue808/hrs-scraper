@@ -379,7 +379,7 @@ src/
   serve.ts         — serves build/site locally (development only)
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 161 tests (bun test)
+  *.test.ts        — 169 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)

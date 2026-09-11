@@ -103,6 +103,21 @@ no text to attach to. The options if it ever needs more are listed cheapest
 first, along with the constraint that rules out the obvious one: the site does
 not inject text the legislature did not write.
 
+### Two more from the same reading
+
+- **Bracketed banners looked like a bug.** Fixing the parser made
+  `[PART IV. THE EXECUTIVE BUDGET]` appear, brackets and all. The brackets come
+  off for display now and the note is stated in words beside the banner — which
+  is the same trade the parser already makes for a bracketed *section* heading,
+  where it strips the brackets and `isUncodified` carries the meaning. Nothing
+  in the corpus changes; this is display only.
+- **Only section pages had a source link.** Chapter, volume and home pages had
+  no footer at all, which made them look like a different site. Every page that
+  stands for a real document on the source server now links back to it: a
+  section to its file, a chapter to its index page, a volume to its directory,
+  home to `hrscurrent/`. `02-HNP` and `03-ORG` have no index page on the server,
+  so they get no footer rather than a dead link.
+
 ### Also
 
 `src/serve.ts` — the built site uses extensionless directories, which is what a

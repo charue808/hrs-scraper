@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { chapterLabel, chapterPage, outline, sectionPage } from "./site";
+import { chapterLabel, chapterPage, outline, partBanner, sectionPage, volumePage } from "./site";
 import { sectionHref, type Index, type Target } from "./resolver";
 import type { ParsedSection } from "./config";
 
@@ -252,6 +252,61 @@ describe("bracketed headings", () => {
     const html = render({ isUncodified: true, bodyText: "The department shall act." });
     expect(html).not.toContain("not enacted");
     expect(html).toContain("The department shall act.");
+  });
+});
+
+describe("part banners", () => {
+  // Left in, the brackets read as a rendering artifact. They come off and the
+  // fact is stated in words — the same trade the parser already makes for a
+  // bracketed section heading.
+  test("an unbracketed banner renders plainly", () => {
+    const html = partBanner("PART V. GENERAL FUND EXPENDITURE CEILING");
+    expect(html).toBe('<p class="part">PART V. GENERAL FUND EXPENDITURE CEILING</p>');
+  });
+
+  test("a fully bracketed banner loses the brackets and gains the note", () => {
+    const html = partBanner("[PART IV. THE EXECUTIVE BUDGET]");
+    expect(html).toContain(">PART IV. THE EXECUTIVE BUDGET<");
+    expect(html).not.toContain("[");
+    expect(html).toContain("supplied by the revisor");
+  });
+
+  test("a partly bracketed banner is handled the same way", () => {
+    const html = partBanner("[PART VII.] ROUTINE REPAIR AND MAINTENANCE");
+    expect(html).toContain(">PART VII. ROUTINE REPAIR AND MAINTENANCE<");
+    expect(html).toContain("supplied by the revisor");
+  });
+
+  test("the banner reaches the section page through the same path", () => {
+    expect(render({ partHeading: "[ARTICLE 9J]" })).toContain(">ARTICLE 9J<");
+  });
+});
+
+describe("source links", () => {
+  // Section pages carried one and nothing else did, which made every other page
+  // look like a different site.
+  test("a section page links its source file", () => {
+    expect(render()).toContain('<a href="https://x/HRS_0502-0013.htm">HRS_0502-0013.htm</a>');
+  });
+
+  test("a chapter page links its index page", () => {
+    const html = chapterPage("37", { title: "BUDGET", volume: 1 }, 1, [], index, {
+      url: "https://x/HRS_0037-.htm",
+      filename: "HRS_0037-.htm",
+    });
+    expect(html).toContain('<a href="https://x/HRS_0037-.htm">HRS_0037-.htm</a>');
+  });
+
+  // 02-HNP and 03-ORG have no index page on the source server.
+  test("a chapter with no index page gets no footer rather than a dead link", () => {
+    const html = chapterPage("02-HNP", undefined, 1, [], index);
+    expect(html).not.toContain("<footer");
+    expect(html).not.toContain("Source:");
+  });
+
+  test("a volume page links its directory", () => {
+    const html = volumePage(1, "1–42F", [], { url: "https://x/Vol01/", dirName: "Vol01" });
+    expect(html).toContain('<a href="https://x/Vol01/">Vol01</a>');
   });
 });
 

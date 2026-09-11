@@ -96,10 +96,12 @@ for (const volume of manifest.volumes) {
     const sections = byChapter.get(chapter.number) ?? [];
     const record = chapterRecords[chapter.number];
     const label = chapterLabel(chapter.number, record);
+    // `02-HNP` and `03-ORG` have no index page, so they get no source link.
+    const chapterSource = chapter.files.find((f) => f.isIndex);
 
     await write(
       `hrs/chapter/${chapter.number}`,
-      chapterPage(chapter.number, record, volume.number, sections, index)
+      chapterPage(chapter.number, record, volume.number, sections, index, chapterSource)
     );
     chapterCount++;
 
@@ -131,7 +133,8 @@ for (const volume of manifest.volumes) {
         number: c.number,
         record: chapterRecords[c.number],
         sections: (byChapter.get(c.number) ?? []).length,
-      }))
+      })),
+      { url: `${manifest.baseUrl}${volume.dirName}/`, dirName: volume.dirName }
     )
   );
 }
@@ -147,7 +150,8 @@ if (!ONLY_CHAPTER) {
         range: v.chapterRange.replace(/^0+/, "").replace(/-0+/, "–"),
         chapters: v.chapters.length,
       })),
-      { sections: corpus.length, chapters: manifest.volumes.reduce((n, v) => n + v.chapters.length, 0) }
+      { sections: corpus.length, chapters: manifest.volumes.reduce((n, v) => n + v.chapters.length, 0) },
+      manifest.baseUrl
     )
   );
 }
