@@ -234,15 +234,18 @@ reports them.
 ### 5. Build the site
 
 ```bash
-bun run build                    # the whole corpus -> build/site/ (~5s)
+bun run build                    # the whole corpus -> build/site/ (~6s + ~17s indexing)
 bun run build -- --chapter 26    # one chapter, for reviewing by eye
+bun run build -- --no-index      # skip Pagefind
 bun run build -- --out dist
+bun run serve                    # browse it at localhost:3000
 ```
 
-Emits 24,503 files: a page per section, per chapter, per volume, plus a home
-page and one stylesheet. `bun run serve` browses the result at
-`localhost:3000` — the pages are extensionless directories, which a static host
-resolves and `file://` does not. URLs are extensionless directories
+Emits 49,413 files: a page per section, per chapter and per volume, plus a home
+page, a search page, `citations.json`, and the Pagefind index — which is 24,907
+of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
+the count. `bun run serve` browses the result at `localhost:3000`; the pages are
+extensionless directories, which a static host resolves and `file://` does not. URLs are extensionless directories
 (`/hrs/26-34/index.html` serves `/hrs/26-34`), so it works on any static host
 without rewrite rules. No page loads JavaScript.
 
@@ -281,8 +284,8 @@ results with highlighted snippets, and `get_chapter_sections()`.
 
 ## Deployment
 
-The build emits **24,503 files** — measured, not estimated — which interacts
-with static-host file caps:
+The build emits **49,413 files** — measured, not estimated. Pagefind writes one
+fragment per indexed page, so search more than doubles the count:
 
 | Host | Cap | Fits? |
 |---|---|---|
@@ -292,7 +295,7 @@ with static-host file caps:
 | Workers static assets (paid) | 100,000 files per version, 25 MiB each | Yes |
 | A VPS / object storage | no practical cap | Yes |
 
-A paid Cloudflare plan on either product clears 24,503 comfortably. The free
+A paid Cloudflare plan on either product clears 49,413 with room. The free
 tier of both does not — which is the constraint to design around if free hosting
 is a requirement.
 
@@ -379,7 +382,7 @@ src/
   serve.ts         — serves build/site locally (development only)
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 169 tests (bun test)
+  *.test.ts        — 195 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)

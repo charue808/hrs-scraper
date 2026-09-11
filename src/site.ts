@@ -15,7 +15,8 @@ import {
   type ParsedSection,
 } from "./config";
 import { escapeHtml, linkify } from "./citations";
-import { chapterHref, sectionHref, volumeHref, type Index } from "./resolver";
+import { chapterHref, resolve, sectionHref, volumeHref, type Index } from "./resolver";
+import type { Edge } from "./graph";
 
 /**
  * The six non-HRS directories, which are numbered as prefixed identifiers
@@ -90,11 +91,21 @@ ul.toc a, ol.toc a { display:block; padding:.55rem .25rem; text-decoration:none;
 ul.toc a:hover, ol.toc a:hover, ul.toc a:focus, ol.toc a:focus { background:var(--note-bg); }
 ol.toc .t { color: var(--muted); }
 .repealed .t::after { content:" — repealed"; font-size:.85em; }
+details summary { cursor: pointer; padding:.4rem 0; font-family: system-ui, sans-serif;
+                  font-size:.85rem; color: var(--muted); }
+details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 nav.crumbs { border-bottom:1px solid var(--rule); font-size:.82rem;
              font-family: system-ui, sans-serif; }
 nav.crumbs ol { list-style:none; display:flex; flex-wrap:wrap; gap:.5rem;
                 padding:.75rem 0; margin:0; color: var(--muted); }
 nav.crumbs li + li::before { content:"› "; color: var(--rule); }
+nav.crumbs > .wrap { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; }
+.search-link { white-space:nowrap; font-size:.82rem; }
+/* Pagefind's UI inherits the page palette rather than shipping its own. */
+:root { --pagefind-ui-scale:.8; --pagefind-ui-primary:var(--ink);
+        --pagefind-ui-text:var(--ink); --pagefind-ui-background:var(--bg);
+        --pagefind-ui-border:var(--rule); --pagefind-ui-tag:var(--note-bg);
+        --pagefind-ui-font:system-ui, sans-serif; }
 nav.pager { border-top:1px solid var(--rule); display:flex; gap:1rem;
             justify-content:space-between; padding:1rem 0; font-size:.9rem; }
 nav.pager a { flex:1 1 0; text-decoration:none; }
@@ -109,12 +120,38 @@ interface Crumb {
   href?: string;
 }
 
+/**
+ * How a page presents itself to the search index.
+ *
+ * Pagefind indexes only pages carrying `data-pagefind-body` once any page has
+ * it, which is exactly the behaviour we want: statute and chapter pages are
+ * content, volume and home pages are navigation and would only pollute results.
+ */
+export interface SearchInfo {
+  /** Shown on the result card. */
+  meta?: Record<string, string>;
+  /** Offered as facets in the search UI. */
+  filters?: Record<string, string>;
+}
+
+const searchAttrs = (search?: SearchInfo): string => {
+  if (!search) return "";
+  const attr = (kind: "meta" | "filter", pairs: Record<string, string> = {}) =>
+    Object.entries(pairs)
+      .map(([k, v]) => ` data-pagefind-${kind}="${escapeHtml(`${k}:${v}`)}"`)
+      .join("");
+  return ` data-pagefind-body${attr("meta", search.meta)}${attr("filter", search.filters)}`;
+};
+
 export function page(opts: {
   title: string;
   crumbs: Crumb[];
   body: string;
   pager?: string;
   footer?: string;
+  search?: SearchInfo;
+  head?: string;
+  bodyEnd?: string;
 }): string {
   const crumbs = opts.crumbs
     .map((c) =>
@@ -131,18 +168,87 @@ export function page(opts: {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(opts.title)}</title>
 <link rel="stylesheet" href="/style.css">
-</head>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+${opts.head ?? ""}</head>
 <body>
 <a class="skip" href="#content">Skip to content</a>
-<nav class="crumbs" aria-label="Breadcrumb"><div class="wrap"><ol>${crumbs}</ol></div></nav>
-<main id="content" class="wrap">
+<nav class="crumbs" aria-label="Breadcrumb"><div class="wrap"><ol>${crumbs}</ol>
+<a class="search-link" href="/search">Search</a></div></nav>
+<main id="content" class="wrap"${searchAttrs(opts.search)}>
 ${opts.body}
 </main>
 ${opts.pager ?? ""}
 ${opts.footer ?? ""}
-</body>
+${opts.bodyEnd ?? ""}</body>
 </html>
 `;
+}
+
+/**
+ * "Cited by" — the reverse of the citation graph.
+ *
+ * This is the thing the published statutes cannot do at all: a `.htm` file has
+ * no idea what points at it. Two groups, because they answer different
+ * questions:
+ *
+ * - **Cited by** — the statutory text of another section refers to this one.
+ *   Range-implied edges belong here too (the statute did mean the whole span)
+ *   but are marked, since there is no clickable text naming this section.
+ * - **Mentioned in annotations** — case notes, commentary and revision notes
+ *   discuss it. Useful, but not the statute pointing anywhere.
+ *
+ * Long lists are wrapped in `<details>`, which is native HTML — the no-JavaScript
+ * rule is about scripts, not about interactivity the browser already provides.
+ * §23G-15 is referenced by 410 sections and chapter 91 by 1,642; rendering those
+ * flat would bury the statute under its own backlinks.
+ */
+const COLLAPSE_OVER = 25;
+
+function citedByList(edges: Edge[], index: Index): string {
+  const sortKey = (n: string) =>
+    (n.match(/\d+|[A-Za-z]+/g) ?? []).map((p) => (/\d/.test(p) ? p.padStart(8, "0") : p)).join("");
+
+  const rows = [...edges]
+    .sort((a, b) => sortKey(a.from).localeCompare(sortKey(b.from)))
+    .map((edge) => {
+      const target = resolve(index, edge.from.replace(/^§/, ""), "section");
+      const title = target?.title ? `<span class="t">${escapeHtml(target.title)}</span>` : "";
+      const note =
+        edge.block === "range" ? `<span class="meta"> within a cited range</span>` : "";
+      return (
+        `<li><a href="${sectionHref(edge.from)}">` +
+        `<span class="num">${escapeHtml(edge.from)}</span> ${title}${note}</a></li>`
+      );
+    })
+    .join("\n");
+
+  return `<ul class="toc">${rows}</ul>`;
+}
+
+function citedBySection(edges: Edge[] | undefined, index: Index): string {
+  if (!edges?.length) return "";
+
+  const statutory = edges.filter((e) => e.block !== "annotation");
+  const annotation = edges.filter((e) => e.block === "annotation");
+
+  const group = (heading: string, list: Edge[], noun: string) => {
+    if (!list.length) return "";
+    const count = `${list.length} ${list.length === 1 ? noun : `${noun}s`}`;
+    const body = citedByList(list, index);
+    return list.length > COLLAPSE_OVER
+      ? `<h2>${heading}</h2>\n<details><summary>${count}</summary>${body}</details>`
+      : `<h2>${heading}</h2>\n<p class="meta">${count}</p>\n${body}`;
+  };
+
+  // Excluded from the search index: these are lists of other sections' numbers,
+  // and indexing them makes every heavily-cited section match every query that
+  // mentions one of its citers.
+  return `<div data-pagefind-ignore>${[
+    group("Cited by", statutory, "section"),
+    group("Mentioned in annotations", annotation, "section"),
+  ]
+    .filter(Boolean)
+    .join("\n")}</div>`;
 }
 
 /**
@@ -279,11 +385,20 @@ const paragraphs = (
     .join("\n");
 };
 
+/**
+ * Annotation blocks, down-weighted for search.
+ *
+ * Case notes and commentary are far bulkier than the statute they sit under —
+ * 5.3M characters against 32M, but concentrated on a minority of sections. At
+ * equal weight a section's own text loses to the case law discussing it, which
+ * is the wrong answer to "what does the statute say?".
+ */
 const annotationBlocks = (blocks: Annotation[], index: Index): string =>
   blocks
     .map(
       (note) =>
-        `<h2>${escapeHtml(note.heading)}</h2>\n${paragraphs(note.text, index, "ann", true)}`
+        `<h2>${escapeHtml(note.heading)}</h2>\n` +
+        `<div data-pagefind-weight="0.4">${paragraphs(note.text, index, "ann", true)}</div>`
     )
     .join("\n");
 
@@ -310,9 +425,104 @@ function anomalyNote(section: ParsedSection): string {
 
 // --- pages ---
 
+/**
+ * The search page — the only page on the site that loads JavaScript.
+ *
+ * Everything else is pre-rendered precisely so there is nothing to fail; search
+ * is the one thing a static file cannot do, so it is isolated here. Pagefind's
+ * index is chunked, so a query pulls a few hundred KB rather than the corpus.
+ *
+ * Without JavaScript the page says so and hands the reader the navigation that
+ * does work, rather than presenting a search box that silently does nothing.
+ */
+export function searchPage(): string {
+  return page({
+    title: "Search — Hawaii Revised Statutes",
+    crumbs: [{ label: "HRS", href: "/" }, { label: "Search" }],
+    head: `<link rel="stylesheet" href="/pagefind/pagefind-ui.css">\n`,
+    body: `<h1>Search the statutes</h1>
+<p class="meta">Searches the full text of every section and chapter, including
+case notes and commentary. Annotations are weighted below the statutory text, so
+a section's own words win over the case law discussing them.</p>
+<p id="jump" class="note" hidden></p>
+<div id="search"></div>
+<noscript><p class="note"><strong>Search needs JavaScript</strong> — it is the
+one thing on this site that does. Every statute page works without it: start
+from <a href="/">the volume list</a>, or go straight to a section at
+<code>/hrs/26-34</code>.</p></noscript>`,
+    bodyEnd: `<script src="/pagefind/pagefind-ui.js"></script>
+<script>
+  window.addEventListener("DOMContentLoaded", function () {
+    new PagefindUI({
+      element: "#search",
+      showSubResults: true,
+      showImages: false,
+      pageSize: 20,
+    });
+
+    // Jump straight to a section when the query names one.
+    //
+    // Full-text search cannot do this reliably: Pagefind tokenizes "26-34" into
+    // the digits 26 and 34 and prefix-matches, so §263-4 scores against it. But
+    // a section number is an exact address, and the site is addressed by it —
+    // so resolve it as an address instead of a query. The URL is verified with
+    // a HEAD request before the link is offered, which is why no table of valid
+    // numbers has to be shipped to the browser.
+    var jump = document.getElementById("jump");
+    var input = document.querySelector(".pagefind-ui__search-input");
+    if (!jump || !input) return;
+
+    // A typed number, cleaned. The colon of the article form survives here so the
+    // label reads \\u00A7431:10C-301 as the HRS writes it, and is folded to a hyphen
+    // only for the URL — the same split sectionSlug() makes on the server.
+    var numberOf = function (q) {
+      var t = q.trim().replace(/^\\u00A7+\\s*/, "").replace(/\\s+/g, "").toUpperCase();
+      if (!/^[0-9][0-9A-Z:.\\-]*$/.test(t)) return null;
+      // Every HRS section number contains a hyphen, so a bare number is never one.
+      if (t.indexOf("-") === -1) return null;
+      return t;
+    };
+
+    var token = 0;
+    var timer = null;
+    var check = function () {
+      var number = numberOf(input.value);
+      var mine = ++token;
+      if (!number) { jump.hidden = true; return; }
+      var slug = number.replace(/:/g, "-");
+      fetch("/hrs/" + slug + "/", { method: "HEAD" })
+        .then(function (r) {
+          if (mine !== token) return;            // a newer keystroke won
+          if (!r.ok) { jump.hidden = true; return; }
+          jump.innerHTML =
+            'Go straight to <a href="/hrs/' + slug + '/">\\u00A7' + number + "</a>";
+          jump.hidden = false;
+        })
+        .catch(function () { if (mine === token) jump.hidden = true; });
+    };
+    // Debounced: without this every keystroke of "431:10C-301" fires its own
+    // request, and nine of the eleven are for prefixes that cannot exist.
+    input.addEventListener("input", function () {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(check, 250);
+    });
+    check();
+  });
+</script>
+`,
+  });
+}
+
 export function sectionPage(
   section: ParsedSection,
-  context: { chapterLabel: string; volume: number; prev?: ParsedSection; next?: ParsedSection },
+  context: {
+    chapterLabel: string;
+    volume: number;
+    prev?: ParsedSection;
+    next?: ParsedSection;
+    /** What cites this section, from the citation graph. */
+    citedBy?: Edge[];
+  },
   index: Index
 ): string {
   // Display text is the source's; identity is ours. Where a number was
@@ -372,6 +582,8 @@ export function sectionPage(
   // right would be zero useful links anyway. See docs/citation-linking.md.
   if (section.history) body.push(`<p class="history">${escapeHtml(section.history)}</p>`);
   if (section.annotations.length) body.push(annotationBlocks(section.annotations, index));
+  // After the annotations: this is about the section, not part of it.
+  body.push(citedBySection(context.citedBy, index));
 
   const link = (other: ParsedSection | undefined, rel: "prev" | "next") => {
     if (!other) return `<span></span>`;
@@ -386,6 +598,17 @@ export function sectionPage(
 
   return page({
     title: `${shown} ${section.title} — Hawaii Revised Statutes`,
+    search: {
+      meta: { number: shown, title: section.title, chapter: section.chapterNumber },
+      // Facets a researcher actually narrows by. `status` is derived from what
+      // the source states, never inferred: a section is "repealed" because its
+      // heading says so.
+      filters: {
+        chapter: section.chapterNumber,
+        document: section.docType,
+        status: section.isRepealed ? "repealed" : "in force",
+      },
+    },
     crumbs: [
       { label: "HRS", href: "/" },
       { label: `Volume ${context.volume}`, href: volumeHref(context.volume) },
@@ -411,7 +634,9 @@ export function chapterPage(
   sections: ParsedSection[],
   index: Index,
   /** The chapter's index page on the source server. Two chapters have none. */
-  source?: { url: string; filename: string }
+  source?: { url: string; filename: string },
+  /** What cites this chapter, from the citation graph. */
+  citedBy?: Edge[]
 ): string {
   const label = chapterLabel(chapterNumber, record);
   const body: string[] = [`<h1>${escapeHtml(label)}</h1>`];
@@ -461,9 +686,14 @@ export function chapterPage(
   body.push(rows.join("\n"));
 
   if (record?.annotations?.length) body.push(annotationBlocks(record.annotations, index));
+  body.push(citedBySection(citedBy, index));
 
   return page({
     title: `${label} — Hawaii Revised Statutes`,
+    search: {
+      meta: { number: `Chapter ${chapterNumber}`, title: record?.title ?? "" },
+      filters: { chapter: chapterNumber, document: "chapter index" },
+    },
     crumbs: [
       { label: "HRS", href: "/" },
       { label: `Volume ${volume}`, href: volumeHref(volume) },

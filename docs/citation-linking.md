@@ -488,7 +488,9 @@ with links.
    all. But the statute means the span, and dropping it would make a section
    cited only inside a range look uncited, so `expandRange()` contributes those
    2,722 edges to the graph. Same-chapter numeric spans only.
-2. ~~**Should the citation graph be stored?**~~ **Decided 2026-09-09**: the
+2. ~~**Should the citation graph be stored?**~~ **Decided 2026-09-09, built
+   2026-09-10** — `src/graph.ts` emits `build/site/citations.json`, 28,547 edges,
+   byte-stable. Original reasoning: the
    graph is built in memory at build time and baked into the rendered HTML.
    24,505 sections is small enough that this needs no database. Emitting it
    alongside the site as a `citations.json` (from, to, offsets, resolved) is
@@ -557,4 +559,5 @@ with links.
    pages + 14 volume pages, 0 broken internal links across 24,503 hrefs.
    Hazard 9 was found by reviewing its output.
 7. **Cross-document targets** (open question 4) — the remaining correctness gap.
-8. Emit `citations.json` from `detect()` + `expandRange()` for backlinks.
+8. ~~Emit `citations.json` from `detect()` + `expandRange()` for backlinks.~~ —
+   done 2026-09-10; `src/graph.ts`, 28,547 edges, rendered as "Cited by".

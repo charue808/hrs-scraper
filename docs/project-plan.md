@@ -27,7 +27,7 @@ Storage & Delivery below and `citation-linking.md`.
 ## Status
 
 The corpus is scraped, parsed, committed, cross-linked and **built into a
-static site** (24,503 files, 0 broken internal links).
+static site** with search and backlinks (49,413 files, 0 broken internal links).
 **`STATE.md` is the current-state summary** — what is trustworthy, what
 is missing, and where the loose threads are. This document is the design
 reference underneath it.
@@ -55,8 +55,10 @@ something this content needs. Concretely:
   URLs are extensionless directories (`/hrs/26-34/index.html` serves
   `/hrs/26-34`), which needs no rewrite rules on any static host. No client-side fetching,
   no JS on statute pages — which also means nothing to fail for a screen reader.
-- **Search**: Pagefind. Its index is chunked, so a query pulls a few hundred KB
-  rather than the whole corpus, and only the search page loads any JS.
+- **Search**: Pagefind, wired up 2026-09-10. Indexes the 24,487 statute and
+  chapter pages; annotations are weighted at 0.4 and backlinks excluded. Its
+  index is chunked, so a query pulls a few hundred KB rather than the whole
+  corpus, and only the search page loads any JS.
 - **`bodyHtml`**: retained in the parsed JSON as a fallback for debugging parse
   issues, but never rendered. Pages are built from the structured fields, which
   is what gives us control over the markup for accessibility. It is 46% of the
@@ -67,7 +69,7 @@ Measured sizes for the full corpus: 154 MB of parsed JSON raw, ~33 MB gzipped.
 `db.ts`, `migrate.ts` and `sql/schema.sql` are kept — `--db` remains useful for
 ad-hoc analysis during development — but they are a side tool, not the pipeline.
 
-**Deployment**: the build emits **24,503 files** (measured, not estimated). Cloudflare raised the Pages
+**Deployment**: the build emits **49,413 files** (measured, not estimated) — Pagefind writes one fragment per indexed page and more than doubles the count. Cloudflare raised the Pages
 cap to 100,000 for paid plans on 2026-01-23 (requires
 `PAGES_WRANGLER_MAJOR_VERSION=4`), and Workers static assets tier the same way,
 so a paid plan on either clears it. Both free tiers stop at 20,000. If free
@@ -82,7 +84,7 @@ pages is the cheapest reduction. Limits move — re-check before committing.
 - **Language**: TypeScript
 - **HTML parsing**: cheerio
 - **HTTP**: the built-in `fetch`, with Puppeteer as a fallback only
-- **Search**: Pagefind (not yet wired up)
+- **Search**: Pagefind 1.5
 - **Database** *(side tool)*: Postgres, via the built-in `Bun.SQL`
 
 The original plan specified `postgres.js` and plain `fetch` with browser-like
@@ -413,8 +415,9 @@ src/
   corrections.ts   loadCorrections, applyCorrections, sectionNumberAliases
   resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
-  site.ts          the site's markup: page shell, section/chapter/volume pages,
-                   statutory outline depth, part banners, source footers
+  graph.ts         the citation graph: edges, backlinks, citations.json
+  site.ts          the site's markup: page shell, section/chapter/volume/search
+                   pages, outline depth, part banners, footers, backlinks
   build.ts         reads the corpus, resolves citations, writes build/site
   serve.ts         serves build/site locally (development only)
 
@@ -424,7 +427,8 @@ src/
   parser.test.ts         77 tests
   citations.test.ts      44 tests
   corrections.test.ts    15 tests
-  site.test.ts           33 tests
+  graph.test.ts          10 tests
+  site.test.ts           49 tests
 
 sql/schema.sql     standalone schema (side tool)
 data/              manifest.json, chapters.json, corrections.json and
@@ -640,14 +644,15 @@ Ordered by what stands between the current state and a finished site.
 
 ### To build
 
-- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,503 files
-  (23,373 sections, 1,114 chapters, 14 volumes, home, stylesheet) in 4.7s with
-  0 broken internal links. `src/site.ts` owns the markup, `src/build.ts` the
-  driver.
-- **Pagefind.** Not started. The build is the input it needs.
-- **`citations.json`.** `detect()` plus `expandRange()` already produce the
-  graph; nothing emits it, so backlinks ("what cites this section?") are
-  unanswerable.
+- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,503 pages
+  (23,373 sections, 1,114 chapters, 14 volumes, home, search) with 0 broken
+  internal links. `src/site.ts` owns the markup, `src/build.ts` the driver.
+- ~~**Pagefind.**~~ Done 2026-09-10. Indexes the 24,487 statute and chapter
+  pages; annotations weighted 0.4, backlinks excluded, navigation pages left
+  out. Adds 24,907 files.
+- ~~**`citations.json`.**~~ Done 2026-09-10: `src/graph.ts`, 28,547 edges,
+  rendered as "Cited by" and emitted as a 6.0 MB byte-stable artifact.
+
 
 ### Smaller
 

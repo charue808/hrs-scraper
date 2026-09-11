@@ -2,15 +2,84 @@
 
 **Last updated**: 2026-09-10
 
-## Status: the site builds, and reading it has been paying for itself
+## Status: search and backlinks are in
 
-`bun run build` turns the committed corpus into **24,503 files in ~4.6 seconds**
-— 23,373 sections, 1,114 chapters, 14 volumes, a home page and one stylesheet —
-with **0 broken internal links** across all 24,503 distinct hrefs. `bun run
-serve` browses it at localhost:3000. 161 tests.
+`bun run build` emits **49,413 files** — 24,503 pages in ~6s, then ~17s for the
+Pagefind index (24,907 of those files) — with 0 broken internal links. Every
+section carries "Cited by", and `citations.json` publishes the whole 28,547-edge
+graph. `bun run serve` browses it at localhost:3000. 195 tests.
 
-Next: Pagefind, then `citations.json` for backlinks. The one remaining
-correctness gap is still cross-document targets (the 424 non-HRS files).
+Next: cross-document targets (the 424 non-HRS files), the last correctness gap.
+Then Division/Title navigation, and a host.
+
+## 2026-09-10 (third pass) — the citation graph, and search
+
+### Backlinks
+
+`src/graph.ts` collects what `detect()` already resolves into a graph: **28,547
+edges** over the corpus, built in about a second. Three rules decide an edge —
+history excluded (hazard 9), self-citations dropped, ranges contributing their
+implied members labelled `range` so a section cited only inside a span does not
+look uncited. Body and annotation references stay separate because they answer
+different questions: one is the statute pointing somewhere, the other is
+commentary about it.
+
+This is the thing the published statutes cannot do at all. A `.htm` file has no
+idea what points at it.
+
+The shape is manageable: 8,758 sections have at least one backlink, most have
+one to four, and the tail is short — chapter 91 with 1,642 and §23G-15 with 410,
+the latter almost entirely Revision Notes citing the revisor's own authority.
+Lists over 25 collapse into native `<details>`, which is interactivity the
+browser already provides and does not breach the no-JavaScript rule.
+
+`citations.json` (6.0 MB, byte-stable, verified identical across runs) publishes
+the graph alongside the site, so the question is answerable without a build.
+
+### Search
+
+Pagefind 1.5 indexes the **24,487** statute and chapter pages. Volume and home
+pages are navigation and are deliberately left out — once any page carries
+`data-pagefind-body`, only tagged pages are indexed, which is exactly the
+behaviour wanted. Annotations are weighted **0.4**: they are 5.3M characters
+against the statutes' 32M but concentrated on a minority of sections, so at equal
+weight the case law discussing a section beats the section itself. Backlinks are
+excluded outright, or every heavily-cited section matches every query naming one
+of its citers.
+
+`/search` is the only page on the site that loads JavaScript, and it says so
+plainly when JavaScript is off rather than presenting a box that does nothing.
+
+### Section numbers are an address, not a query
+
+Verified in a real browser rather than assumed, which is how this surfaced:
+**searching a section number never found that section.** `26-34` put §263-4
+first and §26-34 second; `1-1` did not return §1-1 in the top five at all.
+
+The cause is tokenization. Pagefind splits `26-34` into the digits `26` and `34`
+and prefix-matches, so `263` matches `26`. A `data-pagefind-weight="10"` on the
+number in the heading was tried and **measured to change nothing**, so it was
+removed rather than left in with a comment claiming it helped.
+
+The fix is to stop treating a number as a query. The search page resolves a
+number-shaped input to a URL and offers "Go straight to §26-34", verified with a
+debounced HEAD request before the link appears — so no table of 22,972 valid
+numbers has to ship to the browser, and a number that does not exist simply
+offers nothing. Confirmed working for the plain (`26-34`), article
+(`431:10C-301`) and short (`1-1`) forms, and correctly silent for prose and for
+`9999-1`. The debounce took a single query from 11 HEAD requests to 1.
+
+### Also
+
+A favicon, because every page load was emitting a 404 for one. Inline SVG
+written by the build — three lines, scales, no build step.
+
+### The deployment number changed
+
+Pagefind writes one fragment per indexed page, so the site went from 24,503
+files to **49,413**. A paid Cloudflare plan (100,000) still clears it with room;
+both free tiers (20,000) are now out of reach by more than twice over.
+`--no-index` halves the count if that ever matters more than search.
 
 ## 2026-09-10 (second pass) — five defects found by reading the built site
 

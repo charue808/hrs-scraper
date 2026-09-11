@@ -1,7 +1,17 @@
 import { expect, test, describe } from "bun:test";
-import { chapterLabel, chapterPage, outline, partBanner, sectionPage, volumePage } from "./site";
+import {
+  chapterLabel,
+  chapterPage,
+  homePage,
+  outline,
+  partBanner,
+  searchPage,
+  sectionPage,
+  volumePage,
+} from "./site";
 import { sectionHref, type Index, type Target } from "./resolver";
 import type { ParsedSection } from "./config";
+import type { Edge } from "./graph";
 
 const target = (number: string, title: string): Target => ({
   number,
@@ -50,8 +60,8 @@ const section = (over: Partial<ParsedSection> = {}): ParsedSection => ({
   ...over,
 });
 
-const render = (over: Partial<ParsedSection> = {}) =>
-  sectionPage(section(over), { chapterLabel: "Chapter 502", volume: 12 }, index);
+const render = (over: Partial<ParsedSection> = {}, citedBy?: Edge[]) =>
+  sectionPage(section(over), { chapterLabel: "Chapter 502", volume: 12, citedBy }, index);
 
 describe("legislative history is never linked", () => {
   // Measured over the corpus: of 5,222 resolvable citations in history, 4,251
@@ -307,6 +317,119 @@ describe("source links", () => {
   test("a volume page links its directory", () => {
     const html = volumePage(1, "1–42F", [], { url: "https://x/Vol01/", dirName: "Vol01" });
     expect(html).toContain('<a href="https://x/Vol01/">Vol01</a>');
+  });
+});
+
+describe("cited by", () => {
+  const edges = (n: number, block: "body" | "annotation" | "range" = "body") =>
+    Array.from({ length: n }, (_, i) => ({
+      from: `§26-${i + 1}`,
+      to: "§502-13",
+      kind: "section" as const,
+      block,
+    }));
+
+  test("a short list renders open, with a count", () => {
+    const html = render({}, edges(3));
+    expect(html).toContain("<h2>Cited by</h2>");
+    expect(html).toContain("3 sections");
+    expect(html).not.toContain("<details>");
+    expect(html).toContain(`href="${sectionHref("§26-1")}"`);
+  });
+
+  test("one citing section is singular", () => {
+    expect(render({}, edges(1))).toContain("1 section");
+  });
+
+  // §23G-15 has 410 citing sections and chapter 91 has 1,642. Rendering those
+  // flat buries the statute under its own backlinks.
+  test("a long list collapses into native details/summary", () => {
+    const html = render({}, edges(40));
+    expect(html).toContain("<details><summary>40 sections</summary>");
+    expect(html).not.toContain("<script");
+  });
+
+  test("statutory and annotation references are separated", () => {
+    const html = render({}, [...edges(2), ...edges(2, "annotation")]);
+    expect(html).toContain("<h2>Cited by</h2>");
+    expect(html).toContain("<h2>Mentioned in annotations</h2>");
+  });
+
+  // The statute meant the whole span, but no text in it names this section.
+  test("a range-implied reference is marked", () => {
+    expect(render({}, edges(1, "range"))).toContain("within a cited range");
+  });
+
+  test("nothing is rendered when nothing cites the section", () => {
+    expect(render()).not.toContain("Cited by");
+  });
+});
+
+describe("search index markup", () => {
+  // Once any page carries data-pagefind-body, Pagefind indexes only those pages.
+  // Statute and chapter pages are content; volume and home pages are navigation
+  // and would only pollute results.
+  test("section pages are indexed, with metadata and filters", () => {
+    const html = render();
+    expect(html).toContain("data-pagefind-body");
+    expect(html).toContain('data-pagefind-meta="number:§502-13"');
+    expect(html).toContain('data-pagefind-filter="chapter:502"');
+    expect(html).toContain('data-pagefind-filter="status:in force"');
+  });
+
+  test("a repealed section is filterable as such", () => {
+    expect(render({ isRepealed: true })).toContain('data-pagefind-filter="status:repealed"');
+  });
+
+  test("chapter pages are indexed", () => {
+    expect(chapterPage("37", { title: "BUDGET", volume: 1 }, 1, [], index)).toContain(
+      "data-pagefind-body"
+    );
+  });
+
+  test("navigation pages are not indexed", () => {
+    expect(volumePage(1, "1–42F", [])).not.toContain("data-pagefind-body");
+    expect(homePage([], { sections: 0, chapters: 0 })).not.toContain("data-pagefind-body");
+  });
+
+  // Annotations are 5.3M characters against the statutes' 32M but concentrated
+  // on a minority of sections; at equal weight the case law discussing a section
+  // outranks the section itself.
+  test("annotations are down-weighted", () => {
+    expect(render({ annotations: [{ heading: "Case Notes", text: "A note." }] })).toContain(
+      'data-pagefind-weight="0.4"'
+    );
+  });
+
+  // Otherwise every heavily-cited section matches every query naming one of the
+  // sections that cites it.
+  test("backlinks are excluded from the index", () => {
+    const html = render({}, [{ from: "§26-1", to: "§502-13", kind: "section", block: "body" }]);
+    expect(html).toContain("data-pagefind-ignore");
+  });
+});
+
+describe("search page", () => {
+  test("it is the only page that loads JavaScript", () => {
+    const html = searchPage();
+    expect(html).toContain("pagefind-ui.js");
+    expect(render()).not.toContain("<script");
+  });
+
+  test("it degrades to real guidance without JavaScript", () => {
+    const html = searchPage();
+    expect(html).toContain("<noscript>");
+    expect(html).toContain("Search needs JavaScript");
+    expect(html).toContain('href="/"');
+  });
+
+  test("it is not itself indexed", () => {
+    expect(searchPage()).not.toContain("data-pagefind-body");
+  });
+
+  test("every page offers a way to reach it", () => {
+    expect(render()).toContain('href="/search"');
+    expect(chapterPage("37", undefined, 1, [], index)).toContain('href="/search"');
   });
 });
 

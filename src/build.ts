@@ -21,12 +21,25 @@ import {
   type ParsedSection,
 } from "./config";
 import { buildIndex, sectionSlug } from "./resolver";
-import { chapterLabel, chapterPage, homePage, sectionPage, volumePage, STYLE } from "./site";
+import { buildGraph, serializeGraph } from "./graph";
+import {
+  chapterLabel,
+  chapterPage,
+  homePage,
+  searchPage,
+  sectionPage,
+  volumePage,
+  STYLE,
+} from "./site";
 import { pool } from "./fetcher";
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
-  options: { chapter: { type: "string" }, out: { type: "string" } },
+  options: {
+    chapter: { type: "string" },
+    out: { type: "string" },
+    "no-index": { type: "boolean", default: false },
+  },
   allowPositionals: true,
 });
 
@@ -54,6 +67,11 @@ await pool(files, 32, async (file, i) => {
 });
 
 const index = await buildIndex(corpus);
+
+// The graph is built once here and used two ways: baked into each page as
+// backlinks, and emitted as citations.json so the question is answerable
+// without re-detecting. History is excluded from it — see graph.ts.
+const graph = buildGraph(corpus, index);
 
 const byChapter = new Map<string, ParsedSection[]>();
 for (const section of corpus) {
@@ -101,7 +119,15 @@ for (const volume of manifest.volumes) {
 
     await write(
       `hrs/chapter/${chapter.number}`,
-      chapterPage(chapter.number, record, volume.number, sections, index, chapterSource)
+      chapterPage(
+        chapter.number,
+        record,
+        volume.number,
+        sections,
+        index,
+        chapterSource,
+        graph.citedBy.get(chapter.number)
+      )
     );
     chapterCount++;
 
@@ -115,6 +141,7 @@ for (const volume of manifest.volumes) {
             volume: volume.number,
             prev: sections[i - 1],
             next: sections[i + 1],
+            citedBy: graph.citedBy.get(section.sectionNumber),
           },
           index
         )
@@ -141,6 +168,27 @@ for (const volume of manifest.volumes) {
 
 await Bun.write(`${OUT}/style.css`, STYLE.trim() + "\n");
 
+// A favicon, so every page load stops emitting a 404 for one. Inline SVG rather
+// than a binary: it is three lines, scales, and needs no build step.
+await Bun.write(
+  `${OUT}/favicon.svg`,
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#1a1a1a"/>
+  <text x="16" y="23" font-family="Georgia, serif" font-size="20" font-weight="bold"
+        fill="#fbfaf7" text-anchor="middle">\u00A7</text>
+</svg>
+`
+);
+
+// Published alongside the site: the whole graph, so "what cites this?" is
+// answerable without a build and rendering can be regenerated without
+// re-detecting. Only emitted on a full build — a --chapter subset would
+// produce a graph that silently omits most of the corpus.
+if (!ONLY_CHAPTER) {
+  await Bun.write(`${OUT}/citations.json`, serializeGraph(graph));
+  await Bun.write(`${OUT}/search/index.html`, searchPage());
+}
+
 if (!ONLY_CHAPTER) {
   await Bun.write(
     `${OUT}/index.html`,
@@ -160,3 +208,13 @@ const seconds = ((Date.now() - started) / 1000).toFixed(1);
 console.log(
   `${sectionCount} sections + ${chapterCount} chapters -> ${OUT}/ in ${seconds}s`
 );
+
+// Pagefind reads the HTML that was just written, so it has to run last. Skipped
+// for a --chapter subset, which would index a fraction of the corpus and give a
+// search box that confidently reports nothing.
+if (!ONLY_CHAPTER && !values["no-index"]) {
+  const at = Date.now();
+  const { $ } = await import("bun");
+  await $`bunx pagefind --site ${OUT} --output-subdir pagefind`.quiet();
+  console.log(`search index -> ${OUT}/pagefind/ in ${((Date.now() - at) / 1000).toFixed(1)}s`);
+}

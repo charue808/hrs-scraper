@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-10
-**Head**: 169 tests, typecheck clean
+**Head**: 195 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -78,6 +78,32 @@ contain a hyphen, so a bare "section 203" is never an HRS reference.
 Run `bun run profile-citations` to reproduce. It reports rejections **by
 reason**, because "bare number" and "unresolved" mean opposite things.
 
+### Search and backlinks — built
+
+**Backlinks.** `src/graph.ts` builds the citation graph — **28,547 edges** in
+about a second — and the build bakes it into each page as "Cited by" and emits
+the whole thing as `citations.json` (6.0 MB, byte-stable). This is the thing the
+published statutes cannot do at all: a `.htm` file has no idea what points at it.
+
+Three rules decide an edge: history is excluded (hazard 9), self-citations are
+dropped, and ranges contribute their implied members labelled `range`. Body and
+annotation references are kept apart because they answer different questions.
+Most-cited: chapter 91 with 1,642 and §23G-15 with 410; 8,758 sections have at
+least one backlink. Lists over 25 collapse into native `<details>`.
+
+**Search.** Pagefind indexes the 24,487 statute and chapter pages — volume and
+home pages are navigation and are left out. Annotations are weighted at 0.4 so a
+section's own words beat the case law discussing them, and backlinks are
+excluded outright. `/search` is the only page that loads JavaScript, and says so
+if it is switched off.
+
+**Section numbers are found by address, not by search.** Pagefind tokenizes
+`26-34` into the digits `26` and `34` and prefix-matches, so §263-4 outranks
+§26-34 and no weighting fixed it — measured, then the weighting was removed
+rather than left in claiming to help. Instead the search page resolves a
+number-shaped query to a URL and offers "Go straight to §26-34", verified with a
+debounced HEAD request so no table of valid numbers ships to the browser.
+
 ### The site — built
 
 `bun run build` reads `data/parsed` and writes the whole document set.
@@ -89,10 +115,12 @@ writing files.
 | Section pages | 23,373 |
 | Chapter pages | 1,114 |
 | Volume pages | 14 |
-| Home + stylesheet | 2 |
-| **Total files** | **24,503** |
-| Size | 218 MB raw, ~16 MB gzipped |
-| Build time | 4.7s |
+| Home, search, stylesheet, favicon | 4 |
+| `citations.json` | 6.0 MB |
+| Pagefind index | 24,907 files, 115 MB |
+| **Total files** | **49,413** |
+| Size | 351 MB raw |
+| Build time | ~6s, plus ~17s to index |
 | Broken internal links | **0** of 24,503 distinct hrefs |
 
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
@@ -129,19 +157,17 @@ missing.
 
 ## What is not built
 
-1. **Pagefind.** No search at all yet. The build is the input it needs.
-2. **`citations.json`.** The graph is computed but not emitted, so there are no
-   backlinks — "what cites this section?" is unanswerable. `detect()` plus
-   `expandRange()` already produce everything needed, and the build already
-   walks every section, so emitting it is nearly free from here.
-3. **Cross-document linking.** See the correctness gap below.
-4. **A host.** Not blocking, and now measured: the build emits **24,503 files**.
-   A paid Cloudflare plan (100,000) clears it; both free tiers (20,000) do not.
-5. **Division/Title navigation.** The site navigates by volume, which is a
+1. **Cross-document linking.** See the correctness gap below.
+2. **A host.** Now the sharpest constraint, because Pagefind writes one fragment
+   per indexed page: the build emits **49,413 files**, not 24,503. A paid
+   Cloudflare plan (100,000) still clears it with room; both free tiers (20,000)
+   are now out of reach by more than twice over. `--no-index` halves the count if
+   that ever matters more than search.
+3. **Division/Title navigation.** The site navigates by volume, which is a
    printing artifact. The index pages carry the real structure —
    `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — and it is not
    extracted yet.
-6. **Chapter index section listings.** Only the title, notes and annotations are
+4. **Chapter index section listings.** Only the title, notes and annotations are
    taken from an index page. The listing itself would make a good coverage check
    against the files actually discovered. Not needed for the build: chapter
    contents are derived from the parsed sections, which carry real titles.
@@ -197,7 +223,7 @@ Small, and none of them block the site build.
 
 ```bash
 bun install
-bun test                                  # 169 tests
+bun test                                  # 195 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)
@@ -207,6 +233,7 @@ bun run chapters                          # chapter titles -> data/chapters.json
 bun run profile-citations                 # the citation quality metric
 bun run build                             # the whole site -> build/site/ (~5s)
 bun run build -- --chapter 26             # one chapter, for reviewing by eye
+bun run build -- --no-index               # skip Pagefind (halves the file count)
 bun run serve                             # browse build/site at localhost:3000
 ```
 

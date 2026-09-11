@@ -19,7 +19,8 @@
     "puppeteer": "^24.37.3"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "pagefind": "^1.5.2"
   },
   "peerDependencies": {
     "typescript": "^5"
