@@ -416,6 +416,9 @@ src/
   resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
   graph.ts         the citation graph: edges, backlinks, citations.json
+  vocabulary.ts    corpus word list, for spelling suggestions on /search
+  search-client.js browser script for /search: jump-to-section, spelling
+  verify-search.ts end-to-end check of /search in a real browser
   site.ts          the site's markup: page shell, section/chapter/volume/search
                    pages, outline depth, part banners, footers, backlinks
   build.ts         reads the corpus, resolves citations, writes build/site
@@ -428,6 +431,7 @@ src/
   citations.test.ts      44 tests
   corrections.test.ts    15 tests
   graph.test.ts          10 tests
+  vocabulary.test.ts      8 tests
   site.test.ts           49 tests
 
 sql/schema.sql     standalone schema (side tool)
@@ -580,6 +584,7 @@ bun run profile-citations             # citation quality metric
 bun run build                         # the whole site -> build/site/ (~5s)
 bun run build -- --chapter 26         # one chapter, for reviewing by eye
 bun run serve                         # browse build/site at localhost:3000
+bun run verify-search                 # drive /search in a real browser
 
 # Parse a single page to sanity-check the parser
 bun run test-parse -- --file data/html/HRS_0001-0001.htm --json

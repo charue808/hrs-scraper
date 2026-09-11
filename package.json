@@ -11,6 +11,7 @@
     "profile-citations": "bun src/profile-citations.ts",
     "build": "bun src/build.ts",
     "serve": "bun src/serve.ts",
+    "verify-search": "bun src/verify-search.ts",
     "chapters": "bun src/chapters.ts",
     "test": "bun test"
   },

@@ -443,8 +443,10 @@ export function searchPage(): string {
     body: `<h1>Search the statutes</h1>
 <p class="meta">Searches the full text of every section and chapter, including
 case notes and commentary. Annotations are weighted below the statutory text, so
-a section's own words win over the case law discussing them.</p>
+a section's own words win over the case law discussing them. Type a section
+number to go straight to it.</p>
 <p id="jump" class="note" hidden></p>
+<p id="spelling" class="note" hidden></p>
 <div id="search"></div>
 <noscript><p class="note"><strong>Search needs JavaScript</strong> — it is the
 one thing on this site that does. Every statute page works without it: start
@@ -459,54 +461,10 @@ from <a href="/">the volume list</a>, or go straight to a section at
       showImages: false,
       pageSize: 20,
     });
-
-    // Jump straight to a section when the query names one.
-    //
-    // Full-text search cannot do this reliably: Pagefind tokenizes "26-34" into
-    // the digits 26 and 34 and prefix-matches, so §263-4 scores against it. But
-    // a section number is an exact address, and the site is addressed by it —
-    // so resolve it as an address instead of a query. The URL is verified with
-    // a HEAD request before the link is offered, which is why no table of valid
-    // numbers has to be shipped to the browser.
-    var jump = document.getElementById("jump");
-    var input = document.querySelector(".pagefind-ui__search-input");
-    if (!jump || !input) return;
-
-    // A typed number, cleaned. The colon of the article form survives here so the
-    // label reads \\u00A7431:10C-301 as the HRS writes it, and is folded to a hyphen
-    // only for the URL — the same split sectionSlug() makes on the server.
-    var numberOf = function (q) {
-      var t = q.trim().replace(/^\\u00A7+\\s*/, "").replace(/\\s+/g, "").toUpperCase();
-      if (!/^[0-9][0-9A-Z:.\\-]*$/.test(t)) return null;
-      // Every HRS section number contains a hyphen, so a bare number is never one.
-      if (t.indexOf("-") === -1) return null;
-      return t;
-    };
-
-    var token = 0;
-    var timer = null;
-    var check = function () {
-      var number = numberOf(input.value);
-      var mine = ++token;
-      if (!number) { jump.hidden = true; return; }
-      var slug = number.replace(/:/g, "-");
-      fetch("/hrs/" + slug + "/", { method: "HEAD" })
-        .then(function (r) {
-          if (mine !== token) return;            // a newer keystroke won
-          if (!r.ok) { jump.hidden = true; return; }
-          jump.innerHTML =
-            'Go straight to <a href="/hrs/' + slug + '/">\\u00A7' + number + "</a>";
-          jump.hidden = false;
-        })
-        .catch(function () { if (mine === token) jump.hidden = true; });
-    };
-    // Debounced: without this every keystroke of "431:10C-301" fires its own
-    // request, and nine of the eleven are for prefixes that cannot exist.
-    input.addEventListener("input", function () {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(check, 250);
-    });
-    check();
+    // Loaded after the UI exists, because it attaches to Pagefind's own input.
+    var s = document.createElement("script");
+    s.src = "/search.js";
+    document.body.appendChild(s);
   });
 </script>
 `,

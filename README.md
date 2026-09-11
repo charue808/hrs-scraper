@@ -239,6 +239,7 @@ bun run build -- --chapter 26    # one chapter, for reviewing by eye
 bun run build -- --no-index      # skip Pagefind
 bun run build -- --out dist
 bun run serve                    # browse it at localhost:3000
+bun run verify-search            # drive /search in a real browser (needs Chrome)
 ```
 
 Emits 49,413 files: a page per section, per chapter and per volume, plus a home
@@ -382,7 +383,7 @@ src/
   serve.ts         — serves build/site locally (development only)
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 195 tests (bun test)
+  *.test.ts        — 203 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)

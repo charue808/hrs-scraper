@@ -22,6 +22,7 @@ import {
 } from "./config";
 import { buildIndex, sectionSlug } from "./resolver";
 import { buildGraph, serializeGraph } from "./graph";
+import { countWords, serializeVocabulary } from "./vocabulary";
 import {
   chapterLabel,
   chapterPage,
@@ -187,6 +188,10 @@ await Bun.write(
 if (!ONLY_CHAPTER) {
   await Bun.write(`${OUT}/citations.json`, serializeGraph(graph));
   await Bun.write(`${OUT}/search/index.html`, searchPage());
+  // Pagefind cannot tell a typo from a rare term; the corpus can. See
+  // vocabulary.ts for why this is worth 70 KB on the search page alone.
+  await Bun.write(`${OUT}/search-vocabulary.txt`, serializeVocabulary(countWords(corpus)));
+  await Bun.write(`${OUT}/search.js`, Bun.file("src/search-client.js"));
 }
 
 if (!ONLY_CHAPTER) {

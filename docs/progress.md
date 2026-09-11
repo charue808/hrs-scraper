@@ -7,7 +7,7 @@
 `bun run build` emits **49,413 files** — 24,503 pages in ~6s, then ~17s for the
 Pagefind index (24,907 of those files) — with 0 broken internal links. Every
 section carries "Cited by", and `citations.json` publishes the whole 28,547-edge
-graph. `bun run serve` browses it at localhost:3000. 195 tests.
+graph. `bun run serve` browses it at localhost:3000. 203 tests.
 
 Next: cross-document targets (the 424 non-HRS files), the last correctness gap.
 Then Division/Title navigation, and a host.
@@ -68,6 +68,50 @@ numbers has to ship to the browser, and a number that does not exist simply
 offers nothing. Confirmed working for the plain (`26-34`), article
 (`431:10C-301`) and short (`1-1`) forms, and correctly silent for prose and for
 `9999-1`. The debounce took a single query from 11 HEAD requests to 1.
+
+### Typo tolerance, which Pagefind does not have
+
+Asked whether a misspelling could still find the right sections. Measured first:
+it cannot, and the failure is worse than empty.
+
+| query | Pagefind |
+|---|---|
+| `marijuana` | 59 results, correct |
+| `marijauna` | **3 results**, unrelated |
+| `marjuana` | **7 results**, unrelated |
+| `marihuana` | **3 results** — and this is the older statutory spelling |
+| `cannabus` | **878 results** |
+
+None of those are marked as guesses. A reader gets confident nonsense, which is
+the same failure the citation linker exists to prevent. Pagefind's `ranking`
+options (`term_similarity` and friends) tune its own prefix matching and are not
+typo tolerance; it has none by design.
+
+Having the whole corpus makes the honest answer cheap: we know exactly which
+words appear in the statutes, so *"that word is not in the HRS"* is a fact we can
+state. `src/vocabulary.ts` emits `search-vocabulary.txt` — 17,223 words at
+**52 KB gzipped**, loaded on the search page only. Thresholds were measured:
+`len>=5, freq>=3` keeps `riparian` (15) and `escheat` (44) while dropping one-off
+typos in the published source.
+
+The client suggests the nearest word with capped Damerau-Levenshtein. The first
+attempt used plain Levenshtein and corrected `marijauna` to **`mariana`** —
+transposition costs 2 there, tying with two deletions, and bucket order decided
+it. Counting a swap as one edit makes the right answer strictly better.
+Suggestion dispatch measures 0.3ms over the full word list.
+
+`src/search-client.js` is now a real browser file rather than a template string
+inside `site.ts`, so it can be read and typechecked like everything else.
+
+### Verification is repeatable now
+
+`bun run verify-search` drives `/search` in a real browser: 14 checks over the
+three section-number forms, six typo classes, and three queries that must stay
+quiet. It is deliberately outside `bun test` — it needs a Chrome download and a
+running server, so a fresh clone would fail for reasons unrelated to the code.
+
+Every search defect so far was found by driving the real UI and would have been
+invisible to a unit test.
 
 ### Also
 

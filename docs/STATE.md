@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-10
-**Head**: 195 tests, typecheck clean
+**Head**: 203 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -103,6 +103,20 @@ if it is switched off.
 rather than left in claiming to help. Instead the search page resolves a
 number-shaped query to a URL and offers "Go straight to §26-34", verified with a
 debounced HEAD request so no table of valid numbers ships to the browser.
+
+**Typos are answered from the corpus, because Pagefind cannot.** It has no fuzzy
+matching, and its failure mode is worse than an empty result: `marijauna` returns
+3 unrelated sections and `cannabus` returns 878, rendered exactly like real hits.
+Having the whole corpus makes the honest answer cheap — we know which words
+appear in the statutes, so "that word is not in the HRS" is a fact, not a guess.
+`search-vocabulary.txt` ships 17,223 words (52 KB gzipped, search page only) and
+the client suggests the nearest with capped Damerau-Levenshtein. Transposition
+costs one edit, not two, or `marijauna` corrects to `mariana` instead of
+`marijuana`. Dispatch is 0.3ms.
+
+`bun run verify-search` drives all of this in a real browser — 14 checks. Search
+is the one part of the site that cannot be verified by reading the built output,
+and every defect in it so far was found this way.
 
 ### The site — built
 
@@ -223,7 +237,7 @@ Small, and none of them block the site build.
 
 ```bash
 bun install
-bun test                                  # 195 tests
+bun test                                  # 203 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)
@@ -235,6 +249,7 @@ bun run build                             # the whole site -> build/site/ (~5s)
 bun run build -- --chapter 26             # one chapter, for reviewing by eye
 bun run build -- --no-index               # skip Pagefind (halves the file count)
 bun run serve                             # browse build/site at localhost:3000
+bun run verify-search                     # drive /search in a real browser
 ```
 
 `--db`, `bun run migrate` and `sql/schema.sql` still work but are a side tool for
