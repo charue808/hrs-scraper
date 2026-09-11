@@ -1,10 +1,10 @@
 {
   "sectionNumber": "CONST §5-3",
-  "title": "",
+  "title": "REPEALED.",
   "chapterNumber": "05-CONST",
   "docType": "const",
   "partHeading": null,
-  "bodyText": "COMPENSATION: GOVERNOR, LIEUTENANT GOVERNOR\n\nSection 3. REPEALED.",
+  "bodyText": "COMPENSATION: GOVERNOR, LIEUTENANT GOVERNOR",
   "history": "[Repeal HB 1917 (2006) and election Nov 7, 2006]",
   "crossReferences": [
     "Statutory provision, see §26-51."
@@ -17,7 +17,7 @@
     }
   ],
   "isUncodified": false,
-  "isRepealed": false,
+  "isRepealed": true,
   "covers": null,
   "titleIsSupplied": false,
   "sourceAnomalies": [],

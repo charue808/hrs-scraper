@@ -16,6 +16,7 @@ import {
 } from "./config";
 import { escapeHtml, linkify } from "./citations";
 import { chapterHref, resolve, sectionHref, volumeHref, type Index } from "./resolver";
+import { properCitation } from "./cross-document";
 import type { Edge } from "./graph";
 
 /**
@@ -26,7 +27,7 @@ import type { Edge } from "./graph";
  */
 export const NON_HRS_LABELS: Record<string, string> = {
   "01-USCON": "United States Constitution",
-  "02-HNP": "Hawaii National Park",
+  "02-HNP": "Hawaii National Park Act",
   "03-ORG": "Organic Act",
   "04-ADM": "Admission Act",
   "05-CONST": "Hawaii State Constitution",
@@ -211,13 +212,17 @@ function citedByList(edges: Edge[], index: Index): string {
   const rows = [...edges]
     .sort((a, b) => sortKey(a.from).localeCompare(sortKey(b.from)))
     .map((edge) => {
-      const target = resolve(index, edge.from.replace(/^§/, ""), "section");
+      const target =
+        resolve(index, edge.from.replace(/^§/, ""), "section") ??
+        [...(index.cross?.documents.values() ?? [])]
+          .flatMap((m) => [...m.values()])
+          .find((t) => t.number === edge.from);
       const title = target?.title ? `<span class="t">${escapeHtml(target.title)}</span>` : "";
       const note =
         edge.block === "range" ? `<span class="meta"> within a cited range</span>` : "";
       return (
         `<li><a href="${sectionHref(edge.from)}">` +
-        `<span class="num">${escapeHtml(edge.from)}</span> ${title}${note}</a></li>`
+        `<span class="num">${escapeHtml(target?.label ?? edge.from)}</span> ${title}${note}</a></li>`
       );
     })
     .join("\n");
@@ -486,7 +491,15 @@ export function sectionPage(
   // Display text is the source's; identity is ours. Where a number was
   // corrected, the heading shows what the page actually says.
   const numberAnomaly = section.sourceAnomalies.find((a) => a.field === "sectionNumber");
-  const shown = numberAnomaly ? numberAnomaly.observed : section.sectionNumber;
+  // The non-HRS documents are keyed by a synthesized identifier (`CONST §1-5`)
+  // because it is stable and unique, but nobody cites them that way. The page
+  // shows the citation a lawyer would write; the identifier stays the URL, so
+  // nothing that already links here breaks.
+  const shown = numberAnomaly
+    ? numberAnomaly.observed
+    : section.docType === "hrs"
+      ? section.sectionNumber
+      : properCitation(section);
 
   const body: string[] = [];
   // The title is linkified, not merely escaped: 29 titles in the corpus are
@@ -546,7 +559,8 @@ export function sectionPage(
   const link = (other: ParsedSection | undefined, rel: "prev" | "next") => {
     if (!other) return `<span></span>`;
     const arrow = rel === "prev" ? "← " : " →";
-    const label = rel === "prev" ? `${arrow}${other.sectionNumber}` : `${other.sectionNumber}${arrow}`;
+    const cited = other.docType === "hrs" ? other.sectionNumber : properCitation(other);
+    const label = rel === "prev" ? `${arrow}${cited}` : `${cited}${arrow}`;
     return (
       `<a class="${rel}" rel="${rel}" href="${sectionHref(other.sectionNumber)}">` +
       `<span class="num">${escapeHtml(label)}</span><br>` +
@@ -636,7 +650,9 @@ export function chapterPage(
     rows.push(
       `<li${section.isRepealed ? ' class="repealed"' : ""}>` +
         `<a href="${sectionHref(section.sectionNumber)}">` +
-        `<span class="num">${escapeHtml(section.sectionNumber)}</span> ` +
+        `<span class="num">${escapeHtml(
+          section.docType === "hrs" ? section.sectionNumber : properCitation(section)
+        )}</span> ` +
         `<span class="t">${escapeHtml(section.title)}</span></a></li>`
     );
   }

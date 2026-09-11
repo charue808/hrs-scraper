@@ -1,10 +1,10 @@
 {
   "sectionNumber": "CONST §18-3",
-  "title": "",
+  "title": "REPEALED.",
   "chapterNumber": "05-CONST",
   "docType": "const",
   "partHeading": null,
-  "bodyText": "SALARIES OF LEGISLATORS\n\nSection 3. REPEALED.",
+  "bodyText": "SALARIES OF LEGISLATORS",
   "history": "[Repeal HB 1917 (2006) and election Nov 7, 2006]",
   "crossReferences": [
     "Commission on salaries, see §26-56."
@@ -17,7 +17,7 @@
     }
   ],
   "isUncodified": false,
-  "isRepealed": false,
+  "isRepealed": true,
   "covers": null,
   "titleIsSupplied": false,
   "sourceAnomalies": [],

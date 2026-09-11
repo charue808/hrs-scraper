@@ -209,6 +209,50 @@ function leadingBoldText(runs: Run[]): string {
 }
 
 const HEADING_RE = /^\[?\s*§+\s*([0-9][0-9A-Za-z:.\-]*[0-9A-Za-z])\s*\]?\s+(.*)$/;
+
+// The non-HRS documents head their sections differently, and neither form is
+// matched by HEADING_RE — which is why 276 of their titles were missing.
+//
+// `§73. Commissioner of public lands.` — the Organic Act, HHCA, Admission Act
+// and Hawaii National Park Act put a period after the number and then the
+// catchline, where one exists. The number must still end on an alphanumeric so
+// `§220.5.` yields `220.5` and not `220.5.`.
+const ACT_HEADING_RE = /^§+\s*([0-9](?:[0-9A-Za-z.\-]*[0-9A-Za-z])?)\s*\.\s*(.*)$/;
+// `Section 5.` — both constitutions. The number here is the section *within its
+// article*, and the article appears only in the filename, so this locates the
+// heading rather than supplying a number. The catchline is not on this line at
+// all; it sits in the centred paragraph above (see `catchlineAbove`).
+const CONST_HEADING_RE = /^Section\s+([0-9]+[A-Za-z]?)\s*\.\s*(.*)$/i;
+
+/**
+ * Whether a bold run opens a section.
+ *
+ * The alternative forms are accepted only for the non-HRS documents, so the
+ * 22,972 HRS sections keep exactly the behaviour they had.
+ */
+function isSectionHeading(heading: string, prefix: string): boolean {
+  if (HEADING_RE.test(heading)) return true;
+  if (prefix === "HRS") return false;
+  return ACT_HEADING_RE.test(heading) || CONST_HEADING_RE.test(heading);
+}
+
+/**
+ * Whether the paragraph above a constitutional heading is its catchline.
+ *
+ * The constitutions print the catchline as a centred, fully upper-case line
+ * above `Section n.` — `DUE PROCESS AND EQUAL PROTECTION`. Measured across all
+ * 179 such pages, 178 are entirely upper-case; the one exception is annotation
+ * prose that leaked above a heading, which this correctly rejects. An ARTICLE
+ * banner is excluded because it is the part heading, captured separately.
+ */
+function catchlineAbove(paragraph: string | undefined): string | null {
+  if (!paragraph) return null;
+  const text = paragraph.trim();
+  if (!text || text.length > 90) return null;
+  if (/[a-z]/.test(text)) return null;
+  if (STRUCTURAL_RE.test(text)) return null;
+  return text;
+}
 // The leading bracket is not optional decoration: the HRS brackets material
 // supplied by the revisor rather than enacted, and it applies that convention to
 // structural banners exactly as it does to section headings above. Both whole-
@@ -310,7 +354,11 @@ interface Block {
  * vocabulary: `XNotesHeading` opens an annotation block and `XNotes` holds its
  * text. Everything before the first `XNotesHeading` is the statute itself.
  */
-function splitBlocks($: cheerio.CheerioAPI, root: cheerio.Cheerio<Element>): Block[] {
+function splitBlocks(
+  $: cheerio.CheerioAPI,
+  root: cheerio.Cheerio<Element>,
+  prefix: string
+): Block[] {
   const blocks: Block[] = [{ kind: "body", heading: null, paragraphs: [], elements: [] }];
 
   root.find("p").each((_, el) => {
@@ -333,9 +381,24 @@ function splitBlocks($: cheerio.CheerioAPI, root: cheerio.Cheerio<Element>): Blo
     if (
       block.kind === "annotation" &&
       !classes.includes("XNotes") &&
-      HEADING_RE.test(leadingBoldText(textRuns(el)))
+      isSectionHeading(leadingBoldText(textRuns(el)), prefix)
     ) {
-      block = { kind: "body", heading: null, paragraphs: [], elements: [] };
+      // A constitutional catchline sits directly above its heading, so when an
+      // annotation intervenes — an article banner page carries the article
+      // title, then a Law Journals note, then section 1 — the catchline is
+      // stranded at the end of that annotation. Carry it into the body with the
+      // heading it belongs to, or the section inherits the *article's* title.
+      const carried: { text: string; element: Element }[] = [];
+      const last = block.paragraphs[block.paragraphs.length - 1];
+      if (prefix !== "HRS" && catchlineAbove(last)) {
+        carried.push({ text: block.paragraphs.pop()!, element: block.elements.pop()! });
+      }
+      block = {
+        kind: "body",
+        heading: null,
+        paragraphs: carried.map((c) => c.text),
+        elements: carried.map((c) => c.element),
+      };
       blocks.push(block);
     }
 
@@ -358,7 +421,8 @@ export function parseSection(
   const section = $("div.WordSection1");
   const root = (section.length ? section : $("body")) as cheerio.Cheerio<Element>;
 
-  const blocks = splitBlocks($, root);
+  const { prefix, suffix } = normalizeFilename(filename);
+  const blocks = splitBlocks($, root, prefix);
   const bodyBlocks = blocks.filter((block) => block.kind === "body");
   const body = {
     paragraphs: bodyBlocks.flatMap((block) => block.paragraphs),
@@ -370,7 +434,6 @@ export function parseSection(
 
   // --- section number and title, taken from the page where possible ---
   const fromFilename = filenameToSectionNumber(filename);
-  const { prefix, suffix } = normalizeFilename(filename);
 
   /** Build a full section number from a bare one parsed out of the page. */
   const pageNumber = (raw: string): string =>
@@ -387,7 +450,14 @@ export function parseSection(
   // Every heading on the page, in document order. A page can carry more than
   // one: a repealed-range banner for an [OLD] part, then the section the file
   // is actually for.
-  const candidates: { index: number; heading: string; number: string; rest: string }[] = [];
+  const candidates: {
+    index: number;
+    heading: string;
+    number: string;
+    rest: string;
+    /** The constitutions put the catchline in the paragraph above the heading. */
+    titleAbove?: boolean;
+  }[] = [];
   body.elements.forEach((el, index) => {
     const heading = leadingBoldText(textRuns(el));
     if (heading === "") return;
@@ -398,6 +468,28 @@ export function parseSection(
         heading,
         number: pageNumber(match[1]!),
         rest: match[2]!.trim(),
+      });
+      return;
+    }
+    // The alternative forms are tried only for the non-HRS documents, so the
+    // 22,972 HRS sections keep exactly the behaviour they had.
+    if (prefix === "HRS") return;
+
+    const act = heading.match(ACT_HEADING_RE);
+    if (act) {
+      candidates.push({ index, heading, number: pageNumber(act[1]!), rest: act[2]!.trim() });
+      return;
+    }
+    const constitutional = heading.match(CONST_HEADING_RE);
+    if (constitutional) {
+      // The page states the section but not its article, so the filename still
+      // decides the number — the same split a range heading forces.
+      candidates.push({
+        index,
+        heading,
+        number: fromFilename,
+        rest: constitutional[2]!.trim(),
+        titleAbove: true,
       });
     }
   });
@@ -420,8 +512,22 @@ export function parseSection(
       title = range.title;
     } else {
       sectionNumber = chosen.number;
-      numberSource = "page";
+      // A constitutional heading states the section but not its article, so the
+      // number still comes from the filename and `numberSource` says so.
+      numberSource = chosen.titleAbove ? "filename" : "page";
       title = chosen.rest;
+    }
+
+    // The constitutions carry their catchline above the heading rather than on
+    // it, so the title comes from there when the heading itself yielded none.
+    if (chosen.titleAbove && !title) {
+      const above = catchlineAbove(body.paragraphs[chosen.index - 1]);
+      if (above) {
+        title = above;
+        // Lifted out of the body, not copied — otherwise it renders twice, the
+        // same mistake the PART banner made.
+        body.paragraphs[chosen.index - 1] = "";
+      }
     }
 
     isUncodified = chosen.heading.startsWith("[");
@@ -457,6 +563,19 @@ export function parseSection(
     // renders it twice, which it was doing on 1,243 of the 1,247 sections that
     // carried one.
     body.paragraphs[i] = "";
+
+    // The constitutions name the article on the line below its banner —
+    // `ARTICLE I` then `BILL OF RIGHTS`. That is the article's title, not the
+    // section's, so it joins the banner instead of opening the statute text.
+    // The section's own catchline has already been lifted out above, so
+    // whatever remains here belongs to the article.
+    if (prefix !== "HRS") {
+      const articleTitle = catchlineAbove(body.paragraphs[i + 1]);
+      if (articleTitle) {
+        partHeading = `${paragraph} — ${articleTitle}`;
+        body.paragraphs[i + 1] = "";
+      }
+    }
     break;
   }
 

@@ -164,18 +164,33 @@ Volume 1 carries six directories that are not numbered HRS chapters:
 | `06-HHCA` | Hawaiian Homes Commission Act | 45 |
 
 They are discovered and scraped alongside the chapters and tagged with a
-`docType`. Their headings differ from the HRS form, so they currently fall back
-to filename-derived numbers with no title:
+`docType`. Their headings differ from the HRS form in two ways, both handled
+since 2026-09-10 — and only for non-HRS files, so the 22,972 HRS sections keep
+exactly the behaviour they had:
 
-- **Admission and Organic Acts** — `<b>§2.</b>  The State of Hawaii shall...`:
-  the number is bold but is followed by a period and then straight into the
-  text. These sections genuinely have no titles, so the filename-derived number
-  is the right answer; only `numberSource` is misleading.
-- **Constitutions** — `<b>Section 4.</b>  No law shall be enacted...`, with the
-  title in centered bold paragraphs *above* it (`FREEDOM OF RELIGION, SPEECH,
-  PRESS, ASSEMBLY AND PETITION`). Here a real title is being missed.
+- **The acts** — `<b>§73. Commissioner of public lands.</b>`: a period follows
+  the number, which `HEADING_RE` does not allow. `ACT_HEADING_RE` does.
+  The Organic Act and HHCA do carry catchlines (the plan previously said they
+  did not); the Admission Act and Hawaii National Park Act genuinely do not.
+- **The constitutions** — `<b>Section 4.</b>`, with the catchline in a centred,
+  fully upper-case paragraph *above* it. `CONST_HEADING_RE` locates the heading
+  and `catchlineAbove()` takes the title. Measured: 178 of 179 such paragraphs
+  are entirely upper-case, and the one exception is annotation prose the rule
+  correctly rejects.
 
-See Known Gaps.
+  The number on that line is the section *within its article*; the article
+  appears only in the filename, so the filename still decides and
+  `numberSource` says `filename`.
+
+  An article's banner page also carries its section 1, *after* an annotation
+  block. `splitBlocks` reopens the body on a section heading, and for these
+  documents it carries the stranded catchline across with it — otherwise the
+  section inherits the article's title.
+
+Titles went from 1 of 400 to **280 of 400**. The remainder genuinely have none.
+
+Citations into these documents are resolved by `cross-document.ts`; see
+`citation-linking.md`, open question 4.
 
 ---
 
@@ -416,6 +431,8 @@ src/
   resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
   graph.ts         the citation graph: edges, backlinks, citations.json
+  cross-document.ts  citations into the constitutions, Organic Act, Admission
+                     Act, HHCA and Hawaii National Park Act
   vocabulary.ts    corpus word list, for spelling suggestions on /search
   search-client.js browser script for /search: jump-to-section, spelling
   verify-search.ts end-to-end check of /search in a real browser
@@ -432,6 +449,7 @@ src/
   corrections.test.ts    15 tests
   graph.test.ts          10 tests
   vocabulary.test.ts      8 tests
+  cross-document.test.ts 24 tests
   site.test.ts           49 tests
 
 sql/schema.sql     standalone schema (side tool)
@@ -631,21 +649,22 @@ Scraper flags: `--save-html`, `--limit N`, `--concurrency N`, `--db`.
 Ordered by what stands between the current state and a finished site.
 `STATE.md` carries the same list in short form alongside the loose threads.
 
-### The correctness gap
+### The correctness gap — closed 2026-09-10
 
-- **Non-HRS numbering and titles — 424 files.** The constitutions, Organic Act,
-  Admission Act and HHCA are captured and tagged, but numbered as prefixed
-  identifiers (`CONST §1-1`) rather than proper citations
-  (`Haw. Const. art. I, §1`). Titles are missed for the constitutions, where the
-  title sits in centered paragraphs above a `Section n.` heading; the Admission
-  and Organic Acts have no titles to find.
+- ~~**Non-HRS numbering and titles — 424 files.**~~ Done. Titles went from 1 of
+  400 to **280 of 400** (see Non-HRS documents above); pages are headed with the
+  citation a lawyer would write, derived at render time by `properCitation()`;
+  and **305 citations** from HRS text into these documents now resolve.
 
-  This is no longer optional. HRS text names these documents **306 times** and
-  none of those citations can be linked. The resolver deliberately keeps the two
-  namespaces apart — 89 non-HRS numbers collide outright with HRS numbers and
-  149 are bare — so merging them without a real mapping is how `section 2`
-  acquires a confident link to the Admission Act. Deferred until the site build
-  is done; see open question 4 in `citation-linking.md`.
+  `sectionNumber` deliberately stays `CONST §12-7`. It is a stable unique key
+  and it is the URL, so renaming it would rewrite 424 files and break every link
+  to them for nothing the display does not already give. Identity is ours,
+  presentation is the citation form — the same split used for source anomalies.
+
+  The namespaces were **not** merged: 89 non-HRS numbers collide outright with
+  HRS numbers and 149 are bare. Resolution requires the citation to name its
+  document, which the corpus always does. See open question 4 in
+  `citation-linking.md`.
 
 ### To build
 

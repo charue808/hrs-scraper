@@ -17,8 +17,13 @@
  *   the whole span, so a section cited only inside a range would otherwise look
  *   uncited. Those edges are labelled `range` so they can be told apart from
  *   ones with text a reader can click.
+ *
+ * Citations into the non-HRS documents are edges too, so "what cites Haw.
+ * Const. art. XII, §7?" is answerable on the constitution's own page — a
+ * question the published statutes cannot answer in either direction.
  */
 import { detect, expandRange, type Citation } from "./citations";
+import { detectCrossDocument } from "./cross-document";
 import type { Index } from "./resolver";
 import type { ParsedSection } from "./config";
 
@@ -69,6 +74,14 @@ export function buildGraph(corpus: ParsedSection[], index: Index): Graph {
       if (citation.target) add(from, citation.target.number, citation.kind, block);
     }
     for (const target of expandRange(found, index)) add(from, target.number, "section", "range");
+
+    // Keyed by the section's own identifier, not its printed citation, so it
+    // matches the key the constitution's page is rendered under.
+    if (index.cross) {
+      for (const citation of detectCrossDocument(text, index.cross)) {
+        add(from, citation.target.number, "section", block);
+      }
+    }
   };
 
   for (const section of corpus) {

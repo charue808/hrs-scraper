@@ -6,6 +6,7 @@
  * `docs/citation-linking.md`, measured against the full corpus.
  */
 import { resolve, type Index, type Target } from "./resolver";
+import { detectCrossDocument } from "./cross-document";
 
 /** Why a candidate was not linked. Tracked as the quality metric. */
 export type RejectReason =
@@ -256,15 +257,47 @@ export function escapeHtml(text: string): string {
  * `href="#"`.
  */
 export function linkify(text: string, index: Index, options: DetectOptions = {}): string {
-  const citations = detect(text, index, options).filter(
+  const hrs = detect(text, index, options).filter(
     (c) => c.target || c.reason === "absent-section"
   );
+
+  // Citations into the constitutions, the Organic Act, the Admission Act and the
+  // HHCA. These never collide with the HRS matches above: every one of them is
+  // a bare or article-form number, which `classify()` rejects outright, and they
+  // resolve only through a citation that names its document. The overlap guard
+  // below is belt and braces.
+  const cross = index.cross
+    ? detectCrossDocument(text, index.cross).map((c) => ({
+        start: c.start,
+        end: c.end,
+        text: c.text,
+        target: c.target,
+        reason: null,
+        crossDocument: true,
+      }))
+    : [];
+
+  const citations = [...hrs, ...cross].sort((a, b) => a.start - b.start);
   let out = "";
   let at = 0;
 
   for (const citation of citations) {
     if (citation.start < at) continue; // overlapping match, keep the first
     out += escapeHtml(text.slice(at, citation.start));
+
+    if ("crossDocument" in citation && citation.target) {
+      // The visible text is often partial — `§5` for Admission Act §5 — so the
+      // accessible name carries the full citation rather than only the title.
+      const cited = citation.target.label ?? citation.target.number;
+      const label = citation.target.title
+        ? `${cited}, ${citation.target.title.replace(/\.$/, "")}`
+        : cited;
+      out +=
+        `<a href="${citation.target.href}" aria-label="${escapeHtml(label)}">` +
+        `${escapeHtml(citation.text)}</a>`;
+      at = citation.end;
+      continue;
+    }
 
     if (citation.target) {
       const label = citation.target.title

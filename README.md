@@ -79,6 +79,10 @@ worthless.
   Candidates are looked up against it; what resolves becomes a link, what does
   not stays plain text and gets counted. A wrong link in a legal document is
   worse than no link. See [`docs/citation-linking.md`](docs/citation-linking.md).
+- **Cross-document citations resolve through the document's name** — the
+  constitutions, Organic Act, Admission Act and HHCA share number space with the
+  HRS (89 outright collisions), so their indexes are kept separate and a
+  citation resolves only when it names its document. 305 such links.
 - **The source has errors, and we say so** — the published HRS contains
   typographical mistakes. We correct a section's *identity* so navigation works,
   keep its *displayed text* faithful to the source, and attach a generated
@@ -383,7 +387,7 @@ src/
   serve.ts         — serves build/site locally (development only)
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 203 tests (bun test)
+  *.test.ts        — 227 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)

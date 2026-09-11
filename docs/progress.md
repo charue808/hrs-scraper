@@ -2,15 +2,88 @@
 
 **Last updated**: 2026-09-10
 
-## Status: search and backlinks are in
+## Status: the last correctness gap is closed
 
-`bun run build` emits **49,413 files** — 24,503 pages in ~6s, then ~17s for the
-Pagefind index (24,907 of those files) — with 0 broken internal links. Every
-section carries "Cited by", and `citations.json` publishes the whole 28,547-edge
-graph. `bun run serve` browses it at localhost:3000. 203 tests.
+`bun run build` emits the whole site with search, backlinks and — as of this
+pass — the non-HRS documents properly cited and linked in both directions.
+227 tests.
 
-Next: cross-document targets (the 424 non-HRS files), the last correctness gap.
-Then Division/Title navigation, and a host.
+Next: Division/Title navigation, and a host.
+
+## 2026-09-10 (fourth pass) — the non-HRS documents
+
+The one gap deferred through every previous session: both constitutions, the
+Organic Act, the Admission Act, the HHCA and the Hawaii National Park Act —
+424 files, captured and tagged but numbered `CONST §1-1`, untitled, and named by
+HRS text 306 times with none of it linkable.
+
+### Two things the plan had wrong
+
+Reading the source pages rather than the notes about them:
+
+- **The Organic Act and HHCA do have catchlines.** The plan said these sections
+  "genuinely have no titles". `<b>§73. Commissioner of public lands.</b>` says
+  otherwise; `HEADING_RE` simply cannot match a period after the number.
+  82 Organic Act and 32 HHCA titles were sitting there unread.
+- **The constitutions' catchlines are recoverable**, in the centred upper-case
+  paragraph above `Section n.` Measured: 178 of 179 such paragraphs are entirely
+  upper-case, and the single exception is annotation prose the rule rejects.
+
+A third thing emerged only from parsing: an article's banner page also carries
+its **section 1**, after an intervening annotation block. `splitBlocks` reopens
+the body on a section heading, but its test only recognised HRS headings — so
+section 1 of every article was trapped inside a Law Journals note. Fixing that
+then exposed the catchline being stranded on the annotation's side of the break,
+so it is carried across with the heading it belongs to; otherwise the section
+inherits the *article's* title.
+
+Titles: **1 of 400 -> 280 of 400.** The other 120 genuinely have none. Every
+alternative heading form is gated on the document being non-HRS, so the reparse
+changed 386 files and **not one HRS section**.
+
+### Proper citations without moving the furniture
+
+Pages are now headed `Haw. Const. art. XII, §7`, `Organic Act §73`,
+`Admission Act §5` — derived at render time from `docType` and the identifier.
+
+`sectionNumber` stays `CONST §12-7`. It is a stable unique key and it is the
+URL; renaming it rewrites 424 files and breaks every link to them for nothing
+the display does not already provide. Identity is ours, presentation is the
+citation form — the same split `sourceAnomalies` already uses for headings.
+
+### Linking the 306 references, without merging the namespaces
+
+The standing objection was real: 89 non-HRS numbers collide outright with HRS
+numbers and 149 are bare, so one index is how `section 2` acquires a confident
+link to the Admission Act.
+
+What makes it tractable is that **the corpus never cites these documents without
+naming them** — `article I, §5 of the Hawaii constitution`, `section 203 of the
+Hawaiian Homes Commission Act`, `Organic Act §73`. The document name is part of
+the citation key. The indexes stay apart, resolution requires the name, and a
+bare `section 203` still resolves to nothing.
+
+**305 citations linked**: Hawaii Constitution 196, Admission Act 39, HHCA 33,
+Organic Act 25, US Constitution 12. Backlinks work in the other direction too —
+96 non-HRS sections now list what cites them, Haw. Const. art. XII, §7 leading
+with 20.
+
+Three guards, each added after a measured wrong link rather than in
+anticipation:
+
+- **A number followed by `-`, `:` or more digits is not a flat section.**
+  `see §171-64.7` inside an Organic Act sentence matched as `§17`.
+- **A citation stops at a sentence or a semicolon.** `U.S. Const., 5th Am.;
+  Const. art. I, §10` is two citations to two documents.
+- **The binding `of the` phrase beats proximity.** In `the Sixth Amendment to
+  the U.S. Constitution and by Article I, Section 10, of the Constitution of the
+  State of Hawaii`, the wrong document is *nearer* — 8 characters against 9.
+  Legal writing binds a provision to its source with "of the", and that settles
+  what distance cannot.
+
+`profile-citations` now reports cross-document citations as their own block, for
+the same reason it reports history: a rendered block that nothing measures is
+where the next defect hides.
 
 ## 2026-09-10 (third pass) — the citation graph, and search
 

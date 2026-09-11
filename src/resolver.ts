@@ -15,6 +15,7 @@ import {
   type ParsedSection,
 } from "./config";
 import { loadCorrections, sectionNumberAliases } from "./corrections";
+import { buildCrossIndex, type CrossIndex } from "./cross-document";
 
 export interface Target {
   /** Canonical section number, e.g. "§26-34", or chapter number, e.g. "91". */
@@ -22,6 +23,13 @@ export interface Target {
   kind: "section" | "chapter";
   title: string;
   href: string;
+  /**
+   * How the target is written in a citation, when that differs from its
+   * identity — `CONST §12-7` is keyed and linked by that identifier but cited as
+   * `Haw. Const. art. XII, §7`. Absent for HRS sections, where the two are the
+   * same string.
+   */
+  label?: string;
 }
 
 export interface Index {
@@ -29,6 +37,15 @@ export interface Index {
   chapters: Map<string, Target>;
   /** `observed -> corrected`, from the reviewed corrections ledger. */
   aliases: Map<string, string>;
+  /**
+   * The non-HRS documents, kept deliberately separate.
+   *
+   * Merging them into `sections` is how `section 2` acquires a confident link to
+   * the Admission Act — 89 of their numbers collide outright with HRS numbers.
+   * They resolve only through a citation that names the document. See
+   * `cross-document.ts`.
+   */
+  cross?: CrossIndex;
 }
 
 /**
@@ -132,7 +149,12 @@ export async function buildIndex(preloaded?: ParsedSection[]): Promise<Index> {
     }
   }
 
-  return { sections, chapters, aliases: sectionNumberAliases(await loadCorrections()) };
+  return {
+    sections,
+    chapters,
+    aliases: sectionNumberAliases(await loadCorrections()),
+    cross: buildCrossIndex(corpus),
+  };
 }
 
 /**

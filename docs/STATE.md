@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-10
-**Head**: 203 tests, typecheck clean
+**Head**: 227 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -41,8 +41,8 @@ zero failures across all 24,505 files.
 | Sections | 23,373 |
 | Chapter index pages | 1,132 |
 | Chapters with titles | 1,106 of 1,112 (1,114 dirs, 2 have no index page) |
-| Number taken from the page | 22,560 (96.5%) |
-| From the filename | 541 — the 400 non-HRS documents plus ~141 article banners |
+| Number taken from the page | 22,731 (97.3%) |
+| From the filename | 369 — the constitutions plus ~141 article banners |
 | From a range heading | 272 |
 | From the corrections ledger | 1 |
 | Duplicate section numbers | **0** |
@@ -70,6 +70,7 @@ it names exists in the inventory.
 | Case Notes | 78.62% | 0.09% |
 | Commentary | 71.41% | 1.37% |
 | Legislative history | **never linked** — see hazard 9 | |
+| Non-HRS documents | 305 citations linked | |
 
 The percentages that look low are correct: most of the gap is `bare-number`
 rejections, which is the detector working. All 22,972 HRS section numbers
@@ -188,22 +189,31 @@ missing.
 
 ---
 
-## The one known correctness gap
+## The correctness gap — closed 2026-09-10
 
 **The 424 non-HRS files** — both constitutions, the Organic Act, the Admission
-Act, and the Hawaiian Homes Commission Act — are scraped and tagged but numbered
-as prefixed identifiers (`CONST §1-1`) rather than proper citations
-(`Haw. Const. art. I, §1`). Constitution titles are missed entirely, since the
-title sits in centered paragraphs above a `Section n.` heading.
+Act, the HHCA and the Hawaii National Park Act — now carry proper citations,
+titles, and working links in both directions.
 
-HRS text names these documents **306 times** and none of those citations can be
-linked. The namespaces are deliberately kept apart in the resolver: 89 non-HRS
-numbers collide outright with HRS numbers (`1-2` is both HRS §1-2 and
-CONST §1-2) and 149 are bare, so merging them is how `section 2` would acquire a
-confident link to the Admission Act.
+| | before | after |
+|---|---|---|
+| Titles | 1 of 400 | **280 of 400** |
+| Citations into them from HRS text | 0 | **305** |
+| Non-HRS pages with backlinks | 0 | 96 |
 
-Deferred until the site build is done — but it is the last thing standing
-between the current state and "citations are correct".
+Pages are headed with the citation a lawyer would write — `Haw. Const. art. XII,
+§7`, `Organic Act §73`, `Admission Act §5` — derived at render time.
+`sectionNumber` stays `CONST §12-7`, because it is a stable unique key and it is
+the URL; changing it would rewrite 424 files and break every link to them for no
+gain the display does not already provide.
+
+**The namespaces were never merged.** 89 non-HRS numbers collide outright with
+HRS numbers and 149 are bare, so one index is how `section 2` acquires a
+confident link to the Admission Act. What made this safe is that the corpus
+never cites these documents without naming them — `article I, §5 of the Hawaii
+constitution`, `section 203 of the Hawaiian Homes Commission Act`. The document
+name is part of the citation key, resolution requires it, and a bare
+`section 203` still resolves to nothing. See `cross-document.ts`.
 
 ---
 
@@ -237,7 +247,7 @@ Small, and none of them block the site build.
 
 ```bash
 bun install
-bun test                                  # 203 tests
+bun test                                  # 227 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)

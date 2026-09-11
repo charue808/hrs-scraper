@@ -13,6 +13,7 @@ import { parseArgs } from "node:util";
 import { readdirSync } from "node:fs";
 import { PARSED_DIR, type ParsedSection } from "./config";
 import { detect, expandRange, tally, type Citation } from "./citations";
+import { detectCrossDocument } from "./cross-document";
 import { buildIndex } from "./resolver";
 
 const { values } = parseArgs({
@@ -40,6 +41,13 @@ const xrefs: Citation[] = [];
 const history: Citation[] = [];
 /** Of those, how many point somewhere other than the citing section's own page. */
 let historyCrossLinks = 0;
+/**
+ * Citations into the non-HRS documents, counted by document.
+ *
+ * Measured for the same reason history is: this block is rendered, so leaving
+ * it unmeasured is how a defect in it would survive.
+ */
+const crossDocument = new Map<string, number>();
 const annotations = new Map<string, Citation[]>();
 const unresolved = new Map<string, { n: number; sample: string }>();
 let rangeEdges = 0;
@@ -83,6 +91,13 @@ for (const file of readdirSync(PARSED_DIR)) {
     history.push(citation);
     if (citation.target && citation.target.number !== section.sectionNumber) historyCrossLinks++;
   }
+  for (const text of [section.bodyText, ...section.annotations.map((a) => a.text)]) {
+    if (!text || !index.cross) continue;
+    for (const citation of detectCrossDocument(text, index.cross)) {
+      const document = citation.target.number.split(" ")[0]!;
+      crossDocument.set(document, (crossDocument.get(document) ?? 0) + 1);
+    }
+  }
   for (const entry of section.crossReferences) record(entry, xrefs, true);
   for (const note of section.annotations) {
     const key = noteBucket(note.heading);
@@ -118,6 +133,17 @@ report({ name: "history", citations: history });
 console.log(
   `${" ".repeat(28)}of those, ${historyCrossLinks.toLocaleString()} would point at a ` +
     `section other than the citing one — all of them wrong. See docs/citation-linking.md, hazard 9.`
+);
+
+const crossTotal = [...crossDocument.values()].reduce((n, v) => n + v, 0);
+console.log(`\n=== cross-document (the non-HRS documents) ===`);
+console.log(
+  `${"linked".padEnd(26)} ${crossTotal.toLocaleString().padStart(7)} citations  ` +
+    [...crossDocument].sort((a, b) => b[1] - a[1]).map(([d, n]) => `${d} ${n}`).join(", ")
+);
+console.log(
+  `${" ".repeat(28)}resolved only through a citation that names its document — the` +
+    ` namespaces stay separate. See docs/citation-linking.md, open question 4.`
 );
 
 console.log("\n=== annotations ===");

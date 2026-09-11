@@ -366,9 +366,9 @@ Re-measured 2026-09-10, after the hazard 4 correction.
 
 | | count | share |
 |---|---|---|
-| Candidates detected | 32,057 | |
-| **Linked** | 26,707 | 83.31% |
-| Rejected: bare number, no `C-S` shape | 5,107 | 15.93% |
+| Candidates detected | 31,765 | |
+| **Linked** | 26,707 | 84.08% |
+| Rejected: bare number, no `C-S` shape | 4,815 | 15.16% |
 | Rejected: absent from the current code | 125 | 0.39% |
 | Rejected: foreign law (hazard 2) | 55 | 0.17% |
 | Rejected: administrative rules (hazard 7) | 11 | 0.03% |
@@ -501,15 +501,42 @@ with links.
    its own page would add nothing a reader needs and would flood link-list
    navigation for screen-reader users. Requiring a digit after the keyword
    excludes them for free.
-4. **Cross-document targets.** *Deferred 2026-09-09 until the site build is
-   done.* HHCA, the constitutions and the Organic Act are in the corpus but
-   numbered as prefixed identifiers, and HRS text names them **306 times**.
-   Linking them requires the proper-citation work noted as a gap in
-   `project-plan.md`. The profile sharpened the risk: **89 non-HRS numbers
-   collide outright with HRS numbers** and 149 are bare, so until that mapping
-   exists the two namespaces stay separate and non-HRS citations stay plain —
-   the failure mode is `section 2` acquiring a confident link to the Admission
-   Act. This is the last known correctness gap in citation linking.
+4. ~~**Cross-document targets.**~~ **Built 2026-09-10** — `src/cross-document.ts`,
+   **305 citations linked** (Hawaii Constitution 196, Admission Act 39, HHCA 33,
+   Organic Act 25, US Constitution 12).
+
+   The risk was real and is unchanged: 89 non-HRS numbers collide outright with
+   HRS numbers and 149 are bare, so a single index is how `section 2` acquires a
+   confident link to the Admission Act. **The namespaces were not merged.** What
+   made this tractable is that the corpus never cites these documents without
+   naming them:
+
+   ```
+   article I, §5 of the Hawaii constitution
+   Article V, section 6 of the Constitution of the State
+   section 203 of the Hawaiian Homes Commission Act, 1920, as amended
+   §4 of the Admission Act          Organic Act §73
+   Sixth Amendment to U.S. Constitution
+   ```
+
+   So the document name is part of the citation key: resolution requires it, the
+   indexes stay separate, and a bare `section 203` resolves to nothing. This is
+   resolve-don't-match applied one level up.
+
+   Three guards were each added after a measured wrong link:
+
+   - **A number followed by `-`, `:` or more digits is not a flat section.**
+     `see §171-64.7` inside an Organic Act sentence matched as `§17` and linked
+     to Organic Act §17.
+   - **A citation stops at a sentence or a semicolon.** `U.S. Const., 5th Am.;
+     Const. art. I, §10` is two citations to two documents, and letting the first
+     name reach across the semicolon attached the second to it.
+   - **The binding `of the` phrase beats proximity.** In `...the Sixth Amendment
+     to the U.S. Constitution and by Article I, Section 10, of the Constitution
+     of the State of Hawaii`, the wrong document is *nearer* — 8 characters
+     against 9. Legal writing attaches a provision to its source with "of the",
+     and that construction settles it where distance cannot.
+
 5. **Enhancing ranges for research, not correctness.** *Raised 2026-09-10, open
    by choice.* The current handling is settled and agreed: `sections 500 to 502`
    links both endpoints, the span's implied members are carried in the graph
@@ -551,13 +578,13 @@ with links.
    `src/resolver.ts`.
 3. ~~Run detection over `crossReferences` first~~ — done: 95% linked, nothing
    unresolved.
-4. ~~Extend to body text~~ — done; 83.31% linked, 0.15% unresolved after the
-   hazard 4 correction of 2026-09-10.
+4. ~~Extend to body text~~ — done; 84.08% linked, 0.15% unresolved.
 5. ~~Only then annotations~~ — done, with hazards 7 and 8 in place. The
    progression in *Annotations* above is the evidence that ordering mattered.
 6. ~~Build the site~~ — done 2026-09-10. 23,373 section pages + 1,114 chapter
    pages + 14 volume pages, 0 broken internal links across 24,503 hrefs.
    Hazard 9 was found by reviewing its output.
-7. **Cross-document targets** (open question 4) — the remaining correctness gap.
+7. ~~**Cross-document targets**~~ — done 2026-09-10; 305 citations, namespaces
+   still separate.
 8. ~~Emit `citations.json` from `detect()` + `expandRange()` for backlinks.~~ —
    done 2026-09-10; `src/graph.ts`, 28,547 edges, rendered as "Cited by".
