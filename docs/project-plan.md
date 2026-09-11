@@ -27,7 +27,7 @@ Storage & Delivery below and `citation-linking.md`.
 ## Status
 
 The corpus is scraped, parsed, committed, cross-linked and **built into a
-static site** with search and backlinks (49,413 files, 0 broken internal links).
+static site** with search and backlinks (49,415 files, 0 broken internal links).
 **`STATE.md` is the current-state summary** — what is trustworthy, what
 is missing, and where the loose threads are. This document is the design
 reference underneath it.
@@ -64,12 +64,13 @@ something this content needs. Concretely:
   is what gives us control over the markup for accessibility. It is 46% of the
   payload and is serialized last for that reason.
 
-Measured sizes for the full corpus: 154 MB of parsed JSON raw, ~33 MB gzipped.
+Measured sizes for the full corpus: 155 MB of parsed JSON raw, ~16 MB gzipped as
+a single stream, 29 MiB in git.
 
 `db.ts`, `migrate.ts` and `sql/schema.sql` are kept — `--db` remains useful for
 ad-hoc analysis during development — but they are a side tool, not the pipeline.
 
-**Deployment**: the build emits **49,413 files** (measured, not estimated) — Pagefind writes one fragment per indexed page and more than doubles the count. Cloudflare raised the Pages
+**Deployment**: the build emits **49,415 files** (measured, not estimated) — Pagefind writes one fragment per indexed page and more than doubles the count. Cloudflare raised the Pages
 cap to 100,000 for paid plans on 2026-01-23 (requires
 `PAGES_WRANGLER_MAJOR_VERSION=4`), and Workers static assets tier the same way,
 so a paid plan on either clears it. Both free tiers stop at 20,000. If free
@@ -428,7 +429,8 @@ src/
                    normalizeChapterNumber, isIndexFilename,
                    docTypeFromFilename, parseSection, parseChapterIndex
   corrections.ts   loadCorrections, applyCorrections, sectionNumberAliases
-  resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref
+  resolver.ts      buildIndex, resolve, sectionSlug/sectionHref/chapterHref,
+                   volumeHref; holds the cross-document index alongside the HRS one
   citations.ts     detect, linkify, expandRange, tally, escapeHtml
   graph.ts         the citation graph: edges, backlinks, citations.json
   cross-document.ts  citations into the constitutions, Organic Act, Admission
@@ -674,7 +676,7 @@ Ordered by what stands between the current state and a finished site.
 - ~~**Pagefind.**~~ Done 2026-09-10. Indexes the 24,487 statute and chapter
   pages; annotations weighted 0.4, backlinks excluded, navigation pages left
   out. Adds 24,907 files.
-- ~~**`citations.json`.**~~ Done 2026-09-10: `src/graph.ts`, 28,547 edges,
+- ~~**`citations.json`.**~~ Done 2026-09-10: `src/graph.ts`, 28,811 edges,
   rendered as "Cited by" and emitted as a 6.0 MB byte-stable artifact.
 
 
@@ -716,6 +718,6 @@ Ordered by what stands between the current state and a finished site.
   Deliberately **not** carried: a per-section `scraped_at`. It would rewrite all
   23,373 files on every run and destroy the diff property the whole architecture
   rests on. Run-level provenance belongs in a separate file if it is ever needed.
-- ~~**Storage.**~~ Measured for real: 154 MB of parsed JSON, ~33 MB gzipped,
-  32 MB in git. `bodyHtml` is 46% of it, retained for parse debugging and never
+- ~~**Storage.**~~ Measured for real: 155 MB of parsed JSON, ~16 MB gzipped,
+  29 MiB in git. `bodyHtml` is 46% of it, retained for parse debugging and never
   rendered.

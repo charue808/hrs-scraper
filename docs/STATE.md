@@ -1,7 +1,7 @@
 # Where the project stands
 
-**As of**: 2026-09-10
-**Head**: 227 tests, typecheck clean
+**As of**: 2026-09-10 (paused here)
+**Head**: `fefcc6b9` on `main` — 227 tests, typecheck clean, working tree clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -18,14 +18,16 @@ yet, and where the loose threads are. The other documents go deeper:
 ## The short version
 
 The Hawaii Revised Statutes have been scraped, parsed into structured data,
-committed as the source of truth, cross-linked, and **built into a static
-site**. What is missing now is search, backlinks, proper citations for the
-non-HRS documents, and a host.
+committed as the source of truth, cross-linked, and **built into a searchable
+static site with backlinks**. Every known correctness gap is closed.
 
 What works end to end today: `bun run build` turns the committed corpus into
-24,503 files in under five seconds — every section, every chapter, every volume,
-with citations resolved and **0 broken internal links** across all 24,503
-distinct hrefs.
+**49,415 files** — 24,503 pages in ~6s, then ~15s for the search index — with
+citations resolved, backlinks on every page, and **0 broken internal links**
+across all 24,505 distinct hrefs. `bun run serve` browses it at localhost:3000.
+
+**What is left is a decision, not a defect: where to host it.** Everything else
+on the list below is an enhancement.
 
 ---
 
@@ -39,15 +41,15 @@ zero failures across all 24,505 files.
 | | |
 |---|---|
 | Sections | 23,373 |
-| Chapter index pages | 1,132 |
-| Chapters with titles | 1,106 of 1,112 (1,114 dirs, 2 have no index page) |
+| Chapter index pages | 1,132 (1,114 dirs, 2 have no index page) |
 | Number taken from the page | 22,731 (97.3%) |
 | From the filename | 369 — the constitutions plus ~141 article banners |
 | From a range heading | 272 |
 | From the corrections ledger | 1 |
 | Duplicate section numbers | **0** |
 | Duplicate URL slugs | **0** (the build fails on collision) |
-| Size | 154 MB raw, ~33 MB gzipped, 32 MB in git |
+| Chapters with titles | 1,107 of 1,112 |
+| Size | 155 MB raw, ~16 MB gzipped, 29 MiB in git |
 
 Git is the version store. A re-scrape after a legislative session diffs to
 exactly the sections that were amended, and `git log` on one file is that
@@ -58,16 +60,16 @@ that the property still holds.
 
 ### Citation linking — trustworthy
 
-83.31% of body-text candidates become links; **0.15% are unresolved**. The
+84.08% of body-text candidates become links; **0.15% are unresolved**. The
 design is resolve-don't-match: a candidate becomes a link only when the section
 it names exists in the inventory.
 
 | Block | Linked | Unresolved |
 |---|---|---|
-| Body text | 83.31% | 0.15% |
+| Body text | 84.08% | 0.15% |
 | Cross References | 94.86% | 0.00% |
 | Attorney General Opinions | 69.32% | 0.00% |
-| Case Notes | 78.62% | 0.09% |
+| Case Notes | 78.69% | 0.09% |
 | Commentary | 71.41% | 1.37% |
 | Legislative history | **never linked** — see hazard 9 | |
 | Non-HRS documents | 305 citations linked | |
@@ -81,7 +83,7 @@ reason**, because "bare number" and "unresolved" mean opposite things.
 
 ### Search and backlinks — built
 
-**Backlinks.** `src/graph.ts` builds the citation graph — **28,547 edges** in
+**Backlinks.** `src/graph.ts` builds the citation graph — **28,811 edges** in
 about a second — and the build bakes it into each page as "Cited by" and emits
 the whole thing as `citations.json` (6.0 MB, byte-stable). This is the thing the
 published statutes cannot do at all: a `.htm` file has no idea what points at it.
@@ -89,8 +91,8 @@ published statutes cannot do at all: a `.htm` file has no idea what points at it
 Three rules decide an edge: history is excluded (hazard 9), self-citations are
 dropped, and ranges contribute their implied members labelled `range`. Body and
 annotation references are kept apart because they answer different questions.
-Most-cited: chapter 91 with 1,642 and §23G-15 with 410; 8,758 sections have at
-least one backlink. Lists over 25 collapse into native `<details>`.
+Most-cited: chapter 91 with 1,642 and §23G-15 with 410; 9,455 nodes have at
+least one backlink, 96 of them in the non-HRS documents. Lists over 25 collapse into native `<details>`.
 
 **Search.** Pagefind indexes the 24,487 statute and chapter pages — volume and
 home pages are navigation and are left out. Annotations are weighted at 0.4 so a
@@ -133,10 +135,11 @@ writing files.
 | Home, search, stylesheet, favicon | 4 |
 | `citations.json` | 6.0 MB |
 | Pagefind index | 24,907 files, 115 MB |
-| **Total files** | **49,413** |
+| `search-vocabulary.txt` | 17,223 words, 52 KB gzipped |
+| **Total files** | **49,415** |
 | Size | 351 MB raw |
-| Build time | ~6s, plus ~17s to index |
-| Broken internal links | **0** of 24,503 distinct hrefs |
+| Build time | ~6s, plus ~15s to index |
+| Broken internal links | **0** of 24,505 distinct hrefs |
 
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
 `/hrs/26-34`), which works on any static host without rewrite rules.
@@ -170,22 +173,33 @@ missing.
 
 ---
 
-## What is not built
+## What is left — pick up here
 
-1. **Cross-document linking.** See the correctness gap below.
-2. **A host.** Now the sharpest constraint, because Pagefind writes one fragment
-   per indexed page: the build emits **49,413 files**, not 24,503. A paid
-   Cloudflare plan (100,000) still clears it with room; both free tiers (20,000)
-   are now out of reach by more than twice over. `--no-index` halves the count if
-   that ever matters more than search.
-3. **Division/Title navigation.** The site navigates by volume, which is a
-   printing artifact. The index pages carry the real structure —
-   `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — and it is not
-   extracted yet.
-4. **Chapter index section listings.** Only the title, notes and annotations are
-   taken from an index page. The listing itself would make a good coverage check
-   against the files actually discovered. Not needed for the build: chapter
-   contents are derived from the parsed sections, which carry real titles.
+Nothing here is a defect. In the order I would take them:
+
+1. **Pick a host.** The only thing standing between this and being usable by
+   anyone else, and the one item that needs a decision rather than code. Pagefind
+   writes one fragment per indexed page, so the build emits **49,415 files**, not
+   24,503. A paid Cloudflare plan (100,000) clears it with room; **both free
+   tiers (20,000) are out of reach by more than twice over.** `--no-index` halves
+   the count if free hosting ever matters more than search. Limits move — re-check
+   before committing.
+2. **Division/Title navigation.** The site navigates by volume, which is a
+   printing artifact of the published edition. The index pages carry the real
+   hierarchy — `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — above
+   the chapter banner, and it is not extracted. This is the biggest remaining
+   improvement to how the site reads.
+3. **Chapter index section listings.** The title, notes and annotations are
+   extracted; the listing itself is not. It would make a good coverage check
+   against the files actually discovered. Not needed for chapter pages — those
+   are built from the parsed sections, which carry real titles.
+4. **Rename `isUncodified`.** The name is wrong (see the bracket convention) and
+   the field is documented as wrong in four places. Renaming rewrites all 23,373
+   files, so it wants its own commit with nothing else in it — do it before the
+   first real amendment diff, or never.
+5. **Enhancing ranges for research.** Recorded as open question 5 in
+   `citation-linking.md`. The current handling is correct and agreed; the
+   question is only how much further to go.
 
 ---
 
@@ -219,7 +233,7 @@ name is part of the citation key, resolution requires it, and a bare
 
 ## Loose threads
 
-Small, and none of them block the site build.
+Small, and none of them block anything.
 
 - ~~**36 sections have an empty `bodyText`.**~~ **Closed 2026-09-10.** All 36
   are intentionally content-free: 23 are `Renumbered as §X.` and 13 are
@@ -234,9 +248,10 @@ Small, and none of them block the site build.
   word "chapter". Left unresolved deliberately: `chapter N-M` is otherwise
   almost always a Hawaii Administrative Rules citation, and resolving it as a
   section would manufacture wrong links.
-- **Six chapters have no title** — three reserved ranges
-  (`[CHAPTERS 807 to 830 RESERVED.]`) and the three non-HRS directories. Correct
-  as-is.
+- **Five chapters have no title** — three reserved ranges (807, 837, 847, e.g.
+  `[CHAPTERS 807 to 830 RESERVED.]`) and two non-HRS directories (`04-ADM`,
+  `05-CONST`), whose index pages carry no chapter banner. Correct as-is; the
+  non-HRS ones are labelled by `NON_HRS_LABELS` in `site.ts` instead.
 - **`data/html/` is not committed** (127 MB, gitignored). `bun run reparse` and
   `bun run chapters` re-fetch anything missing, so a fresh clone still works —
   it just costs a crawl.
@@ -255,7 +270,7 @@ bun run reparse                           # rebuild data/parsed from cached HTML
 bun run reparse -- --dry-run              # what would change, writing nothing
 bun run chapters                          # chapter titles -> data/chapters.json
 bun run profile-citations                 # the citation quality metric
-bun run build                             # the whole site -> build/site/ (~5s)
+bun run build                             # the whole site -> build/site/ (~6s + ~15s indexing)
 bun run build -- --chapter 26             # one chapter, for reviewing by eye
 bun run build -- --no-index               # skip Pagefind (halves the file count)
 bun run serve                             # browse build/site at localhost:3000
@@ -320,6 +335,16 @@ arguments. Each is documented in full where noted.
   after the first one in that part — 44 of chapter 26's 47. Grouping a chapter's
   contents by "the value changed" starts a fresh unlabelled list under each
   part's first section; the heading has to be carried forward.
+- **Proximity does not settle which document a citation belongs to.** In `the
+  Sixth Amendment to the U.S. Constitution and by Article I, Section 10, of the
+  Constitution of the State of Hawaii`, the *wrong* document is nearer — 8
+  characters against 9. Legal writing binds a provision to its source with "of
+  the", and that construction decides it where distance cannot.
+  (`citation-linking.md`, open question 4)
+- **Read the source pages, not the notes about them.** The plan recorded that
+  the Organic Act and HHCA "genuinely have no titles"; they have 114 between
+  them, and `HEADING_RE` simply could not match the period after the number.
+  Two sessions of work were planned around a claim that one `grep` disproved.
 - **We do not assert what we cannot show.** Corrections need evidence and a human
   reviewer; a citation into removed text is labelled `absent-section`, not
   `repealed`, because absence is verifiable and the reason is not.

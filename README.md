@@ -102,7 +102,7 @@ Scraped in full on 2026-09-09 with zero failures.
 | `.htm` files | 24,505 |
 | Parsed sections | 23,373 |
 | Chapter index pages | 1,132 |
-| Parsed JSON | 154 MB raw, ~33 MB gzipped |
+| Parsed JSON | 155 MB raw, ~16 MB gzipped |
 
 Volume 1 also contains six non-HRS directories — `01-USCON` (US Constitution),
 `02-HNP`, `03-ORG` (Organic Act), `04-ADM` (Admission Act), `05-CONST` (Hawaii
@@ -246,7 +246,7 @@ bun run serve                    # browse it at localhost:3000
 bun run verify-search            # drive /search in a real browser (needs Chrome)
 ```
 
-Emits 49,413 files: a page per section, per chapter and per volume, plus a home
+Emits 49,415 files: a page per section, per chapter and per volume, plus a home
 page, a search page, `citations.json`, and the Pagefind index — which is 24,907
 of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
 the count. `bun run serve` browses the result at `localhost:3000`; the pages are
@@ -289,7 +289,7 @@ results with highlighted snippets, and `get_chapter_sections()`.
 
 ## Deployment
 
-The build emits **49,413 files** — measured, not estimated. Pagefind writes one
+The build emits **49,415 files** — measured, not estimated. Pagefind writes one
 fragment per indexed page, so search more than doubles the count:
 
 | Host | Cap | Fits? |
@@ -300,7 +300,7 @@ fragment per indexed page, so search more than doubles the count:
 | Workers static assets (paid) | 100,000 files per version, 25 MiB each | Yes |
 | A VPS / object storage | no practical cap | Yes |
 
-A paid Cloudflare plan on either product clears 49,413 with room. The free
+A paid Cloudflare plan on either product clears 49,415 with room. The free
 tier of both does not — which is the constraint to design around if free hosting
 is a requirement.
 

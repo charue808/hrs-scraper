@@ -489,7 +489,7 @@ with links.
    cited only inside a range look uncited, so `expandRange()` contributes those
    2,722 edges to the graph. Same-chapter numeric spans only.
 2. ~~**Should the citation graph be stored?**~~ **Decided 2026-09-09, built
-   2026-09-10** — `src/graph.ts` emits `build/site/citations.json`, 28,547 edges,
+   2026-09-10** — `src/graph.ts` emits `build/site/citations.json`, 28,811 edges,
    byte-stable. Original reasoning: the
    graph is built in memory at build time and baked into the rendered HTML.
    24,505 sections is small enough that this needs no database. Emitting it
@@ -587,4 +587,4 @@ with links.
 7. ~~**Cross-document targets**~~ — done 2026-09-10; 305 citations, namespaces
    still separate.
 8. ~~Emit `citations.json` from `detect()` + `expandRange()` for backlinks.~~ —
-   done 2026-09-10; `src/graph.ts`, 28,547 edges, rendered as "Cited by".
+   done 2026-09-10; `src/graph.ts`, 28,811 edges, rendered as "Cited by".

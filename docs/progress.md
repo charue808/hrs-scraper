@@ -2,13 +2,43 @@
 
 **Last updated**: 2026-09-10
 
-## Status: the last correctness gap is closed
+## Status: paused 2026-09-10, at `fefcc6b9` on `main`
 
-`bun run build` emits the whole site with search, backlinks and — as of this
-pass — the non-HRS documents properly cited and linked in both directions.
-227 tests.
+Every known correctness gap is closed. `bun run build` emits the whole site —
+49,415 files, 24,503 pages in ~6s plus ~15s of indexing — with citations
+resolved, search, backlinks, and 0 broken internal links. 227 tests, typecheck
+clean, working tree clean, `reparse --dry-run` reports `unchanged 23373`.
 
-Next: Division/Title navigation, and a host.
+**`STATE.md` is the pick-up-here document**, and its "What is left" section is
+ordered. The short version: the only thing standing between this and being
+usable by anyone else is **picking a host** — a decision, not code, and the
+binding number is 49,415 files against Cloudflare's 20,000 free / 100,000 paid.
+After that, Division/Title navigation is the biggest improvement to how the site
+reads.
+
+### What this run of sessions did
+
+Started from "the corpus is done, the site is not". Ended with a searchable,
+cross-linked, fully cited site. Five commits:
+
+| | |
+|---|---|
+| `cc22de3c` | the site build, and five defects reading it exposed |
+| `ec407f7d` | unbracketed part banners, source links on every page |
+| `cb45cd93` | the citation graph, backlinks, Pagefind |
+| `c23e358f` | typo tolerance answered from the corpus |
+| `fefcc6b9` | the non-HRS documents — the last correctness gap |
+
+**The recurring lesson, four times over: reading the actual output beat reading
+the metrics.** Hazard 9's 971 wrong history links, 298 chapters missing their
+parts, ~1,600 unlinked citations, a bracket convention we had backwards, and
+search that could not find a section by its number — none of these were visible
+in a count, and several were invisible to the test suite too. Two of them came
+from a human clicking around localhost and asking a question.
+
+The corollary is now written into the profiler: a rendered block that nothing
+measures is where the next defect hides. `history` and `cross-document` are both
+reported as their own blocks precisely because of how they were found.
 
 ## 2026-09-10 (fourth pass) — the non-HRS documents
 
