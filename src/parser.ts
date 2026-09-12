@@ -360,6 +360,11 @@ function splitBlocks(
   prefix: string
 ): Block[] {
   const blocks: Block[] = [{ kind: "body", heading: null, paragraphs: [], elements: [] }];
+  // Whether a blank paragraph (or a heading) has gone by since the last text.
+  // Blanks are dropped from the blocks, but the constitutions use them as the
+  // separator between one centred item and the next — see the catchline join
+  // below — so the fact of one is remembered here.
+  let separated = true;
 
   root.find("p").each((_, el) => {
     const classes = ($(el).attr("class") ?? "").split(/\s+/);
@@ -369,9 +374,13 @@ function splitBlocks(
       if (text) {
         blocks.push({ kind: "annotation", heading: text, paragraphs: [], elements: [] });
       }
+      separated = true;
       return;
     }
-    if (!text) return;
+    if (!text) {
+      separated = true;
+      return;
+    }
 
     let block = blocks[blocks.length - 1]!;
 
@@ -402,8 +411,32 @@ function splitBlocks(
       blocks.push(block);
     }
 
+    // A constitutional catchline that runs to a second line is printed as two
+    // consecutive centred paragraphs with nothing between them — `EXECUTIVE AND
+    // ADMINISTRATIVE OFFICES` / `AND DEPARTMENTS`. Taking only the last line
+    // titled 10 sections with a fragment. A blank paragraph is what separates
+    // one centred item from the next, so its absence is what makes the second
+    // line a continuation rather than, say, the section catchline following
+    // the article's title. Joined here, where the blank is still visible; the
+    // continuation's element is dropped so `paragraphs` and `elements` stay
+    // index-aligned, which costs nothing — a continuation is never a heading.
+    const previous = block.elements[block.elements.length - 1];
+    if (
+      prefix !== "HRS" &&
+      !separated &&
+      previous &&
+      $(el).attr("align") === "center" &&
+      $(previous).attr("align") === "center" &&
+      catchlineAbove(text) &&
+      catchlineAbove(block.paragraphs[block.paragraphs.length - 1])
+    ) {
+      block.paragraphs[block.paragraphs.length - 1] += ` ${text}`;
+      return;
+    }
+
     block.paragraphs.push(text);
     block.elements.push(el);
+    separated = false;
   });
 
   return blocks;

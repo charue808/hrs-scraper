@@ -238,6 +238,54 @@ describe("parseSection", () => {
     expect(parsed.bodyText).not.toContain("\u2011");
   });
 
+  // The constitutions print the catchline as a centred upper-case line above a
+  // `Section n.` heading, with a blank paragraph between one centred item and
+  // the next. The blank is the separator: a catchline that wraps to a second
+  // line has none between its lines.
+  const centred = (text: string) =>
+    `<p class="RegularParagraphs" align="center" style='text-align:center'><b>${text}</b></p>`;
+  const blank = `<p class="RegularParagraphs">&nbsp;</p>`;
+
+  test("takes a constitutional catchline from the line above the heading", () => {
+    const html = page(
+      `${centred("DUE PROCESS AND EQUAL PROTECTION")}${blank}
+       <p class="RegularParagraphs"><b>Section 5.</b> No person shall be deprived of life. [Ren and am Const Con 1978]</p>`
+    );
+    const parsed = parseSection(html, "CONST_0001-0005.htm", "https://x/f.htm", "05-CONST");
+    expect(parsed.sectionNumber).toBe("CONST §1-5");
+    expect(parsed.title).toBe("DUE PROCESS AND EQUAL PROTECTION");
+    expect(parsed.bodyText).not.toContain("DUE PROCESS");
+  });
+
+  test("joins a catchline that wraps to a second centred line", () => {
+    // CONST_0005-0006.htm: the title was "AND DEPARTMENTS".
+    const html = page(
+      `${centred("EXECUTIVE AND ADMINISTRATIVE OFFICES")}${centred("AND DEPARTMENTS")}${blank}
+       <p class="RegularParagraphs"><b>Section 6.</b> All executive and administrative offices. [Ren Const Con 1978]</p>`
+    );
+    const parsed = parseSection(html, "CONST_0005-0006.htm", "https://x/f.htm", "05-CONST");
+    expect(parsed.title).toBe("EXECUTIVE AND ADMINISTRATIVE OFFICES AND DEPARTMENTS");
+    expect(parsed.bodyText).not.toContain("DEPARTMENTS");
+  });
+
+  test("keeps an article's title apart from its first section's catchline", () => {
+    // An article banner page: ARTICLE, blank, article title, blank, an
+    // annotation, then the section's own catchline and heading. Every item is
+    // separated by a blank, so nothing joins.
+    const html = page(
+      `${centred("ARTICLE I")}${blank}${centred("BILL OF RIGHTS")}${blank}
+       <p class="XNotesHeading">Law Journals and Reviews</p>
+       <p class="XNotes">The Protection of Individual Rights. 14 UH L. Rev. 311.</p>
+       ${blank}${centred("POLITICAL POWER")}${blank}
+       <p class="RegularParagraphs"><b>Section 1.</b> All political power of this State is inherent in the people. [Ren Const Con 1978]</p>`
+    );
+    const parsed = parseSection(html, "CONST_0001-0001.htm", "https://x/f.htm", "05-CONST");
+    expect(parsed.title).toBe("POLITICAL POWER");
+    expect(parsed.partHeading).toBe("ARTICLE I — BILL OF RIGHTS");
+    expect(parsed.bodyText).toContain("political power");
+    expect(parsed.annotations.map((a) => a.heading)).toEqual(["Law Journals and Reviews"]);
+  });
+
   test("finds the section when an annotation precedes it", () => {
     // A PART banner, a Note about the part, then the section itself.
     const html = page(
