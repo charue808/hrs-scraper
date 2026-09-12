@@ -189,12 +189,14 @@ Nothing here is a defect. In the order I would take them:
    Apache with SSH — no file-count cap for the 49,419 files, extensionless URLs
    with four lines of `.htaccess`, and server logs instead of a JavaScript tracker for seeing how
    the site is used. `bun run deploy` rsyncs the build; `src/hosting.ts` emits
-   the `.htaccess`. **Deployed 2026-09-12.** What remains is to **pull the
-   Apache access logs down on a cron** — DreamHost keeps them only a few days —
-   with a small `usage` script that separates bots from readers and reports
-   which sections, searches and referrers actually occur. The deploy key
-   (`~/.ssh/dreamhost_deploy`, passphrase-less, via `~/.ssh/config`) is what the
-   cron will use too.
+   the `.htaccess`. **Deployed 2026-09-12**, and the **log cron is installed**
+   the same day: `archive-logs.sh` runs on the host at 01:30 and 13:30 and
+   gzips each rotated day into `~/log-archive/`; `bun run logs` pulls that to
+   `data/logs/`. What remains is a small `usage` script over those files that
+   separates bots from readers and reports which sections, searches and
+   referrers actually occur — worth writing once there is a week of real
+   traffic to shape it against. The deploy key is `~/.ssh/dreamhost_deploy`
+   (passphrase-less, bound to the host in `~/.ssh/config`).
 2. **Division/Title navigation.** The site navigates by volume, which is a
    printing artifact of the published edition. The index pages carry the real
    hierarchy — `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — above
@@ -287,6 +289,8 @@ bun run build -- --no-index               # skip Pagefind (halves the file count
 bun run serve                             # browse build/site at localhost:3000
 bun run verify-search                     # drive /search in a real browser
 bun run deploy -- --dry-run               # rsync build/site to DEPLOY_TARGET (.env)
+bun run logs                              # pull the access-log archive to data/logs/
+bun run logs -- --install                 # (once) put archive-logs.sh and its cron on the host
 ```
 
 `--db`, `bun run migrate` and `sql/schema.sql` still work but are a side tool for

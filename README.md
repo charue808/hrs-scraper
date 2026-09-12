@@ -322,8 +322,14 @@ both cap free at 20,000 files; paid at 100,000). An Apache directory has no cap,
 extensionless URLs are its `DirectoryIndex` behaviour (with `DirectorySlash
 Off` so it serves `/hrs/26-34` rather than redirecting to `/hrs/26-34/` first), and its access
 logs answer "how is this being used?" without adding JavaScript to statute
-pages. DreamHost keeps those logs only briefly, so they need pulling down on a
-cron if they are to be kept.
+pages.
+
+**The logs.** DreamHost rotates the access log daily and deletes rotated days
+after a few of them, so a cron *on the host* (a laptop that is off for a week
+would lose a week) gzips each rotated day into `~/log-archive/` as it appears.
+`src/archive-logs.sh` is that script; `bun run logs -- --install` puts it and
+its crontab in place, and `bun run logs` pulls the archive to `data/logs/`,
+which is gitignored — the lines carry IP addresses.
 
 ## Possible Direction: An Enhanced Site
 
@@ -407,6 +413,8 @@ src/
   build.ts         — reads the corpus, resolves citations, writes build/site
   hosting.ts       — what the host needs beyond pages: .htaccess, robots, sitemap
   deploy.ts        — rsync build/site to the host
+  logs.ts          — pull the access-log archive; --install sets up the host cron
+  archive-logs.sh  — runs on the host under cron: gzip each rotated day before it ages out
   serve.ts         — serves build/site locally (development only)
   verify-search.ts — drives /search in a real browser
   profile-citations.ts — the citation quality metric

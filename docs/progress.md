@@ -6,7 +6,8 @@
 
 The site is up at https://experimental-hrs.dreamhosters.com — all 49,419 files,
 search verified in a real browser against the live host. 235 tests, typecheck
-clean. What remains on the operational side is the access-log cron.
+clean. The access-log cron is installed on the host; a `usage` report over the
+pulled logs is the next operational piece, once there is traffic to shape it.
 
 ## 2026-09-12 — first deploy, and what only a real Apache showed
 
@@ -40,6 +41,15 @@ Also: DreamHost's `.dh-diag` symlink in the web root is excluded from
 
 Verified on the live host: gzip on text types, the cache headers, the 404 page,
 the redirects, and `bun run verify-search --url` — all 14 checks.
+
+**The log cron.** DreamHost rotates `~/logs/<domain>/{http,https}/access.log`
+at 00:43 into `access.log.YYYY-MM-DD` and keeps only a few days. The cron runs
+on the host, not here: `archive-logs.sh` gzips each dated file into
+`~/log-archive/<domain>/<date>.<scheme>.<kind>.log.gz` if it is not already
+there, so it is idempotent and runs at 01:30 and 13:30 for a second chance.
+`bun run logs -- --install` placed it and the crontab; `bun run logs` rsyncs
+the archive to `data/logs/` (gitignored — IP addresses). Day one's 523 hits
+were all ours, plus one inventory crawler that found the site within hours.
 
 ## 2026-09-11 — a host, and the deploy path
 
