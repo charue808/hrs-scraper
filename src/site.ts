@@ -14,9 +14,10 @@ import {
   type Annotation,
   type ChapterRecord,
   type ParsedSection,
+  type TitleRecord,
 } from "./config";
 import { escapeHtml, linkify } from "./citations";
-import { chapterHref, resolve, sectionHref, volumeHref, type Index } from "./resolver";
+import { chapterHref, resolve, sectionHref, titleHref, volumeHref, type Index } from "./resolver";
 import { properCitation } from "./cross-document";
 import type { Edge } from "./graph";
 
@@ -175,6 +176,26 @@ interface Crumb {
   label: string;
   href?: string;
 }
+
+/**
+ * The title a chapter sits under, for the breadcrumb. Undefined for the
+ * non-HRS documents, which are outside the Division/Title hierarchy — their
+ * crumb goes straight from the top of the site to the document.
+ */
+export interface TitleRef {
+  number: string;
+  name: string;
+}
+
+/**
+ * `HRS › Title 12 › …`. The site navigated by volume first, which is how the
+ * printed edition is bound and means nothing to a citation; the title is the
+ * hierarchy the code itself states, and what a lawyer would say.
+ */
+const topCrumbs = (title?: TitleRef): Crumb[] => [
+  { label: "HRS", href: "/" },
+  ...(title ? [{ label: `Title ${title.number}`, href: titleHref(title.number) }] : []),
+];
 
 /**
  * How a page presents itself to the search index.
@@ -555,7 +576,7 @@ export function sectionPage(
   section: ParsedSection,
   context: {
     chapterLabel: string;
-    volume: number;
+    title?: TitleRef;
     prev?: ParsedSection;
     next?: ParsedSection;
     /** What cites this section, from the citation graph. */
@@ -657,8 +678,7 @@ export function sectionPage(
       },
     },
     crumbs: [
-      { label: "HRS", href: "/" },
-      { label: `Volume ${context.volume}`, href: volumeHref(context.volume) },
+      ...topCrumbs(context.title),
       { label: context.chapterLabel, href: chapterHref(section.chapterNumber) },
       { label: shown },
     ],
@@ -677,7 +697,7 @@ export function sectionPage(
 export function chapterPage(
   chapterNumber: string,
   record: ChapterRecord | undefined,
-  volume: number,
+  title: TitleRef | undefined,
   sections: ParsedSection[],
   index: Index,
   /** The chapter's index page on the source server. Two chapters have none. */
@@ -743,11 +763,7 @@ export function chapterPage(
       meta: { number: `Chapter ${chapterNumber}`, title: record?.title ?? "" },
       filters: { chapter: chapterNumber, document: "chapter index" },
     },
-    crumbs: [
-      { label: "HRS", href: "/" },
-      { label: `Volume ${volume}`, href: volumeHref(volume) },
-      { label: label },
-    ],
+    crumbs: [...topCrumbs(title), { label: label }],
     body: body.join("\n"),
     footer: sourceFooter(source?.url, source?.filename ?? ""),
   });
@@ -760,60 +776,135 @@ export function chapterLabel(chapterNumber: string, record?: ChapterRecord): str
   return title ? `Chapter ${chapterNumber} — ${title}` : `Chapter ${chapterNumber}`;
 }
 
+/** A chapter's row in a listing: number, name, and how much is behind the link. */
+export interface ChapterRow {
+  number: string;
+  /** The name to show. Volume pages use the chapter's own banner; title pages the TOC's. */
+  name: string;
+  sections: number;
+}
+
+const chapterRow = (c: ChapterRow): string => {
+  const label = NON_HRS_LABELS[c.number];
+  // 293 chapters have no section pages at all. Saying so here saves the
+  // reader a click, and it is a plain fact about the corpus rather than a
+  // claim about whether the chapter is in force — the chapter page itself
+  // carries the source's own repeal note.
+  const count =
+    c.sections === 0 ? "no sections" : c.sections === 1 ? "1 section" : `${c.sections} sections`;
+  return (
+    `<li><a href="${chapterHref(c.number)}">` +
+    // The non-HRS directories have no chapter number worth showing — their
+    // name is the identifier.
+    (label ? "" : `<span class="num">Chapter ${escapeHtml(c.number)}</span> `) +
+    `<span class="t">${escapeHtml(label ?? c.name)}</span> ` +
+    `<span class="meta">${count}</span></a></li>`
+  );
+};
+
 export function volumePage(
   volume: number,
   range: string,
-  chapters: { number: string; record?: ChapterRecord; sections: number }[],
+  chapters: ChapterRow[],
   source?: { url: string; dirName: string }
 ): string {
-  const rows = chapters
-    .map((c) => {
-      const label = NON_HRS_LABELS[c.number];
-      // 293 chapters have no section pages at all. Saying so here saves the
-      // reader a click, and it is a plain fact about the corpus rather than a
-      // claim about whether the chapter is in force — the chapter page itself
-      // carries the source's own repeal note.
-      const count =
-        c.sections === 0
-          ? "no sections"
-          : c.sections === 1
-            ? "1 section"
-            : `${c.sections} sections`;
-      return (
-        `<li><a href="${chapterHref(c.number)}">` +
-        // The non-HRS directories have no chapter number worth showing — their
-        // name is the identifier.
-        (label ? "" : `<span class="num">Chapter ${escapeHtml(c.number)}</span> `) +
-        `<span class="t">${escapeHtml(label ?? c.record?.title ?? "")}</span> ` +
-        `<span class="meta">${count}</span></a></li>`
-      );
-    })
-    .join("\n");
-
   return page({
     title: `Volume ${volume} — Hawaii Revised Statutes`,
     crumbs: [{ label: "HRS", href: "/" }, { label: `Volume ${volume}` }],
     body:
       `<h1>Volume ${volume}</h1>\n` +
-      `<p class="meta">Chapters ${escapeHtml(range)} · ${chapters.length} chapters</p>\n` +
-      `<ul class="toc">${rows}</ul>`,
+      `<p class="meta">Chapters ${escapeHtml(range)} · ${chapters.length} chapters · ` +
+      `how the printed edition is bound; the code itself is arranged by <a href="/">division and title</a></p>\n` +
+      `<ul class="toc">${chapters.map(chapterRow).join("\n")}</ul>`,
     footer: sourceFooter(source?.url, source?.dirName ?? ""),
   });
 }
 
+/**
+ * A title's page: its chapters as the printed table of contents lists them,
+ * grouped by subtitle where the title has them (6 and 12), with the title's own
+ * notes above and annotations below, as on a chapter page.
+ *
+ * Names come from the table of contents rather than the chapter banners — it
+ * is what the source prints at this level, and it carries information the
+ * banner does not (`--Repealed`).
+ */
+export function titlePage(
+  title: TitleRecord,
+  division: { number: number; name: string },
+  sections: (chapterNumber: string) => number,
+  index: Index,
+  source?: { url: string; filename: string }
+): string {
+  const body: string[] = [];
+  const supplied = title.supplied
+    ? ` <span class="meta">(title supplied by the revisor)</span>`
+    : "";
+  body.push(`<h1>Title ${escapeHtml(title.number)} — ${escapeHtml(title.name)}${supplied}</h1>`);
+  const count = title.listing.reduce((n, g) => n + g.chapters.length, 0);
+  body.push(
+    `<p class="meta">Division ${division.number}, ${escapeHtml(division.name)} · ` +
+      `${count === 1 ? "1 chapter" : `${count} chapters`}</p>`
+  );
+  if (title.notes) body.push(paragraphs(title.notes, index, "note"));
+
+  for (const group of title.listing) {
+    if (group.subtitle) body.push(`<h2>${escapeHtml(group.subtitle)}</h2>`);
+    const rows = group.chapters.map((c) =>
+      chapterRow({ number: c.number, name: c.name, sections: sections(c.number) })
+    );
+    body.push(`<ul class="toc">${rows.join("\n")}</ul>`);
+  }
+  // Placed by number, not by the source: say so, in the document flow like
+  // every other editorial note.
+  if (title.unlisted?.length) {
+    const list = title.unlisted.map((n) => `chapter ${escapeHtml(n)}`).join(", ");
+    body.push(
+      `<p class="note">The published table of contents for this title does not list ` +
+        `${list}; ${title.unlisted.length === 1 ? "it is" : "they are"} placed above by number.</p>`
+    );
+  }
+  if (title.annotations.length) body.push(annotationBlocks(title.annotations, index));
+
+  return page({
+    title: `Title ${title.number} — ${title.name} — Hawaii Revised Statutes`,
+    crumbs: [{ label: "HRS", href: "/" }, { label: `Title ${title.number}` }],
+    body: body.join("\n"),
+    footer: sourceFooter(source?.url, source?.filename ?? ""),
+  });
+}
+
 export function homePage(
-  volumes: { number: number; range: string; chapters: number }[],
+  divisions: {
+    number: number;
+    name: string;
+    titles: { number: string; name: string; chapters: number }[];
+  }[],
+  volumes: { number: number; range: string }[],
   stats: { sections: number; chapters: number },
   sourceUrl?: string
 ): string {
-  const rows = volumes
+  const rows = divisions
     .map(
-      (v) =>
-        `<li><a href="${volumeHref(v.number)}">` +
-        `<span class="num">Volume ${v.number}</span> ` +
-        `<span class="t">Chapters ${escapeHtml(v.range)} · ${v.chapters} chapters</span></a></li>`
+      (d) =>
+        `<h2>Division ${d.number} — ${escapeHtml(d.name)}</h2>\n<ul class="toc">` +
+        d.titles
+          .map(
+            (t) =>
+              `<li><a href="${titleHref(t.number)}">` +
+              `<span class="num">Title ${escapeHtml(t.number)}</span> ` +
+              `<span class="t">${escapeHtml(t.name)}</span> ` +
+              `<span class="meta">${t.chapters === 1 ? "1 chapter" : `${t.chapters} chapters`}</span></a></li>`
+          )
+          .join("\n") +
+        `</ul>`
     )
     .join("\n");
+  // The printed edition's arrangement. Still occasionally what someone has in
+  // hand, and the pages already exist; one line keeps them reachable.
+  const printed = volumes
+    .map((v) => `<a href="${volumeHref(v.number)}">${v.number}</a>`)
+    .join(", ");
 
   return page({
     title: "Hawaii Revised Statutes",
@@ -827,8 +918,8 @@ ${stats.chapters.toLocaleString()} chapters.</p>
 Legislature are the authority; this is a readable, cross-linked copy of them. A
 citation is linked only when the section it names exists in the corpus — what
 does not resolve is left as plain text rather than guessed at.</p>
-<h2>Volumes</h2>
-<ul class="toc">${rows}</ul>`,
+${rows}
+<p class="meta">The printed edition binds these into volumes ${printed}.</p>`,
     footer: sourceFooter(sourceUrl, "capitol.hawaii.gov/hrscurrent"),
   });
 }
@@ -848,7 +939,7 @@ export function notFoundPage(): string {
 <p>Section pages live at <code>/hrs/</code> followed by the section number
 &mdash; <a href="/hrs/26-34"><code>/hrs/26-34</code></a> for §26-34,
 <a href="/hrs/431-1-100"><code>/hrs/431-1-100</code></a> for §431:1-100.
-Chapters are at <code>/hrs/chapter/26</code>.</p>
+Chapters are at <code>/hrs/chapter/26</code> and titles at <code>/hrs/title/4</code>.</p>
 <p>A section that was repealed or renumbered has no page of its own. Its
 chapter page lists what the chapter holds now, and
 <a href="/search">search</a> covers the full text.</p>

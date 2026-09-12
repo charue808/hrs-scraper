@@ -7,6 +7,7 @@ import {
   normalizeChapterNumber,
   parseChapterIndex,
   parseSection,
+  parseTitleBanner,
 } from "./parser";
 
 const page = (body: string) =>
@@ -793,4 +794,107 @@ test("a [NEW] marker is a status, not a chapter title", () => {
     "14"
   );
   expect(parsed.title).toBe("PRESIDENTIAL ELECTIONS");
+});
+
+describe("parseTitleBanner", () => {
+  const p = (cls: string, text: string) => `<p class="${cls}">${text}</p>`;
+  const R = (text: string) => p("RegularParagraphs", text);
+
+  test("returns null for the 1,067 index pages with no TITLE banner", () => {
+    const html = page(`${R("<b>CHAPTER 431K</b>")}${R("<b>RISK RETENTION</b>")}${R("Section")}`);
+    expect(parseTitleBanner(html)).toBeNull();
+  });
+
+  // The shapes seen across the 41 pages, in one fixture: a DIVISION banner, a
+  // title name and a subtitle name and a row that each wrap into the next
+  // paragraph, notes in the middle, and the title's material ending at the
+  // first CHAPTER line even when that one is a superseded [OLD] banner.
+  test("reads division, title, subtitles, wrapped rows and title notes", () => {
+    const html = page(
+      R("<b>DIVISION 1.&nbsp; GOVERNMENT</b>") +
+        R("<b>TITLE 6.&nbsp; COUNTY ORGANIZATION</b>") +
+        R("<b>AND ADMINISTRATION</b>") +
+        R("Subtitle 1. Provisions Common to All") +
+        R("Counties") +
+        R("Chapter") +
+        R("46 General Provisions") +
+        R("47C Indebtedness of the Counties, Exclusions from") +
+        R("the Funded Debt, and Certification Thereof") +
+        R("Subtitle 2. Honolulu Government") +
+        R("70 General Provisions Relating to Honolulu--Repealed") +
+        p("XNotesHeading", "Revision Note") +
+        p("XNotes", "Throughout this title, references to \"board of supervisors\" mean the council.") +
+        R("<b>CHAPTER 46 [OLD]</b>") +
+        R("<b>CHAPTER 46</b>") +
+        R("<b>GENERAL PROVISIONS</b>") +
+        R("Section") +
+        R("46-1 Definitions")
+    );
+    const t = parseTitleBanner(html)!;
+    expect(t.division).toEqual({ number: 1, name: "GOVERNMENT" });
+    expect(t.number).toBe("6");
+    expect(t.name).toBe("COUNTY ORGANIZATION AND ADMINISTRATION");
+    expect(t.supplied).toBe(false);
+    expect(t.listing).toEqual([
+      {
+        subtitle: "Subtitle 1. Provisions Common to All Counties",
+        chapters: [
+          { number: "46", name: "General Provisions" },
+          {
+            number: "47C",
+            name: "Indebtedness of the Counties, Exclusions from the Funded Debt, and Certification Thereof",
+          },
+        ],
+      },
+      {
+        subtitle: "Subtitle 2. Honolulu Government",
+        chapters: [{ number: "70", name: "General Provisions Relating to Honolulu--Repealed" }],
+      },
+    ]);
+    expect(t.annotations).toEqual([
+      { heading: "Revision Note", text: 'Throughout this title, references to "board of supervisors" mean the council.' },
+    ]);
+    // The chapter's own material is not the title's.
+    expect(JSON.stringify(t)).not.toContain("46-1");
+    expect(JSON.stringify(t)).not.toContain("OLD");
+  });
+
+  test("a bracketed banner is revisor-supplied, and only the first title of a division carries one", () => {
+    const html = page(
+      R("<b>[TITLE 23A.&nbsp; OTHER BUSINESS ENTITIES]</b>") +
+        R("Chapter") +
+        R("428 Uniform Limited Liability Company Act") +
+        R("<b>CHAPTER 428</b>")
+    );
+    const t = parseTitleBanner(html)!;
+    expect(t.division).toBeUndefined();
+    expect(t.number).toBe("23A");
+    expect(t.name).toBe("OTHER BUSINESS ENTITIES");
+    expect(t.supplied).toBe(true);
+    expect(t.listing).toEqual([{ chapters: [{ number: "428", name: "Uniform Limited Liability Company Act" }] }]);
+  });
+
+  // Title 37 puts its codification note between the banner and the `Chapter`
+  // header, with no heading, and titles 37 and 38 close the table with an
+  // appendix listing that is not a chapter.
+  test("headingless notes are prose, and an appendix ends the listing", () => {
+    const html = page(
+      R("<b>DIVISION 5.&nbsp; CRIMES AND CRIMINAL PROCEEDINGS</b>") +
+        R("<b>TITLE 37.&nbsp; HAWAII PENAL CODE</b>") +
+        p("XNotes", "Codification. Act 9, Session Laws 1972, repealed or recodified the criminal laws.") +
+        R("Chapter") +
+        R("701 Preliminary Provisions") +
+        R("713 Repeal and Recodification Provisions") +
+        R("Appendix") +
+        R("1. Abbreviations") +
+        R("<b>CHAPTER 701</b>")
+    );
+    const t = parseTitleBanner(html)!;
+    expect(t.notes).toBe("Codification. Act 9, Session Laws 1972, repealed or recodified the criminal laws.");
+    expect(t.annotations).toEqual([]);
+    expect(t.listing[0]!.chapters.map((c) => c.name)).toEqual([
+      "Preliminary Provisions",
+      "Repeal and Recodification Provisions",
+    ]);
+  });
 });

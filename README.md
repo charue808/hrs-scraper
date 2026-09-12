@@ -5,7 +5,7 @@ parses ~24,500 statute files from raw HTML into structured data, and publishes
 them as a static, fully cross-linked document set.
 
 **Current state**: the corpus is scraped, parsed, committed and cross-linked,
-and the site builds — 24,503 pages with search, backlinks and no broken
+and the site builds — 24,544 pages with search, backlinks and no broken
 internal links — and deploys to a plain Apache host with `bun run deploy`.
 See [`docs/STATE.md`](docs/STATE.md).
 
@@ -29,7 +29,7 @@ Nothing a database provides *at runtime* is something this content needs.
 |---|---|
 | Source of truth | `data/parsed/*.json`, committed to the repo |
 | Version history | git — a re-scrape diffs to exactly the sections that were amended |
-| Output | 23,373 statute pages + 1,114 chapter pages + 14 volume pages, pre-rendered HTML |
+| Output | 23,373 statute pages + 1,114 chapter pages + 41 title pages + 14 volume pages, pre-rendered HTML |
 | Citations | resolved at build time and baked into the markup |
 | Search | [Pagefind](https://pagefind.app) — chunked index; only the search page loads JS |
 | Database | optional side tool for ad-hoc analysis, not the pipeline |
@@ -99,7 +99,8 @@ Scraped in full on 2026-09-09 with zero failures.
 
 | | |
 |---|---|
-| Volumes | 14 |
+| Divisions / titles | 5 / 41 — the code's own arrangement, read from the 41 index pages that carry the banners |
+| Volumes | 14 — how the printed edition is bound, and how the source server is organised |
 | Chapter directories | 1,114 |
 | `.htm` files | 24,505 |
 | Parsed sections | 23,373 |
@@ -248,8 +249,8 @@ bun run serve                    # browse it at localhost:3000
 bun run verify-search            # drive /search in a real browser (needs Chrome)
 ```
 
-Emits 49,419 files: a page per section, per chapter and per volume, plus a home
-page, a search page, `citations.json`, and the Pagefind index — which is 24,907
+Emits 49,460 files: a page per section, per chapter, per title and per volume,
+plus a home page, a search page, `citations.json`, and the Pagefind index — which is 24,907
 of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
 the count. `bun run serve` browses the result at `localhost:3000`; the pages are
 extensionless directories (`/hrs/26-34/index.html` serves `/hrs/26-34`), which
@@ -315,7 +316,7 @@ as `.htaccess` by the build: no directory listings, the 404 page, and cache
 headers keyed on whether a file's name changes with its content (Pagefind's
 hashed fragments are immutable; pages get an hour).
 
-**Why a plain host.** The build emits **49,419 files** — Pagefind writes one
+**Why a plain host.** The build emits **49,460 files** — Pagefind writes one
 fragment per indexed page, which more than doubles the page count — and that is
 over the free tier of every CDN-style host checked (Cloudflare Pages and Workers
 both cap free at 20,000 files; paid at 100,000). An Apache directory has no cap,
@@ -400,7 +401,8 @@ src/
   discover.ts      — crawl directory listings -> manifest
   scrape.ts        — fetch, parse, write sections
   reparse.ts       — rebuild data/parsed from cached HTML after a parser change
-  chapters.ts      — chapter titles from index pages -> data/chapters.json
+  chapters.ts      — chapter titles from index pages -> data/chapters.json; the
+                     Division > Title > Chapter hierarchy -> data/titles.json
   parser.ts        — HTML -> structured ParsedSection data
   corrections.ts   — applies data/corrections.json; resolver alias table
   resolver.ts      — the known-section index, and resolution against it
@@ -409,7 +411,7 @@ src/
   graph.ts         — the citation graph: backlinks and citations.json
   vocabulary.ts    — the corpus's word list, for typo suggestions on the search page
   search-client.js — the search page's script: go-to-section and spelling suggestions
-  site.ts          — the site's markup: page shell, section/chapter/volume pages
+  site.ts          — the site's markup: page shell, section/chapter/title/volume pages
   build.ts         — reads the corpus, resolves citations, writes build/site
   hosting.ts       — what the host needs beyond pages: .htaccess, robots, sitemap
   deploy.ts        — rsync build/site to the host
@@ -432,6 +434,7 @@ docs/
 data/
   manifest.json    — discovered URLs from discovery (tracked)
   chapters.json    — chapter number -> title (tracked)
+  titles.json      — Division > Title > (Subtitle) > Chapter, from the 41 title banner pages (tracked)
   corrections.json — reviewed errors in the published source (tracked)
   parsed/          — parsed JSON, the source of truth (tracked)
   html/            — cached raw HTML (gitignored)

@@ -77,6 +77,10 @@ export function volumeHref(volumeNumber: number): string {
   return `/hrs/volume/${volumeNumber}`;
 }
 
+export function titleHref(titleNumber: string): string {
+  return `/hrs/title/${titleNumber}`;
+}
+
 /** The bare number a citation in running text would use for this section. */
 function citationKey(sectionNumber: string): string {
   return sectionNumber.replace(/^§/, "").replace(/ \[OLD\]$/, "");

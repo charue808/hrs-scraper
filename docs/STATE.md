@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-12
-**Head**: see `git log` — 235 tests, typecheck clean
+**Head**: see `git log` — 243 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -22,9 +22,9 @@ committed as the source of truth, cross-linked, and **built into a searchable
 static site with backlinks**. Every known correctness gap is closed.
 
 What works end to end today: `bun run build` turns the committed corpus into
-**49,419 files** — 24,503 pages in ~6s, then ~15s for the search index — with
+**49,460 files** — 24,544 pages in ~9s, then ~15s for the search index — with
 citations resolved, backlinks on every page, and **0 broken internal links**
-across all 24,505 distinct hrefs. `bun run serve` browses it at localhost:3000,
+across all 24,547 distinct hrefs. `bun run serve` browses it at localhost:3000,
 and `bun run deploy` rsyncs it to the host.
 
 **The site is live at https://experimental-hrs.dreamhosters.com** (DreamHost
@@ -124,6 +124,37 @@ costs one edit, not two, or `marijauna` corrects to `mariana` instead of
 is the one part of the site that cannot be verified by reading the built output,
 and every defect in it so far was found this way.
 
+### The hierarchy — built 2026-09-12
+
+The HRS is Division > Title > (Subtitle) > Chapter; volumes are how the printed
+edition is bound. The hierarchy is stated outright on exactly one index page
+per title — the first chapter's — as a `DIVISION n. NAME` banner on the first
+title of each division, a `TITLE n. NAME` banner, and a table of contents
+listing the title's chapters. `parseTitleBanner` reads those 41 pages; `bun run
+chapters` assembles `data/titles.json`.
+
+| | |
+|---|---|
+| Divisions | 5 |
+| Titles | 41 — 1 to 38, plus 23A, 25A, 30A |
+| Revisor-supplied (bracketed) titles | 2 — 23A, 25A |
+| Subtitles | 11 — title 6 has 3, title 12 has 8 |
+| Chapters listed by a table of contents | 1,106 of 1,108 |
+| Placed by number, and said so on the page | 2 — 323J, 349F |
+| Table-of-contents rows with no chapter in the corpus | 0 |
+
+The tables of contents are the membership map, not an inference from number
+ranges — and every row maps to a real chapter. The two chapters no table lists
+were presumably added after their table was last set; each is placed between
+its numeric neighbours and the title page says so in the document flow. The
+non-HRS documents (constitutions, Organic Act, Admission Act, HHCA, HNP Act)
+sit outside every division, which is correct; their crumbs go straight from
+the top of the site to the document.
+
+Chapter names on title pages come from the tables of contents (Title Case,
+with `--Repealed` where the source says so) rather than from the chapter
+banners, because that is what the source prints at that level.
+
 ### The site — built
 
 `bun run build` reads `data/parsed` and writes the whole document set.
@@ -134,16 +165,17 @@ writing files.
 |---|---|
 | Section pages | 23,373 |
 | Chapter pages | 1,114 |
+| Title pages | 41 |
 | Volume pages | 14 |
 | Home, search, 404, stylesheet, favicon | 5 |
 | `.htaccess`, `robots.txt`, `sitemap.xml` | 3 — see `hosting.ts` |
 | `citations.json` | 6.0 MB |
 | Pagefind index | 24,907 files, 115 MB |
 | `search-vocabulary.txt` | 17,223 words, 52 KB gzipped |
-| **Total files** | **49,419** |
+| **Total files** | **49,460** |
 | Size | 351 MB raw |
 | Build time | ~6s, plus ~15s to index |
-| Broken internal links | **0** of 24,505 distinct hrefs |
+| Broken internal links | **0** of 24,547 distinct hrefs |
 
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
 `/hrs/26-34`). Apache's default for that is a 301 to `/hrs/26-34/` before
@@ -186,7 +218,7 @@ missing.
 Nothing here is a defect. In the order I would take them:
 
 1. ~~**Pick a host.**~~ **Decided 2026-09-11: DreamHost shared hosting.** Plain
-   Apache with SSH — no file-count cap for the 49,419 files, extensionless URLs
+   Apache with SSH — no file-count cap for the 49,460 files, extensionless URLs
    with four lines of `.htaccess`, and server logs instead of a JavaScript tracker for seeing how
    the site is used. `bun run deploy` rsyncs the build; `src/hosting.ts` emits
    the `.htaccess`. **Deployed 2026-09-12**, and the **log cron is installed**
@@ -197,11 +229,13 @@ Nothing here is a defect. In the order I would take them:
    referrers actually occur — worth writing once there is a week of real
    traffic to shape it against. The deploy key is `~/.ssh/dreamhost_deploy`
    (passphrase-less, bound to the host in `~/.ssh/config`).
-2. **Division/Title navigation.** The site navigates by volume, which is a
-   printing artifact of the published edition. The index pages carry the real
-   hierarchy — `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — above
-   the chapter banner, and it is not extracted. This is the biggest remaining
-   improvement to how the site reads.
+2. ~~**Division/Title navigation.**~~ **Done 2026-09-12.** The site is
+   arranged as the code is — Division > Title > (Subtitle) > Chapter — read
+   from the 41 index pages that carry a TITLE banner and a table of contents
+   of the title's chapters, into `data/titles.json`. Home page by division
+   and title, a page per title, `HRS › Title 12 › Chapter 171 › §171-2` crumbs.
+   Volume pages remain, as the printed edition's arrangement, reachable from
+   a line on the home page. See "The hierarchy" below.
 3. **Chapter index section listings.** The title, notes and annotations are
    extracted; the listing itself is not. It would make a good coverage check
    against the files actually discovered. Not needed for chapter pages — those
@@ -275,13 +309,13 @@ Small, and none of them block anything.
 
 ```bash
 bun install
-bun test                                  # 235 tests
+bun test                                  # 243 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)
 bun run reparse                           # rebuild data/parsed from cached HTML (seconds)
 bun run reparse -- --dry-run              # what would change, writing nothing
-bun run chapters                          # chapter titles -> data/chapters.json
+bun run chapters                          # chapter titles -> data/chapters.json; hierarchy -> data/titles.json
 bun run profile-citations                 # the citation quality metric
 bun run build                             # the whole site -> build/site/ (~6s + ~15s indexing)
 bun run build -- --chapter 26             # one chapter, for reviewing by eye

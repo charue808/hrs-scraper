@@ -50,8 +50,11 @@ something this content needs. Concretely:
   history — which is strictly better than the `section_versions` table proposed
   under Known Gaps, and free. This depends on byte-stable serialization; see
   `SECTION_FIELD_ORDER` in `config.ts`.
-- **Output**: 23,373 statute pages + 1,114 chapter pages + 14 volume pages and a
-  home page, pre-rendered to plain HTML with citations already resolved to links.
+- **Output**: 23,373 statute pages + 1,114 chapter pages + 41 title pages + 14
+  volume pages and a home page, pre-rendered to plain HTML with citations
+  already resolved to links. Navigation follows the code's own hierarchy —
+  Division > Title > (Subtitle) > Chapter, from `data/titles.json`; volumes are
+  the printed edition's binding and are kept as a secondary index.
   URLs are extensionless directories (`/hrs/26-34/index.html` serves
   `/hrs/26-34`); see `hosting.ts` for the Apache side. No client-side fetching,
   no JS on statute pages — which also means nothing to fail for a screen reader.
@@ -373,6 +376,7 @@ discover  ──> data/manifest.json     crawl the directory listings          ~
 scrape    ──> data/parsed/*.json     fetch + parse + cache HTML            ~45 min
               data/html/*.htm
 chapters  ──> data/chapters.json     chapter titles + notes from indexes   seconds
+              data/titles.json       Division > Title > Chapter, from the 41 banner pages
 reparse   ──> data/parsed/*.json     rebuild from cached HTML              seconds
 build     ──> build/site/**          the whole site, citations linked      ~5 s
 ```
@@ -423,7 +427,8 @@ src/
   discover.ts      Phase 1: directory listings -> manifest
   scrape.ts        Phase 2: fetch, parse, store
   reparse.ts       rebuild data/parsed from cached HTML after a parser change
-  chapters.ts      chapter titles, notes, annotations -> data/chapters.json
+  chapters.ts      chapter titles, notes, annotations -> data/chapters.json;
+                   the Division > Title > Chapter hierarchy -> data/titles.json
 
   parser.ts        filenameToSectionNumber, extractChapterFromFilename,
                    normalizeChapterNumber, isIndexFilename,
@@ -438,7 +443,7 @@ src/
   vocabulary.ts    corpus word list, for spelling suggestions on /search
   search-client.js browser script for /search: jump-to-section, spelling
   verify-search.ts end-to-end check of /search in a real browser
-  site.ts          the site's markup: page shell, section/chapter/volume/search
+  site.ts          the site's markup: page shell, section/chapter/title/volume/search
                    pages, outline depth, part banners, footers, backlinks
   build.ts         reads the corpus, resolves citations, writes build/site
   serve.ts         serves build/site locally (development only)
@@ -455,7 +460,7 @@ src/
   site.test.ts           49 tests
 
 sql/schema.sql     standalone schema (side tool)
-data/              manifest.json, chapters.json, corrections.json and
+data/              manifest.json, chapters.json, titles.json, corrections.json and
                    parsed/ are tracked; html/ and progress.json are not
 ```
 
@@ -540,6 +545,31 @@ They are written into `data/chapters.json` as `ChapterRecord`, and omitted
 rather than written empty: most chapters have neither, and that file is
 committed and read as a diff.
 
+### Title banner pages
+
+41 index pages — the first chapter of each title — carry, above the `CHAPTER`
+line, what the other 1,067 do not: a `DIVISION n. NAME` banner on the first
+title of each division, a `TITLE n. NAME` banner (bracketed on 23A and 25A,
+which are revisor-supplied), and a table of contents of the title's chapters
+under a `Chapter` column header, with `Subtitle n. Name` rows on titles 6 and
+12. Names wrap into the next paragraph at every level — `TITLE 6. COUNTY
+ORGANIZATION` / `AND ADMINISTRATION`, `Subtitle 4. Forestry and Wildlife;
+Recreation Areas;` / `Fire Protection`, `47C Indebtedness of the Counties,
+Exclusions from` / `the Funded Debt, and Certification Thereof` — so a plain
+paragraph straight after a banner, subtitle or row continues it. Title-level
+notes can sit anywhere in this (title 37's codification note sits between the
+banner and the header), and titles 37 and 38 close their tables with an
+`Appendix` listing that is not a chapter.
+
+`parseTitleBanner` reads all of that and stops at the *first* `CHAPTER` line of
+any kind — title 2 has a superseded `CHAPTER 11 [OLD]` banner right under its
+table, and that banner is the chapter's, not the title's. `parseChapterIndex`
+starts where it stops. `bun run chapters` assembles the 41 into
+`data/titles.json` (`TitlesFile`), carrying the division forward by title
+number the way `partHeading` is carried forward on sections, and places the
+two chapters no table lists (323J, 349F) between their numeric neighbours,
+recorded as `unlisted` so the page can say so.
+
 ### Database
 
 Three tables: `volumes`, `chapters`, `sections`.
@@ -599,7 +629,7 @@ bun run scrape --save-html            # full run (~45 min)
 
 bun run reparse                       # rebuild data/parsed from data/html (seconds)
 bun run reparse -- --dry-run          # report changes, write nothing
-bun run chapters                      # chapter titles + notes -> data/chapters.json
+bun run chapters                      # chapter titles + notes -> data/chapters.json; hierarchy -> titles.json
 bun run profile-citations             # citation quality metric
 bun run build                         # the whole site -> build/site/ (~5s)
 bun run build -- --chapter 26         # one chapter, for reviewing by eye
@@ -670,8 +700,9 @@ Ordered by what stands between the current state and a finished site.
 
 ### To build
 
-- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,503 pages
-  (23,373 sections, 1,114 chapters, 14 volumes, home, search) with 0 broken
+- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,544 pages
+  (23,373 sections, 1,114 chapters, 14 volumes, home, search; 41 title pages
+  added 2026-09-12) with 0 broken
   internal links. `src/site.ts` owns the markup, `src/build.ts` the driver.
 - ~~**Pagefind.**~~ Done 2026-09-10. Indexes the 24,487 statute and chapter
   pages; annotations weighted 0.4, backlinks excluded, navigation pages left
@@ -689,10 +720,8 @@ Ordered by what stands between the current state and a finished site.
   *listing* still is not. It would make a good coverage check against the files
   actually discovered. It is not needed for a chapter page's contents — those
   are derived from the parsed sections, which carry real titles.
-- **Division/Title navigation.** The site navigates by volume, which is a
-  printing artifact of the published edition. The index pages carry the real
-  hierarchy (`DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS`) above the
-  chapter banner, and it is not extracted.
+- ~~**Division/Title navigation.**~~ Done 2026-09-12; see "Title banner
+  pages" above and `data/titles.json`.
 - **Historical versions.** `hrsarchive/` holds yearly snapshots from 1999
   onward, but it exists on **`www` only** — the `data` mirror returns 500 for
   that path — so crawling it would need the Puppeteer path throughout. Probably

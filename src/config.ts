@@ -187,6 +187,55 @@ export interface ChapterRecord {
 }
 
 /**
+ * What a title's banner page says about the title, before its first chapter's
+ * `CHAPTER n` line. Read by `parseTitleBanner`, assembled into `data/titles.json`
+ * by `bun run chapters`.
+ *
+ * The HRS is Division > Title > (Subtitle) > Chapter. Volumes, which the site
+ * navigated by first, are how the printed edition is bound and mean nothing to a
+ * citation; "Title 12" is what the code itself says. The hierarchy is stated
+ * outright on exactly one index page per title — the first chapter's — as a
+ * DIVISION banner (on the first title of each division), a TITLE banner, and a
+ * table of contents of the title's chapters. 41 pages carry it.
+ */
+export interface ParsedTitleBanner {
+  /** Present only on the first title of a division. */
+  division?: { number: number; name: string };
+  /** `1`, `23A`. */
+  number: string;
+  name: string;
+  /** The banner was bracketed — supplied by the revisor, like a bracketed heading. */
+  supplied: boolean;
+  /**
+   * The table of contents as printed. Titles 6 and 12 divide into subtitles,
+   * labelled as the source does (`Subtitle 1. Public Lands`); every other
+   * title is a single unnamed group.
+   */
+  listing: { subtitle?: string; chapters: { number: string; name: string }[] }[];
+  /** Title-level prose without a heading — in practice a codification note. */
+  notes: string;
+  annotations: Annotation[];
+}
+
+/** One title in `data/titles.json`. */
+export interface TitleRecord extends Omit<ParsedTitleBanner, "division"> {
+  division: number;
+  /**
+   * Chapters in the corpus that the printed table of contents does not list —
+   * added after it was last set, presumably. Placed in `listing` by number and
+   * named here so the gap is visible.
+   */
+  unlisted?: string[];
+  /** The index page the banner was read from. */
+  source: string;
+}
+
+export interface TitlesFile {
+  divisions: { number: number; name: string }[];
+  titles: TitleRecord[];
+}
+
+/**
  * Field order for serialized `ParsedSection` JSON.
  *
  * `data/parsed` is committed, which makes git the version store for the corpus:
@@ -291,5 +340,7 @@ export const HTML_DIR = `${DATA_DIR}/html`;
 export const CORRECTIONS_PATH = `${DATA_DIR}/corrections.json`;
 /** Chapter number -> title, built from the chapter index pages by `bun run chapters`. */
 export const CHAPTERS_PATH = `${DATA_DIR}/chapters.json`;
+/** Division > Title > Chapter, from the 41 title banner pages. Also by `bun run chapters`. */
+export const TITLES_PATH = `${DATA_DIR}/titles.json`;
 
 export const DATABASE_URL = process.env.DATABASE_URL;

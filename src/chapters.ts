@@ -1,5 +1,6 @@
 /**
- * Build `data/chapters.json` — the chapter number -> title map.
+ * Build `data/chapters.json` — the chapter number -> title map — and
+ * `data/titles.json`, the Division > Title > Chapter hierarchy above it.
  *
  * Chapter titles live on the chapter index pages, which the scraper parses but
  * previously only wrote to Postgres via `updateChapterTitle`. With the database
@@ -18,11 +19,15 @@ import {
   CHAPTERS_PATH,
   HTML_DIR,
   MANIFEST_PATH,
+  TITLES_PATH,
   type ChapterRecord,
   type Manifest,
+  type ParsedTitleBanner,
+  type TitleRecord,
+  type TitlesFile,
 } from "./config";
 import { fetchPage, pool } from "./fetcher";
-import { parseChapterIndex } from "./parser";
+import { parseChapterIndex, parseTitleBanner } from "./parser";
 
 const { values } = parseArgs({
   args: Bun.argv.slice(2),
@@ -49,6 +54,8 @@ const jobs = manifest.volumes.flatMap((volume) =>
  * a diff. They are reduced deterministically below instead.
  */
 const results = new Map<string, { filename: string; record: ChapterRecord }[]>();
+/** The title banners, from the 41 index pages that carry one. */
+const banners: { filename: string; banner: ParsedTitleBanner }[] = [];
 let fetched = 0;
 let missing = 0;
 let untitled = 0;
@@ -74,6 +81,8 @@ await pool(jobs, 8, async ({ file, number, volume }) => {
 
   const index = parseChapterIndex(html, file.filename, file.url, number);
   if (!index.title) untitled++;
+  const banner = parseTitleBanner(html);
+  if (banner) banners.push({ filename: file.filename, banner });
   // Omitted rather than written as empty: the overwhelming majority of chapters
   // have neither, and this file is committed and read as a diff.
   const record: ChapterRecord = {
@@ -105,11 +114,55 @@ for (const [number, value] of sorted) out[number] = value;
 
 await Bun.write(CHAPTERS_PATH, `${JSON.stringify(out, null, 2)}\n`);
 
+// The hierarchy. A DIVISION banner appears only on the first title of each
+// division, so titles are ordered by number and the division carried forward —
+// the same forward-carry as `partHeading` on sections, for the same reason.
+banners.sort((a, b) => sortKey(a.banner.number).localeCompare(sortKey(b.banner.number)));
+const divisions: TitlesFile["divisions"] = [];
+const titleRecords: TitleRecord[] = [];
+for (const { filename, banner } of banners) {
+  const { division, ...rest } = banner;
+  if (division) divisions.push(division);
+  const current = divisions.at(-1);
+  if (!current) throw new Error(`title ${banner.number} (${filename}) precedes any DIVISION banner`);
+  titleRecords.push({ ...rest, division: current.number, source: filename });
+}
+
+// The printed tables of contents miss a few chapters — added since the table
+// was last set, presumably. A chapter belongs to the last title whose first
+// listed chapter precedes it, and goes into that title's last group whose first
+// chapter precedes it, in number order. Recorded as `unlisted` so the gap is a
+// fact on the page rather than a silent repair.
+const listed = new Set(titleRecords.flatMap((t) => t.listing.flatMap((g) => g.chapters.map((c) => c.number))));
+const firstOf = (t: TitleRecord) => t.listing[0]?.chapters[0]?.number ?? "";
+const hrsChapters = sorted.map(([n]) => n).filter((n) => /^\d+[A-Z]*$/.test(n));
+for (const number of hrsChapters) {
+  if (listed.has(number)) continue;
+  const key = sortKey(number);
+  const title = [...titleRecords].reverse().find((t) => sortKey(firstOf(t)).localeCompare(key) <= 0);
+  if (!title) continue;
+  const group =
+    [...title.listing].reverse().find((g) => sortKey(g.chapters[0]!.number).localeCompare(key) <= 0) ??
+    title.listing[0]!;
+  const at = group.chapters.findIndex((c) => sortKey(c.number).localeCompare(key) > 0);
+  const entry = { number, name: out[number]?.title ?? "" };
+  group.chapters.splice(at === -1 ? group.chapters.length : at, 0, entry);
+  (title.unlisted ??= []).push(number);
+}
+const unlisted = titleRecords.flatMap((t) => t.unlisted ?? []);
+
+const titlesFile: TitlesFile = { divisions, titles: titleRecords };
+await Bun.write(TITLES_PATH, `${JSON.stringify(titlesFile, null, 2)}\n`);
+
 const withNotes = [...titles.values()].filter((c) => c.notes).length;
 const withAnnotations = [...titles.values()].filter((c) => c.annotations).length;
 
 console.log(`${titles.size} chapters -> ${CHAPTERS_PATH}`);
 console.log(`${withNotes} with chapter notes, ${withAnnotations} with annotations`);
+console.log(
+  `${divisions.length} divisions, ${titleRecords.length} titles, ${listed.size} chapters listed -> ${TITLES_PATH}` +
+    (unlisted.length ? ` (${unlisted.length} placed by number: ${unlisted.join(", ")})` : ""),
+);
 if (fetched) console.log(`fetched ${fetched} index page(s) missing from the cache`);
 if (untitled) console.log(`${untitled} chapter(s) had no title on their index page`);
 if (missing) console.log(`${missing} index page(s) unavailable`);

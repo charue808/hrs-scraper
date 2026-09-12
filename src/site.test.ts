@@ -7,12 +7,17 @@ import {
   partBanner,
   searchPage,
   sectionPage,
+  titlePage,
   volumePage,
   STYLE,
 } from "./site";
+import type { TitleRecord } from "./config";
 import { sectionHref, type Index, type Target } from "./resolver";
 import type { ParsedSection } from "./config";
 import type { Edge } from "./graph";
+
+const T4 = { number: "4", name: "STATE ORGANIZATION AND ADMINISTRATION, GENERALLY" };
+const T5 = { number: "5", name: "STATE FINANCIAL ADMINISTRATION" };
 
 const target = (number: string, title: string): Target => ({
   number,
@@ -62,7 +67,7 @@ const section = (over: Partial<ParsedSection> = {}): ParsedSection => ({
 });
 
 const render = (over: Partial<ParsedSection> = {}, citedBy?: Edge[]) =>
-  sectionPage(section(over), { chapterLabel: "Chapter 502", volume: 12, citedBy }, index);
+  sectionPage(section(over), { chapterLabel: "Chapter 502", title: { number: "28", name: "PROPERTY" }, citedBy }, index);
 
 describe("legislative history is never linked", () => {
   // Measured over the corpus: of 5,222 resolvable citations in history, 4,251
@@ -100,7 +105,7 @@ describe("section titles are linkified", () => {
         title: "Renumbered as §201H-205.",
         chapterNumber: "201H",
       }),
-      { chapterLabel: "Chapter 201H", volume: 4 },
+      { chapterLabel: "Chapter 201H", title: { number: "13", name: "PLANNING AND ECONOMIC DEVELOPMENT" } },
       index
     );
     expect(html).toContain(`href="${sectionHref("§201H-205")}"`);
@@ -182,7 +187,7 @@ describe("statutory outline", () => {
   test("depth becomes an indentation class, and level 0 gets none", () => {
     const html = sectionPage(
       section({ bodyText: "Intro:\n\n(a) First.\n\n(1) Nested." }),
-      { chapterLabel: "Chapter 502", volume: 12 },
+      { chapterLabel: "Chapter 502", title: { number: "28", name: "PROPERTY" } },
       index
     );
     expect(html).toContain("<p>Intro:</p>");
@@ -193,7 +198,7 @@ describe("statutory outline", () => {
   test("annotations are not outlined", () => {
     const html = sectionPage(
       section({ annotations: [{ heading: "Case Notes", text: "(1) A numbered note." }] }),
-      { chapterLabel: "Chapter 502", volume: 12 },
+      { chapterLabel: "Chapter 502", title: { number: "28", name: "PROPERTY" } },
       index
     );
     expect(html).toContain('<p class="ann">(1) A numbered note.</p>');
@@ -211,7 +216,7 @@ describe("chapter pages", () => {
       section({ sectionNumber: "§26-3", title: "Three.", chapterNumber: "26" }),
       section({ sectionNumber: "§26-4", title: "Four.", chapterNumber: "26", partHeading: "PART II. OTHER" }),
     ];
-    const html = chapterPage("26", { title: "DEPARTMENTS", volume: 1 }, 1, sections, index);
+    const html = chapterPage("26", { title: "DEPARTMENTS", volume: 1 }, T4, sections, index);
     expect(html.match(/<ol class="toc">/g)).toHaveLength(2);
     expect(html.match(/class="part"/g)).toHaveLength(2);
   });
@@ -227,7 +232,7 @@ describe("chapter pages", () => {
         notes: "REPEALED. L Sp 1977 1st, c 8, §3.",
         annotations: [{ heading: "Cross References", text: "For present provisions, see chapter 23G, pt. II." }],
       },
-      1,
+      { number: "1", name: "GENERAL PROVISIONS" },
       [],
       index
     );
@@ -301,7 +306,7 @@ describe("source links", () => {
   });
 
   test("a chapter page links its index page", () => {
-    const html = chapterPage("37", { title: "BUDGET", volume: 1 }, 1, [], index, {
+    const html = chapterPage("37", { title: "BUDGET", volume: 1 }, T5, [], index, {
       url: "https://x/HRS_0037-.htm",
       filename: "HRS_0037-.htm",
     });
@@ -310,7 +315,7 @@ describe("source links", () => {
 
   // 02-HNP and 03-ORG have no index page on the source server.
   test("a chapter with no index page gets no source line rather than a dead link", () => {
-    const html = chapterPage("02-HNP", undefined, 1, [], index);
+    const html = chapterPage("02-HNP", undefined, undefined, [], index);
     expect(html).not.toContain("Source:");
     // The disclaimer is there regardless — it is about the site, not the page.
     expect(html).toContain("<footer");
@@ -385,14 +390,14 @@ describe("search index markup", () => {
   });
 
   test("chapter pages are indexed", () => {
-    expect(chapterPage("37", { title: "BUDGET", volume: 1 }, 1, [], index)).toContain(
+    expect(chapterPage("37", { title: "BUDGET", volume: 1 }, T5, [], index)).toContain(
       "data-pagefind-body"
     );
   });
 
   test("navigation pages are not indexed", () => {
     expect(volumePage(1, "1–42F", [])).not.toContain("data-pagefind-body");
-    expect(homePage([], { sections: 0, chapters: 0 })).not.toContain("data-pagefind-body");
+    expect(homePage([], [], { sections: 0, chapters: 0 })).not.toContain("data-pagefind-body");
   });
 
   // Annotations are 5.3M characters against the statutes' 32M but concentrated
@@ -432,7 +437,7 @@ describe("search page", () => {
 
   test("every page offers a way to reach it", () => {
     expect(render()).toContain('href="/search"');
-    expect(chapterPage("37", undefined, 1, [], index)).toContain('href="/search"');
+    expect(chapterPage("37", undefined, T5, [], index)).toContain('href="/search"');
   });
 });
 
@@ -450,8 +455,22 @@ describe("page shell", () => {
 
   test("the breadcrumb marks the current page and links its ancestors", () => {
     const html = render();
-    expect(html).toContain('<li><a href="/hrs/volume/12">Volume 12</a></li>');
+    expect(html).toContain('<li><a href="/">HRS</a></li>');
+    expect(html).toContain('<li><a href="/hrs/title/28">Title 28</a></li>');
+    expect(html).toContain('<li><a href="/hrs/chapter/502">Chapter 502</a></li>');
     expect(html).toContain('<li aria-current="page">§502-13</li>');
+  });
+
+  // The constitutions and the organic documents sit outside every title.
+  test("a non-HRS document has no title crumb", () => {
+    const html = sectionPage(
+      section({ sectionNumber: "CONST §1-5", chapterNumber: "05-CONST", docType: "const" }),
+      { chapterLabel: "Constitution of the State of Hawaii" },
+      index
+    );
+    expect(html).toContain('<li><a href="/">HRS</a></li>');
+    expect(html).not.toContain("/hrs/title/");
+    expect(html).toContain('<li><a href="/hrs/chapter/05-CONST">Constitution of the State of Hawaii</a></li>');
   });
 
   test("a source anomaly is explained in the document flow, and the heading keeps the source's number", () => {
@@ -483,4 +502,60 @@ test("the pager keeps the page's side gutter", () => {
 test("the site stylesheet comes after any page-specific one, so its Pagefind overrides win", () => {
   const html = searchPage();
   expect(html.indexOf("pagefind-ui.css")).toBeLessThan(html.indexOf("/style.css"));
+});
+
+describe("title and home pages", () => {
+  const title12: TitleRecord = {
+    number: "12",
+    name: "CONSERVATION AND RESOURCES",
+    supplied: false,
+    division: 1,
+    listing: [
+      { subtitle: "Subtitle 1. Public Lands", chapters: [{ number: "171", name: "Public Lands, Management and Disposition of" }] },
+      { subtitle: "Subtitle 3. Mining and Minerals", chapters: [{ number: "181", name: "Mining and Minerals--Repealed" }] },
+    ],
+    notes: "",
+    annotations: [{ heading: "Cross References", text: "Rulemaking, see chapter 91." }],
+    source: "HRS_0171-.htm",
+  };
+  const division = { number: 1, name: "GOVERNMENT" };
+  const counts = (n: string) => (n === "171" ? 58 : 0);
+
+  test("a title page groups chapters by subtitle and names them as the table of contents does", () => {
+    const html = titlePage(title12, division, counts, index, { url: "https://x/HRS_0171-.htm", filename: "HRS_0171-.htm" });
+    expect(html).toContain("<h1>Title 12 — CONSERVATION AND RESOURCES</h1>");
+    expect(html).toContain("Division 1, GOVERNMENT · 2 chapters");
+    expect(html).toContain("<h2>Subtitle 1. Public Lands</h2>");
+    expect(html).toContain("<h2>Subtitle 3. Mining and Minerals</h2>");
+    expect(html).toContain('<a href="/hrs/chapter/171"><span class="num">Chapter 171</span> <span class="t">Public Lands, Management and Disposition of</span> <span class="meta">58 sections</span></a>');
+    expect(html).toContain("Mining and Minerals--Repealed</span> <span class=\"meta\">no sections</span>");
+    // The title's own cross reference resolves like any other.
+    expect(html).toContain('href="/hrs/chapter/91"');
+    expect(html).toContain("HRS_0171-.htm");
+    expect(html).toContain('<li aria-current="page">Title 12</li>');
+    expect(html).not.toContain("data-pagefind-body");
+  });
+
+  test("a revisor-supplied title says so, and an unlisted chapter is explained", () => {
+    const html = titlePage(
+      { ...title12, number: "23A", supplied: true, listing: [{ chapters: [{ number: "428", name: "LLC Act" }] }], unlisted: ["428"], annotations: [] },
+      division,
+      counts,
+      index
+    );
+    expect(html).toContain("title supplied by the revisor");
+    expect(html).toContain("does not list chapter 428; it is placed above by number");
+    expect(html).not.toContain("<h2>");
+  });
+
+  test("the home page is arranged by division and title, with the volumes as a footnote", () => {
+    const html = homePage(
+      [{ number: 1, name: "GOVERNMENT", titles: [{ number: "1", name: "GENERAL PROVISIONS", chapters: 18 }] }],
+      [{ number: 1, range: "1–42F" }, { number: 2, range: "43–100" }],
+      { sections: 23373, chapters: 1112 }
+    );
+    expect(html).toContain("<h2>Division 1 — GOVERNMENT</h2>");
+    expect(html).toContain('<a href="/hrs/title/1"><span class="num">Title 1</span> <span class="t">GENERAL PROVISIONS</span> <span class="meta">18 chapters</span></a>');
+    expect(html).toContain('volumes <a href="/hrs/volume/1">1</a>, <a href="/hrs/volume/2">2</a>.');
+  });
 });

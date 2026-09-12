@@ -9,6 +9,39 @@ search verified in a real browser against the live host. 235 tests, typecheck
 clean. The access-log cron is installed on the host; a `usage` report over the
 pulled logs is the next operational piece, once there is traffic to shape it.
 
+## 2026-09-12 — Division/Title navigation
+
+The site navigated by volume, which is how the printed edition is bound and
+means nothing to a citation. It now navigates as the code is arranged:
+Division > Title > (Subtitle) > Chapter.
+
+**The hierarchy was already stated, on 41 pages.** The first chapter of each
+title carries, above its `CHAPTER` line, a `DIVISION n. NAME` banner (on the
+first title of each division), a `TITLE n. NAME` banner, and a table of
+contents of the title's chapters. That table is the membership map itself —
+not an inference from number ranges — and every one of its 1,109 rows maps to
+a real chapter. It lists 1,106 of the 1,108 HRS chapters; the two it does not
+(323J, 349F) are placed between their numeric neighbours and the title page
+says so in the document flow. Titles 6 and 12 divide into 11 subtitles. 23A
+and 25A are bracketed — revisor-supplied, the same convention as everywhere
+else.
+
+What the pages had to be read for, rather than assumed: names wrap into the
+next paragraph at every level (title, subtitle, row); title 37 puts its
+codification note between the banner and the `Chapter` header; titles 37 and
+38 close their tables with an `Appendix` listing that is not a chapter; and
+title 2 has a superseded `CHAPTER 11 [OLD]` banner right under its table.
+`parseChapterIndex` deliberately skips an `[OLD]` banner to find the live one,
+and reusing that would have glued the old chapter onto the last row — the
+title's material ends at the *first* `CHAPTER` line of any kind.
+
+Built: `parseTitleBanner`, `data/titles.json` from `bun run chapters`, a page
+per title, the home page by division and title, and `HRS › Title 12 › Chapter
+171 › §171-2` crumbs. Volume pages stay, as a footnote on the home page. The
+non-HRS documents sit outside every division, correctly, and their crumbs go
+straight to the document. 24,544 pages, 0 broken of 24,547 hrefs, search
+verified, `chapters.json` byte-identical. 243 tests.
+
 ## 2026-09-12 — first deploy, and what only a real Apache showed
 
 The deploy itself was uneventful: a passphrase-less key made for the host, a

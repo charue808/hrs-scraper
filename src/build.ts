@@ -16,9 +16,11 @@ import {
   CHAPTERS_PATH,
   MANIFEST_PATH,
   PARSED_DIR,
+  TITLES_PATH,
   type ChapterRecord,
   type Manifest,
   type ParsedSection,
+  type TitlesFile,
 } from "./config";
 import { buildIndex, sectionSlug } from "./resolver";
 import { buildGraph, serializeGraph } from "./graph";
@@ -30,8 +32,10 @@ import {
   notFoundPage,
   searchPage,
   sectionPage,
+  titlePage,
   volumePage,
   STYLE,
+  type TitleRef,
 } from "./site";
 import { HTACCESS, robots, sitemap } from "./hosting";
 import { pool } from "./fetcher";
@@ -61,6 +65,16 @@ const manifest: Manifest = await Bun.file(MANIFEST_PATH).json();
 const chapterRecords: Record<string, ChapterRecord> = (await Bun.file(CHAPTERS_PATH).exists())
   ? await Bun.file(CHAPTERS_PATH).json()
   : {};
+// Division > Title > Chapter. A chapter outside every title's listing — the
+// non-HRS documents — has no title crumb and is not on the home page's
+// hierarchy; it stays reachable through its volume page and citations.
+const titles: TitlesFile = (await Bun.file(TITLES_PATH).exists())
+  ? await Bun.file(TITLES_PATH).json()
+  : { divisions: [], titles: [] };
+const titleOf = new Map<string, TitleRef>();
+for (const t of titles.titles) {
+  for (const c of t.listing.flatMap((g) => g.chapters)) titleOf.set(c.number, { number: t.number, name: t.name });
+}
 
 // Read the corpus once. `bodyHtml` is ~46% of the payload and is never
 // rendered, so it is dropped on load rather than carried through the build.
@@ -143,7 +157,7 @@ for (const volume of manifest.volumes) {
       chapterPage(
         chapter.number,
         record,
-        volume.number,
+        titleOf.get(chapter.number),
         sections,
         index,
         chapterSource,
@@ -159,7 +173,7 @@ for (const volume of manifest.volumes) {
           section,
           {
             chapterLabel: label,
-            volume: volume.number,
+            title: titleOf.get(chapter.number),
             prev: sections[i - 1],
             next: sections[i + 1],
             citedBy: graph.citedBy.get(section.sectionNumber),
@@ -179,12 +193,35 @@ for (const volume of manifest.volumes) {
       volume.chapterRange.replace(/^0+/, "").replace(/-0+/, "–"),
       volume.chapters.map((c) => ({
         number: c.number,
-        record: chapterRecords[c.number],
+        name: chapterRecords[c.number]?.title ?? "",
         sections: (byChapter.get(c.number) ?? []).length,
       })),
       { url: `${manifest.baseUrl}${volume.dirName}/`, dirName: volume.dirName }
     )
   );
+}
+
+// One page per title, sourced from the index page its banner was read from.
+if (!ONLY_CHAPTER) {
+  const indexFiles = new Map(
+    manifest.volumes.flatMap((v) =>
+      v.chapters.flatMap((c) => c.files.filter((f) => f.isIndex).map((f) => [f.filename, f.url] as const))
+    )
+  );
+  for (const title of titles.titles) {
+    const division = titles.divisions.find((d) => d.number === title.division)!;
+    const url = indexFiles.get(title.source);
+    await write(
+      `hrs/title/${title.number}`,
+      titlePage(
+        title,
+        division,
+        (chapter) => (byChapter.get(chapter) ?? []).length,
+        index,
+        url ? { url, filename: title.source } : undefined
+      )
+    );
+  }
 }
 
 await Bun.write(`${OUT}/style.css`, STYLE.trim() + "\n");
@@ -226,10 +263,19 @@ if (!ONLY_CHAPTER) {
   await Bun.write(
     `${OUT}/index.html`,
     homePage(
+      titles.divisions.map((d) => ({
+        ...d,
+        titles: titles.titles
+          .filter((t) => t.division === d.number)
+          .map((t) => ({
+            number: t.number,
+            name: t.name,
+            chapters: t.listing.reduce((n, g) => n + g.chapters.length, 0),
+          })),
+      })),
       manifest.volumes.map((v) => ({
         number: v.number,
         range: v.chapterRange.replace(/^0+/, "").replace(/-0+/, "–"),
-        chapters: v.chapters.length,
       })),
       { sections: corpus.length, chapters: manifest.volumes.reduce((n, v) => n + v.chapters.length, 0) },
       manifest.baseUrl

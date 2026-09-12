@@ -5,6 +5,7 @@ import type {
   DocType,
   ParsedChapterIndex,
   ParsedSection,
+  ParsedTitleBanner,
   SectionRange,
 } from "./config";
 
@@ -673,6 +674,178 @@ interface IndexEntry {
 }
 
 /**
+ * The paragraphs of an index page, in order. Class is carried alongside the
+ * text because the annotation vocabulary (`XNotesHeading` / `XNotes`) is what
+ * separates notes from a listing, exactly as it does on a section page.
+ */
+function indexEntries(html: string): IndexEntry[] {
+  const $ = cheerio.load(html);
+  $("script, style, #pageLinks").remove();
+  const section = $("div.WordSection1");
+  const root = section.length ? section : $("body");
+  return root
+    .find("p")
+    .map((_, el) => ({
+      text: clean($(el).text()),
+      classes: ($(el).attr("class") ?? "").split(/\s+/),
+    }))
+    .get()
+    .filter((entry) => entry.text);
+}
+
+/**
+ * The `CHAPTER n` line. Bracketed on uncodified chapters, exactly as section
+ * headings are — `[CHAPTER 30]` — and a variant puts the title inside the
+ * bracket too: `[CHAPTER 56 PUBLIC OFF-STREET PARKING FACILITIES]`.
+ */
+const BANNER = /^\[?\s*chapter\s+([0-9][0-9A-Za-z]*)\s*(.*?)\s*\]?$/i;
+
+/**
+ * Where the chapter begins. Everything before it belongs to the title above.
+ *
+ * A superseded banner can precede the live one — `CHAPTER 14 [OLD]` then
+ * `CHAPTER 14 [NEW]` — exactly as `[OLD]` part banners precede section headings.
+ * Taking the first match makes "ABSENTEE VOTING" the title of the
+ * presidential-elections chapter.
+ */
+function chapterBannerIndex(paragraphs: string[]): number {
+  const inlineOf = (p: string) => p.match(BANNER)?.[2]?.trim() ?? "";
+  const banners = paragraphs
+    .map((p, i) => (BANNER.test(p) ? i : -1))
+    .filter((i) => i !== -1);
+  return banners.find((i) => !/^\[?old\]?$/i.test(inlineOf(paragraphs[i]!))) ?? banners[0] ?? -1;
+}
+
+/**
+ * Read the DIVISION / TITLE banners and the title's table of contents from the
+ * top of an index page, or null when the page has no TITLE banner — which is
+ * all but 41 of them.
+ *
+ * The shape, from reading the 41: a `DIVISION n. NAME` paragraph on the first
+ * title of each division; `TITLE n. NAME`, bracketed when revisor-supplied, the
+ * name sometimes wrapping into the next paragraph (`TITLE 6. COUNTY
+ * ORGANIZATION` / `AND ADMINISTRATION`); a `Chapter` column header; then one
+ * row per chapter, also wrapping, with `Subtitle n. Name` rows on titles 6 and
+ * 12. Notes may sit anywhere in that — title 37 carries its codification note
+ * between the banner and the header. Everything stops at the `CHAPTER n` line,
+ * which is where `parseChapterIndex` starts.
+ */
+export function parseTitleBanner(html: string): ParsedTitleBanner | null {
+  const entries = indexEntries(html);
+  // The first CHAPTER line of any kind, not the live one `parseChapterIndex`
+  // picks: a superseded `CHAPTER 11 [OLD]` banner is still the chapter's, not
+  // the title's, and title 2 has one right under its table of contents.
+  const end = entries.findIndex((e) => BANNER.test(e.text));
+  const head = end === -1 ? entries : entries.slice(0, end);
+
+  const TITLE = /^(\[?)\s*TITLE\s+(\d+[A-Z]?)\.\s*(.*?)\s*\]?$/;
+  const DIVISION = /^\[?\s*DIVISION\s+(\d+)\.\s*(.*?)\s*\]?$/;
+  const SUBTITLE = /^Subtitle\s+(\d+)\.\s*(.*)$/;
+  // A chapter number then its name. Title Case in the listing, which is how a
+  // row is told from the uppercase banners above it.
+  const ROW = /^(\d+[A-Z]*)\s+(\S.*)$/;
+
+  const titleAt = head.findIndex((e) => TITLE.test(e.text));
+  if (titleAt === -1) return null;
+  const titleMatch = head[titleAt]!.text.match(TITLE)!;
+
+  const isProse = (e: IndexEntry) => e.classes.includes("RegularParagraphs");
+  const isNote = (e: IndexEntry) => e.classes.some((c) => c === "XNotes" || c === "XNotesHeading");
+
+  // The banner's name runs on through the plain paragraphs that immediately
+  // follow it, up to anything structural.
+  const structural = (t: string) => /^Chapter$/.test(t) || SUBTITLE.test(t) || ROW.test(t);
+  const nameParts = [titleMatch[3]!];
+  for (let i = titleAt + 1; i < head.length && isProse(head[i]!) && !structural(head[i]!.text); i++) {
+    nameParts.push(head[i]!.text);
+  }
+  const name = nameParts.join(" ").replace(/\]$/, "").trim();
+
+  let division: ParsedTitleBanner["division"];
+  const divisionEntry = head.find((e) => DIVISION.test(e.text));
+  if (divisionEntry) {
+    const m = divisionEntry.text.match(DIVISION)!;
+    division = { number: Number(m[1]), name: m[2]! };
+  }
+
+  const listing: ParsedTitleBanner["listing"] = [];
+  let group: ParsedTitleBanner["listing"][number] | null = null;
+  /** Whatever a following plain paragraph would continue: the last row or subtitle. */
+  let wrapping: { number: string; name: string } | { subtitle?: string; chapters: unknown[] } | null = null;
+  let inListing = false;
+  const notes: string[] = [];
+  const annotations: Annotation[] = [];
+  let open: Annotation | null = null;
+
+  for (let i = titleAt + 1; i < head.length; i++) {
+    const entry = head[i]!;
+    if (entry.classes.includes("XNotesHeading")) {
+      open = { heading: entry.text, text: "" };
+      annotations.push(open);
+      wrapping = null;
+      inListing = false;
+      continue;
+    }
+    if (entry.classes.includes("XNotes")) {
+      if (open) open.text = open.text ? `${open.text}\n${entry.text}` : entry.text;
+      else notes.push(entry.text);
+      wrapping = null;
+      inListing = false;
+      continue;
+    }
+    open = null;
+    if (!isProse(entry)) continue;
+    if (/^Chapter$/.test(entry.text)) {
+      inListing = true;
+      continue;
+    }
+    const sub = entry.text.match(SUBTITLE);
+    if (sub) {
+      group = { subtitle: `Subtitle ${sub[1]}. ${sub[2]!.trim()}`, chapters: [] };
+      listing.push(group);
+      inListing = true;
+      wrapping = group;
+      continue;
+    }
+    const m = entry.text.match(ROW);
+    if (m && inListing) {
+      if (!group) {
+        group = { chapters: [] };
+        listing.push(group);
+      }
+      const row = { number: m[1]!, name: m[2]!.trim() };
+      group.chapters.push(row);
+      wrapping = row;
+      continue;
+    }
+    // Titles 37 and 38 close their tables with an appendix listing, which is
+    // not a chapter and not the last row's name.
+    if (/^appendix\b/i.test(entry.text)) {
+      wrapping = null;
+      inListing = false;
+      continue;
+    }
+    // A plain paragraph straight after a row or subtitle is the rest of its
+    // name (`47C Indebtedness of the Counties, Exclusions from` / `the Funded
+    // Debt, and Certification Thereof`; `Subtitle 4. Forestry and Wildlife;
+    // Recreation Areas;` / `Fire Protection`). After anything else it is noise
+    // — a stray heading between the banner and the `Chapter` header.
+    if (wrapping && "name" in wrapping) wrapping.name = `${wrapping.name} ${entry.text}`;
+    else if (wrapping) wrapping.subtitle = `${wrapping.subtitle} ${entry.text}`;
+  }
+
+  return {
+    ...(division ? { division } : {}),
+    number: titleMatch[2]!,
+    name,
+    supplied: titleMatch[1] === "[",
+    listing: listing.filter((g) => g.chapters.length),
+    notes: notes.join("\n\n"),
+    annotations: annotations.filter((a) => a.text),
+  };
+}
+
+/**
  * The chapter's own notes and annotation blocks.
  *
  * Scope is everything after the live `CHAPTER n` banner — see
@@ -751,46 +924,17 @@ export function parseChapterIndex(
   url: string,
   chapterNumber?: string
 ): ParsedChapterIndex {
-  const $ = cheerio.load(html);
-  $("script, style, #pageLinks").remove();
-
-  const section = $("div.WordSection1");
-  const root = section.length ? section : $("body");
-
-  // Class is carried alongside the text because the annotation vocabulary
-  // (`XNotesHeading` / `XNotes`) is what separates a chapter's notes from its
-  // section listing, exactly as it does on a section page.
-  const entries = root
-    .find("p")
-    .map((_, el) => ({
-      text: clean($(el).text()),
-      classes: ($(el).attr("class") ?? "").split(/\s+/),
-    }))
-    .get()
-    .filter((entry) => entry.text);
-
+  const entries = indexEntries(html);
   const paragraphs = entries.map((entry) => entry.text);
 
   let title = "";
   /** Index of the paragraph the title was taken from, so notes can skip it. */
   let titleIndex = -1;
-  // The banner is bracketed on uncodified chapters, exactly as section headings
-  // are — `[CHAPTER 30]`. A variant puts the title inside the bracket too:
-  // `[CHAPTER 56 PUBLIC OFF-STREET PARKING FACILITIES]`.
-  const BANNER = /^\[?\s*chapter\s+([0-9][0-9A-Za-z]*)\s*(.*?)\s*\]?$/i;
-  // A superseded banner can precede the live one — `CHAPTER 14 [OLD]` then
-  // `CHAPTER 14 [NEW]` — exactly as `[OLD]` part banners precede section
-  // headings. Taking the first match makes "ABSENTEE VOTING" the title of the
-  // presidential-elections chapter.
   const inlineOf = (p: string) => p.match(BANNER)?.[2]?.trim() ?? "";
   // `[OLD]` / `[NEW]` are status markers, not titles: a banner carrying one has
   // its title in the following paragraph like any unmarked banner.
   const MARKER = /^\[?(old|new)\]?$/i;
-  const banners = paragraphs
-    .map((p, i) => (BANNER.test(p) ? i : -1))
-    .filter((i) => i !== -1);
-  const chapterIndex =
-    banners.find((i) => !/^\[?old\]?$/i.test(inlineOf(paragraphs[i]!))) ?? banners[0] ?? -1;
+  const chapterIndex = chapterBannerIndex(paragraphs);
   if (chapterIndex !== -1) {
     const inline = inlineOf(paragraphs[chapterIndex]!);
     if (inline && !MARKER.test(inline)) title = inline;
