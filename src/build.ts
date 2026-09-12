@@ -212,7 +212,10 @@ if (!ONLY_CHAPTER) {
   // What the host needs beyond the pages. See hosting.ts.
   await Bun.write(`${OUT}/.htaccess`, HTACCESS);
   await Bun.write(`${OUT}/robots.txt`, robots(SITE_URL));
+  // The build wrote any sitemap that is there, so it owns it: one left over
+  // from a build that had SITE_URL set would otherwise ship with the wrong host.
   if (SITE_URL) await Bun.write(`${OUT}/sitemap.xml`, sitemap(SITE_URL, paths));
+  else rmSync(`${OUT}/sitemap.xml`, { force: true });
   // Pagefind cannot tell a typo from a rare term; the corpus can. See
   // vocabulary.ts for why this is worth 70 KB on the search page alone.
   await Bun.write(`${OUT}/search-vocabulary.txt`, serializeVocabulary(countWords(corpus)));

@@ -1,7 +1,7 @@
 # Where the project stands
 
-**As of**: 2026-09-11
-**Head**: see `git log` — 234 tests, typecheck clean
+**As of**: 2026-09-12
+**Head**: see `git log` — 235 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -27,9 +27,10 @@ citations resolved, backlinks on every page, and **0 broken internal links**
 across all 24,505 distinct hrefs. `bun run serve` browses it at localhost:3000,
 and `bun run deploy` rsyncs it to the host.
 
-**The host is decided: DreamHost shared hosting**, chosen 2026-09-11 to get the
-site in front of people and see how it is used. Everything on the list below is
-an enhancement.
+**The site is live at https://experimental-hrs.dreamhosters.com** (DreamHost
+shared hosting, chosen 2026-09-11 to get the site in front of people and see
+how it is used; first deployed 2026-09-12). Everything on the list below is an
+enhancement, except pulling the access logs, which is why the site is up.
 
 ---
 
@@ -145,7 +146,10 @@ writing files.
 | Broken internal links | **0** of 24,505 distinct hrefs |
 
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
-`/hrs/26-34`), which works on any static host without rewrite rules.
+`/hrs/26-34`). Apache's default for that is a 301 to `/hrs/26-34/` before
+serving, which the first deploy showed on every link; the emitted `.htaccess`
+turns that off (`DirectorySlash Off` and a two-line rewrite) so each page has
+one URL and one request.
 
 The markup rules: no script files on statute pages (the inline theme switch is
 the one script, and nothing depends on it), link text is the citation exactly
@@ -183,13 +187,14 @@ Nothing here is a defect. In the order I would take them:
 
 1. ~~**Pick a host.**~~ **Decided 2026-09-11: DreamHost shared hosting.** Plain
    Apache with SSH — no file-count cap for the 49,419 files, extensionless URLs
-   by default, and server logs instead of a JavaScript tracker for seeing how
+   with four lines of `.htaccess`, and server logs instead of a JavaScript tracker for seeing how
    the site is used. `bun run deploy` rsyncs the build; `src/hosting.ts` emits
-   the `.htaccess`. What remains here is operational: enable a shell user and
-   set `DEPLOY_TARGET`/`SITE_URL` in `.env`, deploy, and then **pull the Apache
-   access logs down on a cron** — DreamHost keeps them only a few days — with a
-   small `usage` script that separates bots from readers and reports which
-   sections, searches and referrers actually occur.
+   the `.htaccess`. **Deployed 2026-09-12.** What remains is to **pull the
+   Apache access logs down on a cron** — DreamHost keeps them only a few days —
+   with a small `usage` script that separates bots from readers and reports
+   which sections, searches and referrers actually occur. The deploy key
+   (`~/.ssh/dreamhost_deploy`, passphrase-less, via `~/.ssh/config`) is what the
+   cron will use too.
 2. **Division/Title navigation.** The site navigates by volume, which is a
    printing artifact of the published edition. The index pages carry the real
    hierarchy — `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — above
@@ -268,7 +273,7 @@ Small, and none of them block anything.
 
 ```bash
 bun install
-bun test                                  # 227 tests
+bun test                                  # 235 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)

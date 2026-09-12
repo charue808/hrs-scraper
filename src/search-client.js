@@ -58,7 +58,7 @@
     var slug = number.replace(/:/g, "-");
     // Verified before the link is offered, which is why no table of 22,972
     // section numbers has to ship to the browser.
-    fetch("/hrs/" + slug + "/", { method: "HEAD" })
+    fetch("/hrs/" + slug, { method: "HEAD" })
       .then(function (response) {
         if (mine !== jumpToken) return; // a newer keystroke won
         if (!response.ok) {
@@ -66,7 +66,7 @@
           return;
         }
         jump.innerHTML =
-          'Go straight to <a href="/hrs/' + slug + '/">§' + number + "</a>";
+          'Go straight to <a href="/hrs/' + slug + '">§' + number + "</a>";
         jump.hidden = false;
       })
       .catch(function () {

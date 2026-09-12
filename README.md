@@ -253,8 +253,7 @@ page, a search page, `citations.json`, and the Pagefind index — which is 24,90
 of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
 the count. `bun run serve` browses the result at `localhost:3000`; the pages are
 extensionless directories (`/hrs/26-34/index.html` serves `/hrs/26-34`), which
-a static host resolves and `file://` does not, so it works on any static host
-without rewrite rules. Only `/search` loads a script file.
+a static host resolves and `file://` does not. Only `/search` loads a script file.
 
 A full build also writes what the host needs — `.htaccess`, `robots.txt`,
 `404.html`, and `sitemap.xml` when `SITE_URL` is set in `.env` — and clears the
@@ -320,7 +319,8 @@ hashed fragments are immutable; pages get an hour).
 fragment per indexed page, which more than doubles the page count — and that is
 over the free tier of every CDN-style host checked (Cloudflare Pages and Workers
 both cap free at 20,000 files; paid at 100,000). An Apache directory has no cap,
-extensionless URLs are its default `DirectoryIndex` behaviour, and its access
+extensionless URLs are its `DirectoryIndex` behaviour (with `DirectorySlash
+Off` so it serves `/hrs/26-34` rather than redirecting to `/hrs/26-34/` first), and its access
 logs answer "how is this being used?" without adding JavaScript to statute
 pages. DreamHost keeps those logs only briefly, so they need pulling down on a
 cron if they are to be kept.

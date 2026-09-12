@@ -73,10 +73,10 @@ interface Check {
 
 const checks: Check[] = [
   // A section number is an address. Pagefind cannot rank these; the jump can.
-  { query: "26-34", jump: "/hrs/26-34/" },
-  { query: "1-1", jump: "/hrs/1-1/" },
-  { query: "431:10C-301", jump: "/hrs/431-10C-301/" },
-  { query: "§26-34", jump: "/hrs/26-34/" },
+  { query: "26-34", jump: "/hrs/26-34" },
+  { query: "1-1", jump: "/hrs/1-1" },
+  { query: "431:10C-301", jump: "/hrs/431-10C-301" },
+  { query: "§26-34", jump: "/hrs/26-34" },
   { query: "9999-1", clean: true }, // shaped like one, but does not exist
   // Typos. Pagefind answers all of these with confident nonsense.
   { query: "marijauna", suggest: "marijuana" }, // transposition

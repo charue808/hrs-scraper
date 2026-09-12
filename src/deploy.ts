@@ -48,18 +48,24 @@ if (!existsSync(`${SITE}/sitemap.xml`)) {
   console.warn("no sitemap.xml — set SITE_URL in .env and rebuild if you want one");
 }
 
-// -rlpt rather than -a: owner and group cannot be set on a shared host, and
-// asking makes rsync complain on every file. --chmod pins what the web server
-// needs regardless of the local umask.
+// Not -a: owner and group cannot be set on a shared host, and asking makes
+// rsync complain on every file. --chmod pins what the web server needs
+// regardless of the local umask. --checksum instead of --times because every
+// build rewrites every file, so mtimes say nothing; comparing content sends
+// only what changed, and the server keeps its mtime on everything else, which
+// is what Apache's Last-Modified and ETag are made from — a reader's cached
+// page still validates after a deploy that did not touch it.
 const flags = [
   "--recursive",
   "--links",
   "--perms",
-  "--times",
+  "--checksum",
   "--compress",
   "--delete",
   "--delete-delay",
   "--chmod=D755,F644",
+  // DreamHost's own diagnostics symlink in the web root; not ours to delete.
+  "--exclude=/.dh-diag",
   "--human-readable",
   "--stats",
   ...(values["dry-run"] ? ["--dry-run", "--itemize-changes"] : ["--info=progress2"]),

@@ -53,7 +53,7 @@ something this content needs. Concretely:
 - **Output**: 23,373 statute pages + 1,114 chapter pages + 14 volume pages and a
   home page, pre-rendered to plain HTML with citations already resolved to links.
   URLs are extensionless directories (`/hrs/26-34/index.html` serves
-  `/hrs/26-34`), which needs no rewrite rules on any static host. No client-side fetching,
+  `/hrs/26-34`); see `hosting.ts` for the Apache side. No client-side fetching,
   no JS on statute pages — which also means nothing to fail for a screen reader.
 - **Search**: Pagefind, wired up 2026-09-10. Indexes the 24,487 statute and
   chapter pages; annotations are weighted at 0.4 and backlinks excluded. Its

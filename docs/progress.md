@@ -1,8 +1,47 @@
 # HRS Scraper - Implementation Progress
 
-**Last updated**: 2026-09-11
+**Last updated**: 2026-09-12
 
-## Status: hosting decided, deploy path built — 2026-09-11
+## Status: live — 2026-09-12
+
+The site is up at https://experimental-hrs.dreamhosters.com — all 49,419 files,
+search verified in a real browser against the live host. 235 tests, typecheck
+clean. What remains on the operational side is the access-log cron.
+
+## 2026-09-12 — first deploy, and what only a real Apache showed
+
+The deploy itself was uneventful: a passphrase-less key made for the host, a
+dry run, 49,419 files in 80 seconds. What the first pass of `curl` against the
+live site found was not:
+
+**Every page URL redirected.** The site links to `/hrs/26-34`; Apache's
+`mod_dir` answered with a 301 to `/hrs/26-34/` and only then served the page.
+Every click was two round trips and all 24,505 sitemap URLs were redirects. The
+docs had said in four places that extensionless directories "work on any
+static host without rewrite rules", which the local server made true and Apache
+made false. Fixed in the emitted `.htaccess`: `DirectorySlash Off` plus a
+two-line rewrite that serves `/hrs/26-34/index.html` for `/hrs/26-34` in one
+request, and sends the slash form to the bare one so each page has exactly one
+URL. The search page's "Go straight to" link had the slash baked in and now
+does not. The four doc claims are corrected.
+
+**A stale sitemap would have shipped.** `build/site/sitemap.xml` from an
+earlier trial pointed at `hrs.example.com`; a build with `SITE_URL` unset left
+it in place. The build now removes it when it would not write it.
+
+**rsync `--times` was the wrong comparison.** Every build rewrites every file,
+so mtimes say nothing and a deploy would re-touch all 49,419 — and each touch
+changes the `Last-Modified`/`ETag` Apache hands out, so a reader's cached page
+stops validating even though nothing changed. `--checksum` instead: the second
+deploy sent 4 files, and unchanged pages keep the mtime they had.
+
+Also: DreamHost's `.dh-diag` symlink in the web root is excluded from
+`--delete`, since it is the host's and not ours.
+
+Verified on the live host: gzip on text types, the cache headers, the 404 page,
+the redirects, and `bun run verify-search --url` — all 14 checks.
+
+## 2026-09-11 — a host, and the deploy path
 
 Every known correctness gap is closed. `bun run build` emits the whole site —
 49,415 files, 24,503 pages in ~6s plus ~15s of indexing — with citations

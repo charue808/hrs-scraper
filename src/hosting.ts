@@ -31,6 +31,17 @@ export const HTACCESS = `# Emitted by \`bun run build\` — see src/hosting.ts. 
 Options -Indexes
 DirectoryIndex index.html
 
+# Serve /hrs/26-34 from /hrs/26-34/index.html in one request. mod_dir's default
+# is a 301 to /hrs/26-34/ first, which would put a redirect in front of every
+# link on the site and every URL in the sitemap. The slash form redirects to
+# the bare one so each page has exactly one URL.
+DirectorySlash Off
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.*[^/])$ $1/index.html [L]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.+)/$ /$1 [R=301,L]
+
 ErrorDocument 404 /404.html
 
 AddDefaultCharset utf-8
