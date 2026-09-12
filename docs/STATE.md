@@ -1,7 +1,7 @@
 # Where the project stands
 
-**As of**: 2026-09-10 (paused here)
-**Head**: `fefcc6b9` on `main` — 227 tests, typecheck clean, working tree clean
+**As of**: 2026-09-11
+**Head**: see `git log` — 234 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -22,12 +22,14 @@ committed as the source of truth, cross-linked, and **built into a searchable
 static site with backlinks**. Every known correctness gap is closed.
 
 What works end to end today: `bun run build` turns the committed corpus into
-**49,415 files** — 24,503 pages in ~6s, then ~15s for the search index — with
+**49,419 files** — 24,503 pages in ~6s, then ~15s for the search index — with
 citations resolved, backlinks on every page, and **0 broken internal links**
-across all 24,505 distinct hrefs. `bun run serve` browses it at localhost:3000.
+across all 24,505 distinct hrefs. `bun run serve` browses it at localhost:3000,
+and `bun run deploy` rsyncs it to the host.
 
-**What is left is a decision, not a defect: where to host it.** Everything else
-on the list below is an enhancement.
+**The host is decided: DreamHost shared hosting**, chosen 2026-09-11 to get the
+site in front of people and see how it is used. Everything on the list below is
+an enhancement.
 
 ---
 
@@ -97,8 +99,8 @@ least one backlink, 96 of them in the non-HRS documents. Lists over 25 collapse 
 **Search.** Pagefind indexes the 24,487 statute and chapter pages — volume and
 home pages are navigation and are left out. Annotations are weighted at 0.4 so a
 section's own words beat the case law discussing them, and backlinks are
-excluded outright. `/search` is the only page that loads JavaScript, and says so
-if it is switched off.
+excluded outright. `/search` is the only page that loads a script file, and says
+so if JavaScript is switched off.
 
 **Section numbers are found by address, not by search.** Pagefind tokenizes
 `26-34` into the digits `26` and `34` and prefix-matches, so §263-4 outranks
@@ -132,11 +134,12 @@ writing files.
 | Section pages | 23,373 |
 | Chapter pages | 1,114 |
 | Volume pages | 14 |
-| Home, search, stylesheet, favicon | 4 |
+| Home, search, 404, stylesheet, favicon | 5 |
+| `.htaccess`, `robots.txt`, `sitemap.xml` | 3 — see `hosting.ts` |
 | `citations.json` | 6.0 MB |
 | Pagefind index | 24,907 files, 115 MB |
 | `search-vocabulary.txt` | 17,223 words, 52 KB gzipped |
-| **Total files** | **49,415** |
+| **Total files** | **49,419** |
 | Size | 351 MB raw |
 | Build time | ~6s, plus ~15s to index |
 | Broken internal links | **0** of 24,505 distinct hrefs |
@@ -144,7 +147,8 @@ writing files.
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
 `/hrs/26-34`), which works on any static host without rewrite rules.
 
-The markup rules: no JavaScript on any page, link text is the citation exactly
+The markup rules: no script files on statute pages (the inline theme switch is
+the one script, and nothing depends on it), link text is the citation exactly
 as written, `aria-label` carries the target's title, unresolved citations stay
 plain text, a citation into removed text is marked but not linked, editorial
 notes are real text in the document flow. Every page carries a breadcrumb and a
@@ -177,13 +181,15 @@ missing.
 
 Nothing here is a defect. In the order I would take them:
 
-1. **Pick a host.** The only thing standing between this and being usable by
-   anyone else, and the one item that needs a decision rather than code. Pagefind
-   writes one fragment per indexed page, so the build emits **49,415 files**, not
-   24,503. A paid Cloudflare plan (100,000) clears it with room; **both free
-   tiers (20,000) are out of reach by more than twice over.** `--no-index` halves
-   the count if free hosting ever matters more than search. Limits move — re-check
-   before committing.
+1. ~~**Pick a host.**~~ **Decided 2026-09-11: DreamHost shared hosting.** Plain
+   Apache with SSH — no file-count cap for the 49,419 files, extensionless URLs
+   by default, and server logs instead of a JavaScript tracker for seeing how
+   the site is used. `bun run deploy` rsyncs the build; `src/hosting.ts` emits
+   the `.htaccess`. What remains here is operational: enable a shell user and
+   set `DEPLOY_TARGET`/`SITE_URL` in `.env`, deploy, and then **pull the Apache
+   access logs down on a cron** — DreamHost keeps them only a few days — with a
+   small `usage` script that separates bots from readers and reports which
+   sections, searches and referrers actually occur.
 2. **Division/Title navigation.** The site navigates by volume, which is a
    printing artifact of the published edition. The index pages carry the real
    hierarchy — `DIVISION 1. GOVERNMENT`, `TITLE 1. GENERAL PROVISIONS` — above
@@ -275,6 +281,7 @@ bun run build -- --chapter 26             # one chapter, for reviewing by eye
 bun run build -- --no-index               # skip Pagefind (halves the file count)
 bun run serve                             # browse build/site at localhost:3000
 bun run verify-search                     # drive /search in a real browser
+bun run deploy -- --dry-run               # rsync build/site to DEPLOY_TARGET (.env)
 ```
 
 `--db`, `bun run migrate` and `sql/schema.sql` still work but are a side tool for

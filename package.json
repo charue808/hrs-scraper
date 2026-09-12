@@ -12,6 +12,7 @@
     "build": "bun src/build.ts",
     "serve": "bun src/serve.ts",
     "verify-search": "bun src/verify-search.ts",
+    "deploy": "bun src/deploy.ts",
     "chapters": "bun src/chapters.ts",
     "test": "bun test"
   },

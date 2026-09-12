@@ -1,8 +1,8 @@
 # HRS Scraper - Implementation Progress
 
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-11
 
-## Status: paused 2026-09-10, at `fefcc6b9` on `main`
+## Status: hosting decided, deploy path built — 2026-09-11
 
 Every known correctness gap is closed. `bun run build` emits the whole site —
 49,415 files, 24,503 pages in ~6s plus ~15s of indexing — with citations
@@ -10,11 +10,96 @@ resolved, search, backlinks, and 0 broken internal links. 227 tests, typecheck
 clean, working tree clean, `reparse --dry-run` reports `unchanged 23373`.
 
 **`STATE.md` is the pick-up-here document**, and its "What is left" section is
-ordered. The short version: the only thing standing between this and being
-usable by anyone else is **picking a host** — a decision, not code, and the
-binding number is 49,415 files against Cloudflare's 20,000 free / 100,000 paid.
-After that, Division/Title navigation is the biggest improvement to how the site
-reads.
+ordered. The host is decided (DreamHost shared, below); what remains there is
+putting it up and reading the logs. After that, Division/Title navigation is the
+biggest improvement to how the site reads.
+
+## 2026-09-11 — a host, and the deploy path
+
+Picked up after a day away. Re-verified the pause point first: 227 tests,
+typecheck clean, `reparse --dry-run` unchanged, build in 6.8s. Nothing rotted.
+
+**Host: DreamHost shared hosting.** The reasoning that settled it was not the
+file cap — though a plain Apache directory has none, where both Cloudflare free
+tiers stop at 20,000 — but *why* the site is going up at all: to get eyes on it
+and see how it is used. Apache access logs answer that without adding a
+JavaScript tracker to statute pages, which would spend the site's best property
+on day one. The trade is that DreamHost keeps logs only briefly, so a cron to
+pull them down is the next operational step.
+
+Built:
+
+- `src/hosting.ts` — `.htaccess` (no directory listings, `ErrorDocument 404`,
+  cache headers keyed on whether a file's name changes with its content — Pagefind's
+  content-hashed fragments are `immutable`, pages get an hour), `robots.txt`
+  (crawl the pages, not `/pagefind/` or `/search`), and `sitemap.xml` — one file,
+  24,502 URLs, sorted so it is byte-stable, written only when `SITE_URL` is set.
+- A 404 page in `site.ts` that explains the address form, since a mistyped or
+  renumbered section is the usual way to land there. `serve.ts` serves it too.
+- `src/deploy.ts` — rsync over SSH with `--delete-delay`, refusing a `--chapter`
+  or `--no-index` build, reading `DEPLOY_TARGET` from `.env`.
+- The build now clears `hrs/` and `pagefind/` before a full run. Before, a
+  section that left the code after a re-scrape would have kept its stale page
+  forever — a latent defect on the one path the project has not yet exercised.
+
+Also fixed in passing: the README still said search and backlinks "remain" and
+that no page loads JavaScript; its structure listing was missing five files.
+
+One thing checked and *not* done: Pagefind's wasm is named `wasm.en.pagefind`,
+not `.wasm`, and it is gzipped internally and decoded in JavaScript, so no MIME
+type configuration is needed for it.
+
+### Looking at it on a phone before deploying
+
+A disclaimer now sits in the footer of every page — the site is a copy that can
+lag the official text by a session, and a reader acting on a statute should be
+told so where they are reading it, not only on the home page. The footer is
+always emitted now; the "Source:" line above it still appears only when the
+page has a document on the source server.
+
+Then the site was driven through Chrome at 320px and 390px — fifteen pages
+chosen for width hazards, checking `scrollWidth` against the viewport and
+walking every element for one past the right edge. **No page overflows**, at
+either width, search results included. Two things were found by looking at the
+screenshots rather than the numbers, which is now the fifth time that has
+happened:
+
+- **The previous/next pager was flush against the screen edge.** It carries
+  the `wrap` class, but `nav.pager` outranks `.wrap` and its `padding: 1rem 0`
+  shorthand zeroed the side gutter. Invisible on a desktop, where `max-width`
+  centres the bar. Now `padding-block`, with a test on the rule.
+- **Ten constitutional sections were titled with a fragment** — Haw. Const.
+  art. V, §6 read "AND DEPARTMENTS", visible in a backlink list. The catchline
+  wraps to a second centred line, and the parser took only the last one; the
+  first was left stranded in `bodyText` as a stray paragraph. The blank
+  paragraph the source puts between one centred item and the next is the
+  separator, so the join happens in `splitBlocks`, where the blank is still
+  visible: two consecutive centred upper-case lines with nothing between them
+  are one catchline. Measured first: 10 two-line catchlines, 17 article-banner
+  pages where the article title and the section catchline are separated by a
+  blank and must not join. Reparse changed exactly those 10 files plus the US
+  Constitution's preamble page (its two-line document banner became one line),
+  and no HRS section.
+
+### A dark mode toggle
+
+The site already followed `prefers-color-scheme`; a toggle lets a reader
+override it. That costs a script on every page, which was a property the docs
+leaned on, so the cost is kept as small as it can be: one inline script,
+~20 lines, no request. It applies a stored choice before first paint (no light
+flash) and then creates the button — *creates* it, so with JavaScript off there
+is no dead control, just the system preference as before. The choice is kept in
+`localStorage` and overrides the system in both directions. The tests that
+asserted "no `<script`" now assert the sharper thing: no `<script src`, exactly
+one script, no `<button>` in the markup.
+
+Verifying it in a browser found a pre-existing bug: **Pagefind's stylesheet
+was overriding the site's palette on the search page.** It defines the same
+`--pagefind-ui-*` variables on `:root`, and it was linked after `style.css`, so
+its defaults won — near-black result text and a white input on the dark
+ground. Invisible in light mode, where its defaults happen to match; anyone on a
+system-dark setup already had it. Page-specific stylesheets now come before the
+site's, with a test on the order.
 
 ### What this run of sessions did
 

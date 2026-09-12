@@ -11,7 +11,7 @@
  *   bun run build -- --out dist
  */
 import { parseArgs } from "node:util";
-import { readdirSync } from "node:fs";
+import { readdirSync, rmSync } from "node:fs";
 import {
   CHAPTERS_PATH,
   MANIFEST_PATH,
@@ -27,11 +27,13 @@ import {
   chapterLabel,
   chapterPage,
   homePage,
+  notFoundPage,
   searchPage,
   sectionPage,
   volumePage,
   STYLE,
 } from "./site";
+import { HTACCESS, robots, sitemap } from "./hosting";
 import { pool } from "./fetcher";
 
 const { values } = parseArgs({
@@ -46,6 +48,8 @@ const { values } = parseArgs({
 
 const OUT = values.out ?? "build/site";
 const ONLY_CHAPTER = values.chapter;
+/** The public origin, for the sitemap. Unset locally; set in .env for a deploy. */
+const SITE_URL = process.env.SITE_URL?.replace(/\/$/, "");
 
 /** Sort by the numeric parts of a number so 26-9 precedes 26-10. */
 const sortKey = (n: string) =>
@@ -102,7 +106,23 @@ for (const section of corpus) {
 
 const wantChapter = (number: string) => !ONLY_CHAPTER || number === ONLY_CHAPTER;
 
-const write = (path: string, html: string) => Bun.write(`${OUT}/${path}/index.html`, html);
+// A full build owns these directories outright. Clearing them first means a
+// section that leaves the code after a re-scrape also leaves the site, rather
+// than surviving as a stale page that nothing links to but a crawler still
+// finds. Only these two: `--out` can point anywhere, and the build should never
+// delete something it did not write.
+if (!ONLY_CHAPTER) {
+  rmSync(`${OUT}/hrs`, { recursive: true, force: true });
+  rmSync(`${OUT}/pagefind`, { recursive: true, force: true });
+}
+
+/** Every page path, for the sitemap. */
+const paths: string[] = ["/"];
+
+const write = (path: string, html: string) => {
+  paths.push(`/${path}`);
+  return Bun.write(`${OUT}/${path}/index.html`, html);
+};
 
 let sectionCount = 0;
 let chapterCount = 0;
@@ -188,6 +208,11 @@ await Bun.write(
 if (!ONLY_CHAPTER) {
   await Bun.write(`${OUT}/citations.json`, serializeGraph(graph));
   await Bun.write(`${OUT}/search/index.html`, searchPage());
+  await Bun.write(`${OUT}/404.html`, notFoundPage());
+  // What the host needs beyond the pages. See hosting.ts.
+  await Bun.write(`${OUT}/.htaccess`, HTACCESS);
+  await Bun.write(`${OUT}/robots.txt`, robots(SITE_URL));
+  if (SITE_URL) await Bun.write(`${OUT}/sitemap.xml`, sitemap(SITE_URL, paths));
   // Pagefind cannot tell a typo from a rare term; the corpus can. See
   // vocabulary.ts for why this is worth 70 KB on the search page alone.
   await Bun.write(`${OUT}/search-vocabulary.txt`, serializeVocabulary(countWords(corpus)));

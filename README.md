@@ -5,8 +5,8 @@ parses ~24,500 statute files from raw HTML into structured data, and publishes
 them as a static, fully cross-linked document set.
 
 **Current state**: the corpus is scraped, parsed, committed and cross-linked,
-and the site builds — 24,503 pages in under five seconds with no broken internal
-links. Search, backlinks and a host are what remain.
+and the site builds — 24,503 pages with search, backlinks and no broken
+internal links — and deploys to a plain Apache host with `bun run deploy`.
 See [`docs/STATE.md`](docs/STATE.md).
 
 ## Motivation
@@ -34,8 +34,10 @@ Nothing a database provides *at runtime* is something this content needs.
 | Search | [Pagefind](https://pagefind.app) — chunked index; only the search page loads JS |
 | Database | optional side tool for ad-hoc analysis, not the pipeline |
 
-Statute pages ship no JavaScript, which also means there is nothing to fail for
-a screen reader.
+Statute pages load no script files. The one script they carry is a ~20-line
+inline theme switch that the markup never depends on — with JavaScript off the
+page is identical minus the button, and follows the system colour scheme.
+`/search` is the one page that loads a script file (Pagefind).
 
 ### Why git is the version store
 
@@ -246,13 +248,18 @@ bun run serve                    # browse it at localhost:3000
 bun run verify-search            # drive /search in a real browser (needs Chrome)
 ```
 
-Emits 49,415 files: a page per section, per chapter and per volume, plus a home
+Emits 49,419 files: a page per section, per chapter and per volume, plus a home
 page, a search page, `citations.json`, and the Pagefind index — which is 24,907
 of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
 the count. `bun run serve` browses the result at `localhost:3000`; the pages are
-extensionless directories, which a static host resolves and `file://` does not. URLs are extensionless directories
-(`/hrs/26-34/index.html` serves `/hrs/26-34`), so it works on any static host
-without rewrite rules. No page loads JavaScript.
+extensionless directories (`/hrs/26-34/index.html` serves `/hrs/26-34`), which
+a static host resolves and `file://` does not, so it works on any static host
+without rewrite rules. Only `/search` loads a script file.
+
+A full build also writes what the host needs — `.htaccess`, `robots.txt`,
+`404.html`, and `sitemap.xml` when `SITE_URL` is set in `.env` — and clears the
+`hrs/` and `pagefind/` directories first, so a section that leaves the code
+after a re-scrape leaves the site too.
 
 The build fails loudly on a URL-slug collision — the same protection the scraper
 applies to section numbers, one layer down.
@@ -289,24 +296,34 @@ results with highlighted snippets, and `get_chapter_sections()`.
 
 ## Deployment
 
-The build emits **49,415 files** — measured, not estimated. Pagefind writes one
-fragment per indexed page, so search more than doubles the count:
+The site is hosted on DreamHost shared hosting — plain Apache 2.4 with SSH —
+and deployed with rsync:
 
-| Host | Cap | Fits? |
-|---|---|---|
-| Cloudflare Pages (free) | 20,000 files | No |
-| Cloudflare Pages (paid) | [100,000 files since 2026-01-23](https://developers.cloudflare.com/changelog/post/2026-01-23-pages-file-limit-increase/) — requires `PAGES_WRANGLER_MAJOR_VERSION=4` | Yes |
-| [Workers static assets](https://developers.cloudflare.com/workers/platform/limits/) (free) | 20,000 files per version | No |
-| Workers static assets (paid) | 100,000 files per version, 25 MiB each | Yes |
-| A VPS / object storage | no practical cap | Yes |
+```bash
+cat >> .env <<'ENV'
+SITE_URL=https://hrs.example.com
+DEPLOY_TARGET=user@server.dreamhost.com:~/hrs.example.com
+ENV
+bun run build
+bun run deploy -- --dry-run     # what would change, touching nothing
+bun run deploy
+```
 
-A paid Cloudflare plan on either product clears 49,415 with room. The free
-tier of both does not — which is the constraint to design around if free hosting
-is a requirement.
+`deploy` refuses anything but a complete, indexed build, syncs with `--delete`
+so the server mirrors the build exactly, and holds deletions until the new files
+are in place. The server configuration lives in `src/hosting.ts` and is emitted
+as `.htaccess` by the build: no directory listings, the 404 page, and cache
+headers keyed on whether a file's name changes with its content (Pagefind's
+hashed fragments are immutable; pages get an hour).
 
-Verify current limits before committing to a host; they move. If a cap needs
-working around, folding the 1,114 chapter pages into fewer pages is the
-cheapest reduction.
+**Why a plain host.** The build emits **49,419 files** — Pagefind writes one
+fragment per indexed page, which more than doubles the page count — and that is
+over the free tier of every CDN-style host checked (Cloudflare Pages and Workers
+both cap free at 20,000 files; paid at 100,000). An Apache directory has no cap,
+extensionless URLs are its default `DirectoryIndex` behaviour, and its access
+logs answer "how is this being used?" without adding JavaScript to statute
+pages. DreamHost keeps those logs only briefly, so they need pulling down on a
+cron if they are to be kept.
 
 ## Possible Direction: An Enhanced Site
 
@@ -382,12 +399,19 @@ src/
   corrections.ts   — applies data/corrections.json; resolver alias table
   resolver.ts      — the known-section index, and resolution against it
   citations.ts     — detect, resolve and link citations
+  cross-document.ts — citations into the constitutions and the other non-HRS acts
+  graph.ts         — the citation graph: backlinks and citations.json
+  vocabulary.ts    — the corpus's word list, for typo suggestions on the search page
+  search-client.js — the search page's script: go-to-section and spelling suggestions
   site.ts          — the site's markup: page shell, section/chapter/volume pages
   build.ts         — reads the corpus, resolves citations, writes build/site
+  hosting.ts       — what the host needs beyond pages: .htaccess, robots, sitemap
+  deploy.ts        — rsync build/site to the host
   serve.ts         — serves build/site locally (development only)
+  verify-search.ts — drives /search in a real browser
   profile-citations.ts — the citation quality metric
   test-parse.ts    — test parser against a single URL or file
-  *.test.ts        — 227 tests (bun test)
+  *.test.ts        — 234 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)
 sql/
   schema.sql       — standalone schema (runnable in psql or the Neon SQL Editor)
