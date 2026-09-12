@@ -52,7 +52,10 @@ function fileFor(pathname: string): string | null {
   return null;
 }
 
-const NOT_FOUND = `<!doctype html>
+// The same page the host serves (`ErrorDocument 404` in .htaccess), when the
+// build wrote one; a --chapter build does not.
+const NOT_FOUND_FILE = join(ROOT, "404.html");
+const FALLBACK_NOT_FOUND = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Not found</title>
 <link rel="stylesheet" href="/style.css"></head>
 <body><main class="wrap"><h1>404</h1>
@@ -71,7 +74,8 @@ const server = Bun.serve({
 
     const file = fileFor(pathname);
     if (!file) {
-      return new Response(NOT_FOUND, {
+      const page = Bun.file(NOT_FOUND_FILE);
+      return new Response(page.size ? page : FALLBACK_NOT_FOUND, {
         status: 404,
         headers: { "content-type": "text/html; charset=utf-8" },
       });

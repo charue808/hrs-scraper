@@ -6,8 +6,9 @@
  * without running a 24,500-file build. `build.ts` owns reading the corpus and
  * writing files; this file owns what a page looks like.
  *
- * Pages are rendered from the structured fields, never from `bodyHtml`. No
- * JavaScript is emitted.
+ * Pages are rendered from the structured fields, never from `bodyHtml`. The
+ * only script a statute page carries is the inline theme switch (`THEME_SCRIPT`),
+ * which the markup never depends on.
  */
 import {
   type Annotation,
@@ -20,10 +21,9 @@ import { properCitation } from "./cross-document";
 import type { Edge } from "./graph";
 
 /**
- * The six non-HRS directories, which are numbered as prefixed identifiers
- * rather than proper citations. Labelled here so navigation reads correctly;
- * giving them real citations is tracked as the last correctness gap in
- * `docs/STATE.md`.
+ * The six non-HRS directories, whose chapter index pages carry no chapter
+ * banner to take a title from. Their sections are headed with proper citations
+ * (`properCitation` in cross-document.ts); this labels the directory itself.
  */
 export const NON_HRS_LABELS: Record<string, string> = {
   "01-USCON": "United States Constitution",
@@ -36,13 +36,19 @@ export const NON_HRS_LABELS: Record<string, string> = {
 
 // --- markup ---
 
+/**
+ * The dark palette, applied two ways: when the system asks for it and the
+ * reader has not said otherwise, and when the reader has chosen it. Written
+ * once so the two cannot drift.
+ */
+const DARK = `color-scheme: dark; --ink:#e8e6e1; --muted:#a6a29a; --rule:#3a3733; --bg:#16150f;
+          --note-bg:#241f14; --note-edge:#b58900; --accent:#d9b74a;`;
+
 export const STYLE = `
-:root { --ink:#1a1a1a; --muted:#5a5a5a; --rule:#d8d4cc; --bg:#fbfaf7;
+:root { color-scheme: light; --ink:#1a1a1a; --muted:#5a5a5a; --rule:#d8d4cc; --bg:#fbfaf7;
         --note-bg:#fdf6e3; --note-edge:#b58900; --accent:#7a5c00; }
-@media (prefers-color-scheme: dark) {
-  :root { --ink:#e8e6e1; --muted:#a6a29a; --rule:#3a3733; --bg:#16150f;
-          --note-bg:#241f14; --note-edge:#b58900; --accent:#d9b74a; }
-}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${DARK} } }
+:root[data-theme="dark"] { ${DARK} }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--ink);
        font:16px/1.65 Georgia, 'Times New Roman', serif; }
@@ -101,20 +107,69 @@ nav.crumbs ol { list-style:none; display:flex; flex-wrap:wrap; gap:.5rem;
                 padding:.75rem 0; margin:0; color: var(--muted); }
 nav.crumbs li + li::before { content:"› "; color: var(--rule); }
 nav.crumbs > .wrap { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; }
-.search-link { white-space:nowrap; font-size:.82rem; }
+nav.crumbs .tools { display:flex; align-items:baseline; gap:.75rem; white-space:nowrap; font-size:.82rem; }
+/* The theme switch. Only ever created by the script, so a page without one
+   simply has no button — the system preference still applies. */
+button.theme { font:inherit; color:inherit; background:none; cursor:pointer;
+               border:1px solid var(--rule); border-radius:4px; padding:.1rem .5rem; }
+button.theme:hover, button.theme:focus-visible { background:var(--note-bg); border-color:var(--accent); }
+button.theme[aria-pressed="true"] { border-color:var(--accent); }
 /* Pagefind's UI inherits the page palette rather than shipping its own. */
 :root { --pagefind-ui-scale:.8; --pagefind-ui-primary:var(--ink);
         --pagefind-ui-text:var(--ink); --pagefind-ui-background:var(--bg);
         --pagefind-ui-border:var(--rule); --pagefind-ui-tag:var(--note-bg);
         --pagefind-ui-font:system-ui, sans-serif; }
+/* padding-block, not the shorthand: this rule outranks .wrap and the shorthand
+   would zero the side gutter — which is invisible on a desktop, where max-width
+   centres the bar, and flush against the edge on a phone. */
 nav.pager { border-top:1px solid var(--rule); display:flex; gap:1rem;
-            justify-content:space-between; padding:1rem 0; font-size:.9rem; }
+            justify-content:space-between; padding-block:1rem; font-size:.9rem; }
 nav.pager a { flex:1 1 0; text-decoration:none; }
 nav.pager .next { text-align:right; }
 footer { border-top:1px solid var(--rule); padding:1rem 0 2rem; }
+footer .disclaimer { font-size:.8rem; margin-top:.75rem; }
 @media (max-width: 30rem) { nav.pager { flex-direction: column; }
                             nav.pager .next { text-align:left; } }
 `;
+
+/**
+ * The one script every page carries — inline, ~20 lines, no request.
+ *
+ * It does two things: applies a stored theme choice before first paint, so a
+ * reader who chose dark does not see a light flash, and adds the toggle to the
+ * breadcrumb bar. The button exists only when the script runs — the markup
+ * never references it — so with JavaScript off the page is exactly what it was:
+ * the system preference decides, and nothing is missing that the reader could
+ * have wanted to press. A choice overrides the system in both directions and
+ * is remembered per browser in localStorage, where it stays the reader's.
+ */
+const THEME_SCRIPT = `<script>
+(function () {
+  var root = document.documentElement, KEY = "theme";
+  var system = matchMedia("(prefers-color-scheme: dark)");
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  if (stored === "dark" || stored === "light") root.setAttribute("data-theme", stored);
+  function isDark() {
+    var t = root.getAttribute("data-theme");
+    return t ? t === "dark" : system.matches;
+  }
+  addEventListener("DOMContentLoaded", function () {
+    var tools = document.querySelector("nav.crumbs .tools");
+    if (!tools) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "theme"; b.textContent = "Dark mode";
+    b.setAttribute("aria-pressed", String(isDark()));
+    b.addEventListener("click", function () {
+      var next = isDark() ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      b.setAttribute("aria-pressed", String(next === "dark"));
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+    });
+    tools.appendChild(b);
+  });
+})();
+</script>`;
 
 interface Crumb {
   label: string;
@@ -149,8 +204,15 @@ export function page(opts: {
   crumbs: Crumb[];
   body: string;
   pager?: string;
+  /** The source line, when the page has a document on the source server. */
   footer?: string;
   search?: SearchInfo;
+  /**
+   * Extra head markup, placed *before* the site stylesheet. Pagefind's CSS
+   * defines its own `--pagefind-ui-*` defaults on `:root`, and the site's
+   * overrides only win if they come later — otherwise dark mode gets Pagefind's
+   * near-black text on the site's dark ground.
+   */
   head?: string;
   bodyEnd?: string;
 }): string {
@@ -168,18 +230,19 @@ export function page(opts: {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(opts.title)}</title>
-<link rel="stylesheet" href="/style.css">
+${opts.head ?? ""}<link rel="stylesheet" href="/style.css">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-${opts.head ?? ""}</head>
+${THEME_SCRIPT}
+</head>
 <body>
 <a class="skip" href="#content">Skip to content</a>
 <nav class="crumbs" aria-label="Breadcrumb"><div class="wrap"><ol>${crumbs}</ol>
-<a class="search-link" href="/search">Search</a></div></nav>
+<span class="tools"><a class="search-link" href="/search">Search</a></span></div></nav>
 <main id="content" class="wrap"${searchAttrs(opts.search)}>
 ${opts.body}
 </main>
 ${opts.pager ?? ""}
-${opts.footer ?? ""}
+<footer class="wrap">${opts.footer ?? ""}${DISCLAIMER}</footer>
 ${opts.bodyEnd ?? ""}</body>
 </html>
 `;
@@ -269,11 +332,23 @@ function citedBySection(edges: Edge[] | undefined, index: Index): string {
  */
 export function sourceFooter(url: string | undefined, label: string): string {
   if (!url) return "";
-  return (
-    `<footer class="wrap"><p class="meta">Source: ` +
-    `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a></p></footer>`
-  );
+  return `<p class="meta">Source: <a href="${escapeHtml(url)}">${escapeHtml(label)}</a></p>`;
 }
+
+/**
+ * On every page, under the source line. The site is a copy, and the copy can
+ * lag the official text by a legislative session; a reader who acts on a
+ * statute should be told that where they are reading it, not only on the home
+ * page.
+ */
+const DISCLAIMER =
+  `<p class="meta disclaimer"><strong>Disclaimer:</strong> These statutes may not ` +
+  `be the most recent version. The State of Hawaii may have more current or ` +
+  `accurate information. No warranty or guarantee is made about the accuracy, ` +
+  `completeness, or adequacy of the information on this site or of the ` +
+  `information linked to on the state site. Please check ` +
+  `<a href="https://www.capitol.hawaii.gov/hrscurrent/">the official Hawaii ` +
+  `Revised Statutes</a>.</p>`;
 
 /**
  * Render a PART/ARTICLE banner.
@@ -431,7 +506,7 @@ function anomalyNote(section: ParsedSection): string {
 // --- pages ---
 
 /**
- * The search page — the only page on the site that loads JavaScript.
+ * The search page — the only page on the site that loads a script file.
  *
  * Everything else is pre-rendered precisely so there is nothing to fail; search
  * is the one thing a static file cannot do, so it is isolated here. Pagefind's
@@ -758,3 +833,25 @@ does not resolve is left as plain text rather than guessed at.</p>
   });
 }
 
+
+/**
+ * Served by the host for any address that is not a page (`ErrorDocument 404`
+ * in `.htaccess`), and by `bun run serve` locally. The common way to land here
+ * is a mistyped or renumbered section, so it offers the address form rather
+ * than just the top of the site.
+ */
+export function notFoundPage(): string {
+  return page({
+    title: "Not found — Hawaii Revised Statutes",
+    crumbs: [{ label: "HRS", href: "/" }, { label: "Not found" }],
+    body: `<h1>No page at that address</h1>
+<p>Section pages live at <code>/hrs/</code> followed by the section number
+&mdash; <a href="/hrs/26-34"><code>/hrs/26-34</code></a> for §26-34,
+<a href="/hrs/431-1-100"><code>/hrs/431-1-100</code></a> for §431:1-100.
+Chapters are at <code>/hrs/chapter/26</code>.</p>
+<p>A section that was repealed or renumbered has no page of its own. Its
+chapter page lists what the chapter holds now, and
+<a href="/search">search</a> covers the full text.</p>
+<p><a href="/">Start from the volume list</a>.</p>`,
+  });
+}

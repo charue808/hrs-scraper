@@ -8,6 +8,7 @@ import {
   searchPage,
   sectionPage,
   volumePage,
+  STYLE,
 } from "./site";
 import { sectionHref, type Index, type Target } from "./resolver";
 import type { ParsedSection } from "./config";
@@ -308,10 +309,12 @@ describe("source links", () => {
   });
 
   // 02-HNP and 03-ORG have no index page on the source server.
-  test("a chapter with no index page gets no footer rather than a dead link", () => {
+  test("a chapter with no index page gets no source line rather than a dead link", () => {
     const html = chapterPage("02-HNP", undefined, 1, [], index);
-    expect(html).not.toContain("<footer");
     expect(html).not.toContain("Source:");
+    // The disclaimer is there regardless — it is about the site, not the page.
+    expect(html).toContain("<footer");
+    expect(html).toContain("Disclaimer:");
   });
 
   test("a volume page links its directory", () => {
@@ -346,7 +349,7 @@ describe("cited by", () => {
   test("a long list collapses into native details/summary", () => {
     const html = render({}, edges(40));
     expect(html).toContain("<details><summary>40 sections</summary>");
-    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<script src");
   });
 
   test("statutory and annotation references are separated", () => {
@@ -410,10 +413,10 @@ describe("search index markup", () => {
 });
 
 describe("search page", () => {
-  test("it is the only page that loads JavaScript", () => {
+  test("it is the only page that loads a script file", () => {
     const html = searchPage();
     expect(html).toContain("pagefind-ui.js");
-    expect(render()).not.toContain("<script");
+    expect(render()).not.toContain("<script src");
   });
 
   test("it degrades to real guidance without JavaScript", () => {
@@ -434,10 +437,15 @@ describe("search page", () => {
 });
 
 describe("page shell", () => {
-  test("no JavaScript is emitted", () => {
+  test("the only script is the inline theme switch, and nothing depends on it", () => {
     const html = render({ bodyText: "Text.", annotations: [{ heading: "Case Notes", text: "A note." }] });
-    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<script src");
     expect(html).not.toContain("onclick");
+    expect(html.match(/<script/g)).toHaveLength(1);
+    // The toggle is created by the script, so a page with JavaScript off has
+    // no dead button — it has no button.
+    expect(html).not.toContain("<button");
+    expect(html).toContain("prefers-color-scheme");
   });
 
   test("the breadcrumb marks the current page and links its ancestors", () => {
@@ -462,4 +470,17 @@ describe("page shell", () => {
     expect(html).toContain('<span class="num">§643G-2</span>');
     expect(html).toContain("Published here as §634G-2.");
   });
+});
+
+test("the pager keeps the page's side gutter", () => {
+  // nav.pager outranks .wrap, so a `padding` shorthand there would zero the
+  // horizontal padding .wrap provides — invisible on a desktop, flush against
+  // the edge on a phone. Found by looking at the site at 390px.
+  const rule = STYLE.match(/nav\.pager \{[^}]*\}/)![0];
+  expect(rule).not.toMatch(/[^-]padding:/);
+});
+
+test("the site stylesheet comes after any page-specific one, so its Pagefind overrides win", () => {
+  const html = searchPage();
+  expect(html.indexOf("pagefind-ui.css")).toBeLessThan(html.indexOf("/style.css"));
 });
