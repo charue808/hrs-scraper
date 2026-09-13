@@ -17,7 +17,7 @@ import {
   type TitleRecord,
 } from "./config";
 import { escapeHtml, linkify } from "./citations";
-import { chapterHref, resolve, sectionHref, titleHref, volumeHref, type Index } from "./resolver";
+import { chapterHref, resolve, sectionHref, titleHref, volumeHref, TREE_HREF, type Index } from "./resolver";
 import { properCitation } from "./cross-document";
 import type { Edge } from "./graph";
 
@@ -102,6 +102,20 @@ ol.toc .t { color: var(--muted); }
 details summary { cursor: pointer; padding:.4rem 0; font-family: system-ui, sans-serif;
                   font-size:.85rem; color: var(--muted); }
 details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* The tree view: a division holds titles, a title holds its chapters. Native
+   <details>, so it works with nothing loaded — the same trade as the backlink
+   lists. Summaries are the rows; the name inside is a link to the page. */
+.tree details { border-bottom:1px solid var(--rule); }
+.tree details details { border-bottom:0; margin-left:1.25rem; }
+.tree summary { font-family: inherit; font-size:1rem; color: var(--ink); padding:.5rem .25rem; }
+.tree details details summary { font-size:.95rem; }
+.tree summary a { text-decoration:none; }
+.tree summary a:hover { text-decoration:underline; }
+.tree summary .meta { font-family: system-ui, sans-serif; font-size:.82rem; }
+.tree ul.toc { margin-left:1.25rem; margin-bottom:.5rem; }
+.tree ul.toc li:last-child { border-bottom:0; }
+.tree h3 { font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color: var(--muted);
+           margin:.75rem 0 .25rem 1.5rem; }
 nav.crumbs { border-bottom:1px solid var(--rule); font-size:.82rem;
              font-family: system-ui, sans-serif; }
 nav.crumbs ol { list-style:none; display:flex; flex-wrap:wrap; gap:.5rem;
@@ -814,7 +828,7 @@ export function volumePage(
     body:
       `<h1>Volume ${volume}</h1>\n` +
       `<p class="meta">Chapters ${escapeHtml(range)} · ${chapters.length} chapters · ` +
-      `how the printed edition is bound; the code itself is arranged by <a href="/">division and title</a></p>\n` +
+      `how the printed edition is bound; the code itself is arranged by <a href="${TREE_HREF}">division and title</a></p>\n` +
       `<ul class="toc">${chapters.map(chapterRow).join("\n")}</ul>`,
     footer: sourceFooter(source?.url, source?.dirName ?? ""),
   });
@@ -875,36 +889,18 @@ export function titlePage(
 }
 
 export function homePage(
-  divisions: {
-    number: number;
-    name: string;
-    titles: { number: string; name: string; chapters: number }[];
-  }[],
-  volumes: { number: number; range: string }[],
+  volumes: { number: number; range: string; chapters: number }[],
   stats: { sections: number; chapters: number },
   sourceUrl?: string
 ): string {
-  const rows = divisions
+  const rows = volumes
     .map(
-      (d) =>
-        `<h2>Division ${d.number} — ${escapeHtml(d.name)}</h2>\n<ul class="toc">` +
-        d.titles
-          .map(
-            (t) =>
-              `<li><a href="${titleHref(t.number)}">` +
-              `<span class="num">Title ${escapeHtml(t.number)}</span> ` +
-              `<span class="t">${escapeHtml(t.name)}</span> ` +
-              `<span class="meta">${t.chapters === 1 ? "1 chapter" : `${t.chapters} chapters`}</span></a></li>`
-          )
-          .join("\n") +
-        `</ul>`
+      (v) =>
+        `<li><a href="${volumeHref(v.number)}">` +
+        `<span class="num">Volume ${v.number}</span> ` +
+        `<span class="t">Chapters ${escapeHtml(v.range)} · ${v.chapters} chapters</span></a></li>`
     )
     .join("\n");
-  // The printed edition's arrangement. Still occasionally what someone has in
-  // hand, and the pages already exist; one line keeps them reachable.
-  const printed = volumes
-    .map((v) => `<a href="${volumeHref(v.number)}">${v.number}</a>`)
-    .join(", ");
 
   return page({
     title: "Hawaii Revised Statutes",
@@ -918,9 +914,67 @@ ${stats.chapters.toLocaleString()} chapters.</p>
 Legislature are the authority; this is a readable, cross-linked copy of them. A
 citation is linked only when the section it names exists in the corpus — what
 does not resolve is left as plain text rather than guessed at.</p>
-${rows}
-<p class="meta">The printed edition binds these into volumes ${printed}.</p>`,
+<h2>Volumes</h2>
+<ul class="toc">${rows}</ul>
+<p class="meta">Or browse the code as it is arranged — division, title, chapter —
+in the <a href="${TREE_HREF}">tree view</a>.</p>`,
     footer: sourceFooter(sourceUrl, "capitol.hawaii.gov/hrscurrent"),
+  });
+}
+
+/**
+ * The whole hierarchy on one page: Division > Title > (Subtitle) > Chapter,
+ * plus the documents outside it. Divisions open, titles closed, so the
+ * resting state is the 41 titles and a click opens one to its chapters. It
+ * stops at chapters — 1,109 rows is a page, 23,373 would not be.
+ */
+export function treePage(
+  divisions: { number: number; name: string }[],
+  titles: TitleRecord[],
+  /** The non-HRS documents, in the order the source keeps them. */
+  documents: ChapterRow[],
+  sections: (chapterNumber: string) => number
+): string {
+  const titleBlock = (t: TitleRecord) => {
+    const count = t.listing.reduce((n, g) => n + g.chapters.length, 0);
+    const groups = t.listing
+      .map(
+        (g) =>
+          (g.subtitle ? `<h3>${escapeHtml(g.subtitle)}</h3>\n` : "") +
+          `<ul class="toc">` +
+          g.chapters
+            .map((c) => chapterRow({ number: c.number, name: c.name, sections: sections(c.number) }))
+            .join("\n") +
+          `</ul>`
+      )
+      .join("\n");
+    return (
+      `<details><summary><a href="${titleHref(t.number)}"><span class="num">Title ${escapeHtml(t.number)}</span> ` +
+      `${escapeHtml(t.name)}</a> <span class="meta">${count === 1 ? "1 chapter" : `${count} chapters`}</span></summary>\n` +
+      `${groups}</details>`
+    );
+  };
+  const blocks = divisions.map((d) => {
+    const own = titles.filter((t) => t.division === d.number);
+    return (
+      `<details open><summary><span class="num">Division ${d.number}</span> ${escapeHtml(d.name)} ` +
+      `<span class="meta">${own.length} titles</span></summary>\n${own.map(titleBlock).join("\n")}</details>`
+    );
+  });
+  blocks.push(
+    `<details open><summary>Other documents <span class="meta">${documents.length}</span></summary>\n` +
+      `<ul class="toc">${documents.map(chapterRow).join("\n")}</ul></details>`
+  );
+
+  return page({
+    title: "Tree view — Hawaii Revised Statutes",
+    crumbs: [{ label: "HRS", href: "/" }, { label: "Tree view" }],
+    body:
+      `<h1>Tree view</h1>\n` +
+      `<p class="meta">The code as it is arranged: ${divisions.length} divisions, ${titles.length} titles, ` +
+      `then chapters. The constitutions and the organic documents sit outside the divisions ` +
+      `and are listed last. The <a href="/">volumes</a> are how the printed edition is bound.</p>\n` +
+      `<div class="tree">${blocks.join("\n")}</div>`,
   });
 }
 

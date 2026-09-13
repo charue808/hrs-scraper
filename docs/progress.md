@@ -36,11 +36,20 @@ and reusing that would have glued the old chapter onto the last row — the
 title's material ends at the *first* `CHAPTER` line of any kind.
 
 Built: `parseTitleBanner`, `data/titles.json` from `bun run chapters`, a page
-per title, the home page by division and title, and `HRS › Title 12 › Chapter
-171 › §171-2` crumbs. Volume pages stay, as a footnote on the home page. The
-non-HRS documents sit outside every division, correctly, and their crumbs go
-straight to the document. 24,544 pages, 0 broken of 24,547 hrefs, search
-verified, `chapters.json` byte-identical. 243 tests.
+per title, and `HRS › Title 12 › Chapter 171 › §171-2` crumbs. The non-HRS
+documents sit outside every division, correctly, and their crumbs go straight
+to the document.
+
+**The front page was tried both ways and the volumes won.** A home page by
+division and title was built first — 41 rows over three screens where there
+had been 14 — and on looking at it, judged not better as a front page. It was
+reverted the same session in favour of a **tree view** at `/hrs/tree`: native
+`<details>`, divisions open and titles closed so the resting state is the 41
+titles, a click opens a title to its chapters, and the constitutions and
+organic acts are listed last under "Other documents". 200 KB, 28 KB gzipped,
+no script. The home page keeps its 14 volume rows and links to the tree.
+24,546 pages, 0 broken of 24,548 hrefs, search verified, `chapters.json`
+byte-identical. 244 tests.
 
 ## 2026-09-12 — first deploy, and what only a real Apache showed
 

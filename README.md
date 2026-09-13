@@ -5,7 +5,7 @@ parses ~24,500 statute files from raw HTML into structured data, and publishes
 them as a static, fully cross-linked document set.
 
 **Current state**: the corpus is scraped, parsed, committed and cross-linked,
-and the site builds — 24,544 pages with search, backlinks and no broken
+and the site builds — 24,546 pages with search, backlinks and no broken
 internal links — and deploys to a plain Apache host with `bun run deploy`.
 See [`docs/STATE.md`](docs/STATE.md).
 
@@ -29,7 +29,7 @@ Nothing a database provides *at runtime* is something this content needs.
 |---|---|
 | Source of truth | `data/parsed/*.json`, committed to the repo |
 | Version history | git — a re-scrape diffs to exactly the sections that were amended |
-| Output | 23,373 statute pages + 1,114 chapter pages + 41 title pages + 14 volume pages, pre-rendered HTML |
+| Output | 23,373 statute pages + 1,114 chapter pages + 41 title pages + 14 volume pages + a tree view, pre-rendered HTML |
 | Citations | resolved at build time and baked into the markup |
 | Search | [Pagefind](https://pagefind.app) — chunked index; only the search page loads JS |
 | Database | optional side tool for ad-hoc analysis, not the pipeline |
@@ -249,8 +249,8 @@ bun run serve                    # browse it at localhost:3000
 bun run verify-search            # drive /search in a real browser (needs Chrome)
 ```
 
-Emits 49,460 files: a page per section, per chapter, per title and per volume,
-plus a home page, a search page, `citations.json`, and the Pagefind index — which is 24,907
+Emits 49,461 files: a page per section, per chapter, per title and per volume,
+plus a tree view of the whole hierarchy, a home page, a search page, `citations.json`, and the Pagefind index — which is 24,907
 of them, one fragment per indexed page. `--no-index` skips Pagefind and halves
 the count. `bun run serve` browses the result at `localhost:3000`; the pages are
 extensionless directories (`/hrs/26-34/index.html` serves `/hrs/26-34`), which
@@ -316,7 +316,7 @@ as `.htaccess` by the build: no directory listings, the 404 page, and cache
 headers keyed on whether a file's name changes with its content (Pagefind's
 hashed fragments are immutable; pages get an hour).
 
-**Why a plain host.** The build emits **49,460 files** — Pagefind writes one
+**Why a plain host.** The build emits **49,461 files** — Pagefind writes one
 fragment per indexed page, which more than doubles the page count — and that is
 over the free tier of every CDN-style host checked (Cloudflare Pages and Workers
 both cap free at 20,000 files; paid at 100,000). An Apache directory has no cap,
@@ -411,7 +411,7 @@ src/
   graph.ts         — the citation graph: backlinks and citations.json
   vocabulary.ts    — the corpus's word list, for typo suggestions on the search page
   search-client.js — the search page's script: go-to-section and spelling suggestions
-  site.ts          — the site's markup: page shell, section/chapter/title/volume pages
+  site.ts          — the site's markup: page shell, section/chapter/title/volume/tree pages
   build.ts         — reads the corpus, resolves citations, writes build/site
   hosting.ts       — what the host needs beyond pages: .htaccess, robots, sitemap
   deploy.ts        — rsync build/site to the host

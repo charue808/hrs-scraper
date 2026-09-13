@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-12
-**Head**: see `git log` — 243 tests, typecheck clean
+**Head**: see `git log` — 244 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -22,9 +22,9 @@ committed as the source of truth, cross-linked, and **built into a searchable
 static site with backlinks**. Every known correctness gap is closed.
 
 What works end to end today: `bun run build` turns the committed corpus into
-**49,460 files** — 24,544 pages in ~9s, then ~15s for the search index — with
+**49,461 files** — 24,546 pages in ~9s, then ~15s for the search index — with
 citations resolved, backlinks on every page, and **0 broken internal links**
-across all 24,547 distinct hrefs. `bun run serve` browses it at localhost:3000,
+across all 24,548 distinct hrefs. `bun run serve` browses it at localhost:3000,
 and `bun run deploy` rsyncs it to the host.
 
 **The site is live at https://experimental-hrs.dreamhosters.com** (DreamHost
@@ -155,6 +155,11 @@ Chapter names on title pages come from the tables of contents (Title Case,
 with `--Repealed` where the source says so) rather than from the chapter
 banners, because that is what the source prints at that level.
 
+Where it shows: the tree view (`/hrs/tree`), the 41 title pages, and the
+breadcrumb. Not the home page — a division/title front page was built, looked
+at, and reverted the same day: 41 rows over three screens against 14, and the
+tree does the same job better one click away.
+
 ### The site — built
 
 `bun run build` reads `data/parsed` and writes the whole document set.
@@ -166,16 +171,17 @@ writing files.
 | Section pages | 23,373 |
 | Chapter pages | 1,114 |
 | Title pages | 41 |
+| Tree view | 1 — 200 KB, 28 KB gzipped |
 | Volume pages | 14 |
 | Home, search, 404, stylesheet, favicon | 5 |
 | `.htaccess`, `robots.txt`, `sitemap.xml` | 3 — see `hosting.ts` |
 | `citations.json` | 6.0 MB |
 | Pagefind index | 24,907 files, 115 MB |
 | `search-vocabulary.txt` | 17,223 words, 52 KB gzipped |
-| **Total files** | **49,460** |
+| **Total files** | **49,461** |
 | Size | 351 MB raw |
 | Build time | ~6s, plus ~15s to index |
-| Broken internal links | **0** of 24,547 distinct hrefs |
+| Broken internal links | **0** of 24,548 distinct hrefs |
 
 URLs are extensionless directories (`/hrs/26-34/index.html` serves
 `/hrs/26-34`). Apache's default for that is a 301 to `/hrs/26-34/` before
@@ -218,7 +224,7 @@ missing.
 Nothing here is a defect. In the order I would take them:
 
 1. ~~**Pick a host.**~~ **Decided 2026-09-11: DreamHost shared hosting.** Plain
-   Apache with SSH — no file-count cap for the 49,460 files, extensionless URLs
+   Apache with SSH — no file-count cap for the 49,461 files, extensionless URLs
    with four lines of `.htaccess`, and server logs instead of a JavaScript tracker for seeing how
    the site is used. `bun run deploy` rsyncs the build; `src/hosting.ts` emits
    the `.htaccess`. **Deployed 2026-09-12**, and the **log cron is installed**
@@ -232,10 +238,12 @@ Nothing here is a defect. In the order I would take them:
 2. ~~**Division/Title navigation.**~~ **Done 2026-09-12.** The site is
    arranged as the code is — Division > Title > (Subtitle) > Chapter — read
    from the 41 index pages that carry a TITLE banner and a table of contents
-   of the title's chapters, into `data/titles.json`. Home page by division
-   and title, a page per title, `HRS › Title 12 › Chapter 171 › §171-2` crumbs.
-   Volume pages remain, as the printed edition's arrangement, reachable from
-   a line on the home page. See "The hierarchy" below.
+   of the title's chapters, into `data/titles.json`. A **tree view** at
+   `/hrs/tree` — native `<details>`, divisions open and titles closed, the
+   constitutions and organic acts listed last — a page per title, and
+   `HRS › Title 12 › Chapter 171 › §171-2` crumbs. The home page keeps the
+   volume listing, which was tried as division/title and judged not better
+   as a front page; the tree is one link from it. See "The hierarchy" below.
 3. **Chapter index section listings.** The title, notes and annotations are
    extracted; the listing itself is not. It would make a good coverage check
    against the files actually discovered. Not needed for chapter pages — those
@@ -309,7 +317,7 @@ Small, and none of them block anything.
 
 ```bash
 bun install
-bun test                                  # 243 tests
+bun test                                  # 244 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)

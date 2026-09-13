@@ -33,6 +33,7 @@ import {
   searchPage,
   sectionPage,
   titlePage,
+  treePage,
   volumePage,
   STYLE,
   type TitleRef,
@@ -208,6 +209,20 @@ if (!ONLY_CHAPTER) {
       v.chapters.flatMap((c) => c.files.filter((f) => f.isIndex).map((f) => [f.filename, f.url] as const))
     )
   );
+  // The documents outside every title — the constitutions and organic acts —
+  // in the order the source server keeps them.
+  const documents = manifest.volumes
+    .flatMap((v) => v.chapters)
+    .filter((c) => !titleOf.has(c.number) && !/^\d+[A-Z]*$/.test(c.number))
+    .map((c) => ({
+      number: c.number,
+      name: chapterRecords[c.number]?.title ?? "",
+      sections: (byChapter.get(c.number) ?? []).length,
+    }));
+  await write(
+    "hrs/tree",
+    treePage(titles.divisions, titles.titles, documents, (chapter) => (byChapter.get(chapter) ?? []).length)
+  );
   for (const title of titles.titles) {
     const division = titles.divisions.find((d) => d.number === title.division)!;
     const url = indexFiles.get(title.source);
@@ -263,19 +278,10 @@ if (!ONLY_CHAPTER) {
   await Bun.write(
     `${OUT}/index.html`,
     homePage(
-      titles.divisions.map((d) => ({
-        ...d,
-        titles: titles.titles
-          .filter((t) => t.division === d.number)
-          .map((t) => ({
-            number: t.number,
-            name: t.name,
-            chapters: t.listing.reduce((n, g) => n + g.chapters.length, 0),
-          })),
-      })),
       manifest.volumes.map((v) => ({
         number: v.number,
         range: v.chapterRange.replace(/^0+/, "").replace(/-0+/, "–"),
+        chapters: v.chapters.length,
       })),
       { sections: corpus.length, chapters: manifest.volumes.reduce((n, v) => n + v.chapters.length, 0) },
       manifest.baseUrl

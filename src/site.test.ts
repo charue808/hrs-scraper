@@ -8,6 +8,7 @@ import {
   searchPage,
   sectionPage,
   titlePage,
+  treePage,
   volumePage,
   STYLE,
 } from "./site";
@@ -397,7 +398,7 @@ describe("search index markup", () => {
 
   test("navigation pages are not indexed", () => {
     expect(volumePage(1, "1–42F", [])).not.toContain("data-pagefind-body");
-    expect(homePage([], [], { sections: 0, chapters: 0 })).not.toContain("data-pagefind-body");
+    expect(homePage([], { sections: 0, chapters: 0 })).not.toContain("data-pagefind-body");
   });
 
   // Annotations are 5.3M characters against the statutes' 32M but concentrated
@@ -548,14 +549,28 @@ describe("title and home pages", () => {
     expect(html).not.toContain("<h2>");
   });
 
-  test("the home page is arranged by division and title, with the volumes as a footnote", () => {
-    const html = homePage(
-      [{ number: 1, name: "GOVERNMENT", titles: [{ number: "1", name: "GENERAL PROVISIONS", chapters: 18 }] }],
-      [{ number: 1, range: "1–42F" }, { number: 2, range: "43–100" }],
-      { sections: 23373, chapters: 1112 }
+  test("the home page lists the volumes and points at the tree view", () => {
+    const html = homePage([{ number: 1, range: "1–42F", chapters: 74 }], { sections: 23373, chapters: 1112 });
+    expect(html).toContain('<a href="/hrs/volume/1"><span class="num">Volume 1</span> <span class="t">Chapters 1–42F · 74 chapters</span></a>');
+    expect(html).toContain('<a href="/hrs/tree">tree view</a>');
+  });
+
+  test("the tree view nests division > title > chapter in native details, with the other documents last", () => {
+    const html = treePage(
+      [division],
+      [title12],
+      [{ number: "05-CONST", name: "", sections: 120 }],
+      counts
     );
-    expect(html).toContain("<h2>Division 1 — GOVERNMENT</h2>");
-    expect(html).toContain('<a href="/hrs/title/1"><span class="num">Title 1</span> <span class="t">GENERAL PROVISIONS</span> <span class="meta">18 chapters</span></a>');
-    expect(html).toContain('volumes <a href="/hrs/volume/1">1</a>, <a href="/hrs/volume/2">2</a>.');
+    // Divisions open, titles closed: the resting state is the list of titles.
+    expect(html).toContain('<details open><summary><span class="num">Division 1</span> GOVERNMENT <span class="meta">1 titles</span></summary>');
+    expect(html).toContain('<details><summary><a href="/hrs/title/12"><span class="num">Title 12</span> CONSERVATION AND RESOURCES</a> <span class="meta">2 chapters</span></summary>');
+    expect(html).toContain("<h3>Subtitle 1. Public Lands</h3>");
+    expect(html).toContain('<a href="/hrs/chapter/171"><span class="num">Chapter 171</span>');
+    // The constitution is named, not numbered, and sits outside the divisions.
+    expect(html).toContain('<summary>Other documents <span class="meta">1</span></summary>');
+    expect(html).toContain('<a href="/hrs/chapter/05-CONST"><span class="t">Hawaii State Constitution</span> <span class="meta">120 sections</span></a>');
+    expect(html).not.toContain("<script src");
+    expect(html).not.toContain("data-pagefind-body");
   });
 });

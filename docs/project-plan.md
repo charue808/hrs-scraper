@@ -51,10 +51,11 @@ something this content needs. Concretely:
   under Known Gaps, and free. This depends on byte-stable serialization; see
   `SECTION_FIELD_ORDER` in `config.ts`.
 - **Output**: 23,373 statute pages + 1,114 chapter pages + 41 title pages + 14
-  volume pages and a home page, pre-rendered to plain HTML with citations
-  already resolved to links. Navigation follows the code's own hierarchy —
-  Division > Title > (Subtitle) > Chapter, from `data/titles.json`; volumes are
-  the printed edition's binding and are kept as a secondary index.
+  volume pages, a tree view and a home page, pre-rendered to plain HTML with
+  citations already resolved to links. The home page lists the volumes; the
+  tree view (`/hrs/tree`, native `<details>`) and the breadcrumbs follow the
+  code's own hierarchy — Division > Title > (Subtitle) > Chapter, from
+  `data/titles.json`.
   URLs are extensionless directories (`/hrs/26-34/index.html` serves
   `/hrs/26-34`); see `hosting.ts` for the Apache side. No client-side fetching,
   no JS on statute pages — which also means nothing to fail for a screen reader.
@@ -443,7 +444,7 @@ src/
   vocabulary.ts    corpus word list, for spelling suggestions on /search
   search-client.js browser script for /search: jump-to-section, spelling
   verify-search.ts end-to-end check of /search in a real browser
-  site.ts          the site's markup: page shell, section/chapter/title/volume/search
+  site.ts          the site's markup: page shell, section/chapter/title/volume/tree/search
                    pages, outline depth, part banners, footers, backlinks
   build.ts         reads the corpus, resolves citations, writes build/site
   serve.ts         serves build/site locally (development only)
@@ -700,9 +701,9 @@ Ordered by what stands between the current state and a finished site.
 
 ### To build
 
-- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,544 pages
+- ~~**The site build.**~~ Done 2026-09-10: `bun run build` emits 24,546 pages
   (23,373 sections, 1,114 chapters, 14 volumes, home, search; 41 title pages
-  added 2026-09-12) with 0 broken
+  and the tree view added 2026-09-12) with 0 broken
   internal links. `src/site.ts` owns the markup, `src/build.ts` the driver.
 - ~~**Pagefind.**~~ Done 2026-09-10. Indexes the 24,487 statute and chapter
   pages; annotations weighted 0.4, backlinks excluded, navigation pages left

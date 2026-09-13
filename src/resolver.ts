@@ -81,6 +81,9 @@ export function titleHref(titleNumber: string): string {
   return `/hrs/title/${titleNumber}`;
 }
 
+/** The whole hierarchy on one page, Division > Title > Chapter. */
+export const TREE_HREF = "/hrs/tree";
+
 /** The bare number a citation in running text would use for this section. */
 function citationKey(sectionNumber: string): string {
   return sectionNumber.replace(/^§/, "").replace(/ \[OLD\]$/, "");
