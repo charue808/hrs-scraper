@@ -1,7 +1,7 @@
 # Where the project stands
 
 **As of**: 2026-09-12
-**Head**: see `git log` — 244 tests, typecheck clean
+**Head**: see `git log` — 248 tests, typecheck clean
 
 Read this first. It says what exists, what is trustworthy, what is not built
 yet, and where the loose threads are. The other documents go deeper:
@@ -244,10 +244,12 @@ Nothing here is a defect. In the order I would take them:
    `HRS › Title 12 › Chapter 171 › §171-2` crumbs. The home page keeps the
    volume listing, which was tried as division/title and judged not better
    as a front page; the tree is one link from it. See "The hierarchy" below.
-3. **Chapter index section listings.** The title, notes and annotations are
-   extracted; the listing itself is not. It would make a good coverage check
-   against the files actually discovered. Not needed for chapter pages — those
-   are built from the parsed sections, which carry real titles.
+3. ~~**Chapter index section listings.**~~ **Done 2026-09-12** as `bun run
+   coverage`: the listing on every chapter index page against the corpus,
+   both directions. 22,825 sections listed, 99.96% present. First run found
+   a parser defect (38 plural repeal notes, `§§15-7, 15-8 REPEALED.`, not
+   flagged — fixed), typos in the source's own index pages, and one section
+   the index lists that the source server 404s. Run it after every re-scrape.
 4. ~~**Rename `isUncodified`.**~~ **Done 2026-09-12** — `headingIsSupplied`,
    pairing with `titleIsSupplied`. One commit, 23,373 files, one line each,
    before any amendment diff exists to bury.
@@ -295,6 +297,13 @@ Small, and none of them block anything.
   real, now fixed — those titles are themselves citations, and the renderer was
   escaping rather than linking them, so 23 pages whose only content is a pointer
   were dead ends.
+- **Known source gaps, from `bun run coverage`.** §239-12 is listed on its
+  chapter's index page and the source server returns 404 for it. Chapter 490's
+  index lists `409:2A-210` and `409:9-405` for §490:2A-210 and §490:9-405, and
+  436B's lists `463B-19.5` for §436B-19.5 — typos in the index pages, not in
+  the sections, which are fine. Chapter 626 lists its first three sections as
+  `626:1-626-1` etc. None of these is ours to fix; the report is where they
+  show.
 - **48 genuinely unresolved body-text citations** remain, mostly foreign codes
   (`Cal. Evid. Code §§600-669`, federal titles cited by number). Worth a periodic
   look; the number is the metric.
@@ -316,7 +325,7 @@ Small, and none of them block anything.
 
 ```bash
 bun install
-bun test                                  # 244 tests
+bun test                                  # 248 tests
 
 bun run discover                          # crawl -> data/manifest.json (~2 min)
 bun run scrape --save-html                # full scrape (~45 min)
@@ -324,6 +333,7 @@ bun run reparse                           # rebuild data/parsed from cached HTML
 bun run reparse -- --dry-run              # what would change, writing nothing
 bun run chapters                          # chapter titles -> data/chapters.json; hierarchy -> data/titles.json
 bun run profile-citations                 # the citation quality metric
+bun run coverage                          # index-page listings vs the corpus; run after a re-scrape
 bun run build                             # the whole site -> build/site/ (~6s + ~15s indexing)
 bun run build -- --chapter 26             # one chapter, for reviewing by eye
 bun run build -- --no-index               # skip Pagefind (halves the file count)

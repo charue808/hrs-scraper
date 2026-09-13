@@ -636,12 +636,16 @@ export function parseSection(
 
   const caseNotes = findAnnotation(/^case\s+notes?$/i)?.text ?? "";
 
-  // Repeals show up three ways: in the title, as a body opening with
-  // "Repealed", or as a body that is nothing but a bracketed repeal note.
+  // Repeals show up four ways: in the title, as a body opening with
+  // "Repealed", as a body that is nothing but a bracketed repeal note, or as a
+  // body opening with the numbers of a run of sections repealed together —
+  // `§§15-7, 15-8 REPEALED. L 2019, c 136, §§54, 55.` — which is how 38
+  // sections in the corpus are written. Found by `bun run coverage`.
   const isRepealed =
     /\brepealed\b/i.test(title) ||
     /^\s*\[?\s*repealed\b/i.test(bodyText) ||
-    /^\s*\[[^\]]*\brepealed\b[^\]]*\]\s*$/i.test(bodyText);
+    /^\s*\[[^\]]*\brepealed\b[^\]]*\]\s*$/i.test(bodyText) ||
+    /^\s*\[?§§?[\d\w:.\-]+(?:(?:,| to| and) ?[\d\w:.\-]+)*\s+repealed\b/i.test(bodyText);
 
   return {
     sectionNumber,
@@ -714,6 +718,53 @@ function chapterBannerIndex(paragraphs: string[]): number {
     .map((p, i) => (BANNER.test(p) ? i : -1))
     .filter((i) => i !== -1);
   return banners.find((i) => !/^\[?old\]?$/i.test(inlineOf(paragraphs[i]!))) ?? banners[0] ?? -1;
+}
+
+/**
+ * The section listing on a chapter index page: the rows under the `Section`
+ * column header, each a number and a title, wrapping into the next paragraph
+ * like every other listing on these pages. PART/ARTICLE banners and notes
+ * between rows are skipped.
+ *
+ * A row must start with the chapter's own number — `26-14.5 Repealed` for
+ * chapter 26 — which is what tells a row from a wrapped title line that
+ * happens to begin with digits (`6:00 p.m. and 6:00 a.m.; definition;`).
+ * Empty for the 292 chapters whose page is only a repeal note.
+ */
+export function parseSectionListing(
+  html: string,
+  chapterNumber: string
+): { number: string; title: string }[] {
+  const entries = indexEntries(html);
+  const paragraphs = entries.map((e) => e.text);
+  const start = chapterBannerIndex(paragraphs);
+  if (start === -1) return [];
+  const escaped = chapterNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ROW = new RegExp(String.raw`^\[?(${escaped}[-:][0-9A-Z:.\-]*[0-9A-Z])\]?\s+(.*)$`);
+  const rows: { number: string; title: string }[] = [];
+  let last: { number: string; title: string } | null = null;
+  for (let i = start + 1; i < entries.length; i++) {
+    const entry = entries[i]!;
+    // Notes can sit between parts of a listing; a row is told by its shape,
+    // not its class — chapter 39A's rows 287–289 are `oneParagraph`.
+    if (entry.classes.some((c) => c === "XNotes" || c === "XNotesHeading")) {
+      last = null;
+      continue;
+    }
+    const m = entry.text.match(ROW);
+    if (m) {
+      last = { number: m[1]!, title: m[2]!.trim() };
+      rows.push(last);
+      continue;
+    }
+    // A banner, the `Section` header, or the chapter title: not a continuation.
+    if (/^(section|part\b|article\b|\[?chapter\b)/i.test(entry.text) || entry.text === entry.text.toUpperCase()) {
+      last = null;
+      continue;
+    }
+    if (last) last.title = `${last.title} ${entry.text}`;
+  }
+  return rows;
 }
 
 /**

@@ -451,6 +451,7 @@ src/
   serve.ts         serves build/site locally (development only)
 
   profile-citations.ts   the citation quality metric
+  coverage.ts            does the corpus have every section the index pages list?
   test-parse.ts          parse one URL or local file
 
   parser.test.ts         77 tests
@@ -633,6 +634,7 @@ bun run reparse                       # rebuild data/parsed from data/html (seco
 bun run reparse -- --dry-run          # report changes, write nothing
 bun run chapters                      # chapter titles + notes -> data/chapters.json; hierarchy -> titles.json
 bun run profile-citations             # citation quality metric
+bun run coverage                      # index-page section listings vs the corpus
 bun run build                         # the whole site -> build/site/ (~5s)
 bun run build -- --chapter 26         # one chapter, for reviewing by eye
 bun run serve                         # browse build/site at localhost:3000

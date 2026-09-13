@@ -9,6 +9,35 @@ search verified in a real browser against the live host. 235 tests, typecheck
 clean. The access-log cron is installed on the host; a `usage` report over the
 pulled logs is the next operational piece, once there is traffic to shape it.
 
+## 2026-09-12 — the coverage check
+
+`bun run coverage` reads the section listing on every chapter index page and
+compares it with the corpus in both directions. It is the first thing that
+measures whether the scrape is complete rather than merely error-free. 22,825
+sections listed across 1,108 pages; 99.96% present.
+
+What the first run found, in order of how much it mattered:
+
+- **A parser defect.** 38 sections are written as a run repealed together —
+  `§§15-7, 15-8 REPEALED. L 2019, c 136, §§54, 55.` — and `isRepealed` did not
+  recognise the plural form. They rendered as live sections in chapter
+  listings. Fixed; 31 corpus files change by exactly that flag (the other 7
+  were already caught by their titles).
+- **The listing parser had to learn two things** the title-banner parser did
+  not: notes sit *between* parts of a listing, so they are skipped rather than
+  ending it, and three rows on chapter 39A carry the class `oneParagraph` —
+  a row is told by its shape, not its class. Together those recovered 391
+  rows.
+- **Source typos in the index pages themselves.** Chapter 490's index lists
+  `409:2A-210`; 436B's lists `463B-19.5`. The sections are fine; the index is
+  wrong. Requiring a row to start with its own chapter's number keeps those
+  from counting as missing sections, and also stops a wrapped title line
+  (`6:00 p.m. and 6:00 a.m.`) from reading as a row.
+- **§239-12** is listed by its index and the source server returns 404 for
+  it. Not a scrape gap — nothing to scrape.
+
+Recorded in STATE.md under loose threads. 248 tests.
+
 ## 2026-09-12 — `isUncodified` → `headingIsSupplied`
 
 The rename the docs had been promising since 2026-09-10, done while there is

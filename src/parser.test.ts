@@ -7,6 +7,7 @@ import {
   normalizeChapterNumber,
   parseChapterIndex,
   parseSection,
+  parseSectionListing,
   parseTitleBanner,
 } from "./parser";
 
@@ -897,4 +898,59 @@ describe("parseTitleBanner", () => {
       "Repeal and Recodification Provisions",
     ]);
   });
+});
+
+describe("parseSectionListing", () => {
+  const R = (text: string, cls = "RegularParagraphs") => `<p class="${cls}">${text}</p>`;
+
+  test("reads rows, joins wrapped titles, and skips banners, notes and the header", () => {
+    const html = page(
+      R("<b>CHAPTER 26</b>") +
+        R("<b>EXECUTIVE AND ADMINISTRATIVE DEPARTMENTS</b>") +
+        R("Part I. Organization, Generally") +
+        R("Section") +
+        R("26-1 Office of the lieutenant governor") +
+        R("26-2 Order of succession to offices of governor and") +
+        R("lieutenant governor") +
+        R("Cross References", "XNotesHeading") +
+        R("Governor, see chapter 91.", "XNotes") +
+        R("Part II. Boards") +
+        R("26-14.5 Repealed") +
+        // Chapter 39A's rows 287–289 carry this class; a row is told by shape.
+        R("26-34 Boards and commissions", "oneParagraph")
+    );
+    expect(parseSectionListing(html, "26")).toEqual([
+      { number: "26-1", title: "Office of the lieutenant governor" },
+      { number: "26-2", title: "Order of succession to offices of governor and lieutenant governor" },
+      { number: "26-14.5", title: "Repealed" },
+      { number: "26-34", title: "Boards and commissions" },
+    ]);
+  });
+
+  test("a wrapped title line that starts with digits is not a row", () => {
+    const html = page(
+      R("<b>CHAPTER 291C</b>") +
+        R("Section") +
+        R("291C-1 Definitions") +
+        R("291C-2 Operation of vehicles between") +
+        R("6:00 p.m. and 6:00 a.m.; definition;") +
+        R("291C-3 Scope")
+    );
+    expect(parseSectionListing(html, "291C").map((r) => r.number)).toEqual(["291C-1", "291C-2", "291C-3"]);
+  });
+
+  test("a chapter whose page is only a repeal note lists nothing", () => {
+    const html = page(R("<b>CHAPTER 2</b>") + R("REPEALED. L Sp 1977 1st, c 8, §3."));
+    expect(parseSectionListing(html, "2")).toEqual([]);
+  });
+});
+
+// Found by `bun run coverage`: 38 sections whose body opens with the numbers
+// of a run repealed together were not flagged.
+test("a plural repeal note marks the section repealed", () => {
+  const html = page(
+    `<p class="RegularParagraphs"><b>§§15-7, 15-8</b>&nbsp; REPEALED.&nbsp; L 2019, c 136, §§54, 55.</p>`
+  );
+  const parsed = parseSection(html, "HRS_0015-0007.htm", "https://x/f.htm");
+  expect(parsed.isRepealed).toBe(true);
 });

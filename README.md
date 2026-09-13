@@ -420,6 +420,8 @@ src/
   serve.ts         — serves build/site locally (development only)
   verify-search.ts — drives /search in a real browser
   profile-citations.ts — the citation quality metric
+  coverage.ts      — index-page section listings vs the corpus, both directions
+  coverage.ts      — index-page section listings vs the corpus, both directions
   test-parse.ts    — test parser against a single URL or file
   *.test.ts        — 234 tests (bun test)
   db.ts, migrate.ts — Postgres side tool (optional)

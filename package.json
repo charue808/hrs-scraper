@@ -15,6 +15,7 @@
     "deploy": "bun src/deploy.ts",
     "logs": "bun src/logs.ts",
     "chapters": "bun src/chapters.ts",
+    "coverage": "bun src/coverage.ts",
     "test": "bun test"
   },
   "dependencies": {
