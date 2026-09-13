@@ -298,8 +298,9 @@ the statute's text is enacted law either way, so the rendered label says
 "heading supplied by the revisor" and deliberately avoids any phrasing like
 "not enacted", which would invite exactly the wrong reading of a legal document.
 
-The field is still called `isUncodified`. Renaming it rewrites all 23,373 files,
-so it is a deliberate separate commit rather than a drive-by.
+The field was called `isUncodified` until 2026-09-12, when it was renamed
+`headingIsSupplied` in a commit of its own — 23,373 files, one line each — so
+the rewrite sits in history by itself rather than under an amendment diff.
 
 ### Section headings
 
@@ -319,7 +320,7 @@ Headings appear in several forms:
 
 - `§1-1  Title.` — ordinary
 - `[§11-1.52]  Title.` — brackets mark a heading supplied by the revisor
-  (`isUncodified`; see The bracket convention below — the field is misnamed)
+  (`headingIsSupplied`; see The bracket convention below)
 - `§431:1-100.5  Purpose.` — colon/article notation
 - `§11‑3 Application of chapter.` — written with a **non-breaking hyphen**
   (U+2011), which appears throughout the corpus and must be normalized before
@@ -504,7 +505,7 @@ phases.
 | `partHeading` | PART/ARTICLE banner above the section, if any |
 | `chapterNumber` | Normalized (`1`, `6D`, `431K`, `05-CONST`) |
 | `docType` | `hrs`, `const`, `uscon`, `hhca`, `adm`, `org`, `hnp` |
-| `isUncodified` | Heading was bracketed, `[§11-1.52]` — revisor-supplied, **not** uncodified. Misnamed; see The bracket convention |
+| `headingIsSupplied` | Heading was bracketed, `[§11-1.52]` — revisor-supplied, **not** uncodified. Named `isUncodified` until 2026-09-12; see The bracket convention |
 | `isRepealed` | From the title, or a body that is a repeal note |
 | `covers` | The span a range page stands for (`§515-10 to 515-12`), else null. 272 sections |
 | `titleIsSupplied` | The bracket wrapped only the title — a catchline supplied editorially. 13 sections |

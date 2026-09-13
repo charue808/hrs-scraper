@@ -61,7 +61,7 @@ unavailable here. This corpus already uses `[...]` for three distinct things:
 
 | Form | Existing meaning |
 |---|---|
-| `[§11-1.52]` | heading supplied by the revisor (`isUncodified` — misnamed) |
+| `[§11-1.52]` | heading supplied by the revisor (`headingIsSupplied`) |
 | `[OLD]` | superseded part banner |
 | `[L 2022, c 96, pt of §2]` | legislative history |
 

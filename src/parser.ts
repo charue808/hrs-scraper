@@ -476,7 +476,7 @@ export function parseSection(
   let sectionNumber = fromFilename;
   let numberSource: ParsedSection["numberSource"] = "filename";
   let title = "";
-  let isUncodified = false;
+  let headingIsSupplied = false;
   let titleIsSupplied = false;
   let covers: SectionRange | null = null;
   let partHeading: string | null = null;
@@ -564,16 +564,16 @@ export function parseSection(
       }
     }
 
-    isUncodified = chosen.heading.startsWith("[");
+    headingIsSupplied = chosen.heading.startsWith("[");
 
     // `[§440G-16 Rules.]` brackets the whole heading; HEADING_RE consumes the
     // opening bracket with the number, leaving the closing one on the title.
-    if (isUncodified && title.endsWith("]")) title = title.slice(0, -1).trim();
+    if (headingIsSupplied && title.endsWith("]")) title = title.slice(0, -1).trim();
 
     // `§604-13  [Arrest under warrant.]` brackets only the title, which marks a
     // catchline supplied editorially rather than enacted.
     const supplied = title.match(/^\[([^\[\]]+)\]$/);
-    if (!isUncodified && supplied) {
+    if (!headingIsSupplied && supplied) {
       title = supplied[1]!.trim();
       titleIsSupplied = true;
     }
@@ -655,7 +655,7 @@ export function parseSection(
     partHeading,
     chapterNumber: chapterNumber ?? extractChapterFromFilename(filename),
     docType: docTypeFromFilename(filename),
-    isUncodified,
+    headingIsSupplied,
     isRepealed,
     covers,
     titleIsSupplied,

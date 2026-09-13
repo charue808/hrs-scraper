@@ -62,14 +62,14 @@ export async function upsertSection(section: ParsedSection): Promise<void> {
     INSERT INTO sections (
       section_number, title, body_text, body_html, history,
       cross_references, case_notes, annotations, part_heading,
-      chapter_number, doc_type, is_uncodified, filename, url, is_repealed
+      chapter_number, doc_type, heading_is_supplied, filename, url, is_repealed
     ) VALUES (
       ${section.sectionNumber}, ${section.title}, ${section.bodyText},
       ${section.bodyHtml}, ${section.history},
       ${section.crossReferences}, ${section.caseNotes},
       ${JSON.stringify(section.annotations)}::jsonb,
       ${section.partHeading},
-      ${section.chapterNumber}, ${section.docType}, ${section.isUncodified},
+      ${section.chapterNumber}, ${section.docType}, ${section.headingIsSupplied},
       ${section.filename}, ${section.url}, ${section.isRepealed}
     )
     ON CONFLICT (section_number) DO UPDATE SET
@@ -83,7 +83,7 @@ export async function upsertSection(section: ParsedSection): Promise<void> {
       part_heading = EXCLUDED.part_heading,
       chapter_number = EXCLUDED.chapter_number,
       doc_type = EXCLUDED.doc_type,
-      is_uncodified = EXCLUDED.is_uncodified,
+      heading_is_supplied = EXCLUDED.heading_is_supplied,
       filename = EXCLUDED.filename,
       url = EXCLUDED.url,
       is_repealed = EXCLUDED.is_repealed

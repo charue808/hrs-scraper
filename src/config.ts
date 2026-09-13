@@ -93,10 +93,10 @@ export interface ParsedSection {
   chapterNumber: string;
   docType: DocType;
   /**
-   * The heading was bracketed, e.g. `[§11-1.52]`.
+   * The heading was bracketed, e.g. `[§11-1.52]` — supplied by the revisor.
    *
-   * **The name is wrong and is kept only because renaming it rewrites all
-   * 23,373 files.** Brackets do not mark an uncodified section. 7,859 sections
+   * Called `isUncodified` until 2026-09-12, which was wrong: brackets do not
+   * mark an uncodified section. 7,859 sections
    * (33.6%) carry one, and they are plainly printed in the HRS. What the corpus
    * says in its own Revision Notes is that brackets mark material *supplied by
    * the revisor* rather than enacted by the legislature — "Bracketed words ...
@@ -106,9 +106,10 @@ export interface ParsedSection {
    * which is what a bracketed heading records.
    *
    * The statute's *text* is enacted law either way; only the heading is
-   * editorial. See `docs/project-plan.md`, The bracket convention.
+   * editorial. `titleIsSupplied` is the same convention at narrower scope.
+   * See `docs/project-plan.md`, The bracket convention.
    */
-  isUncodified: boolean;
+  headingIsSupplied: boolean;
   isRepealed: boolean;
   /**
    * Set when the heading covers a span of sections rather than one section.
@@ -119,8 +120,8 @@ export interface ParsedSection {
    * The heading bracketed the *title* but not the number
    * (`§604-13  [Arrest under warrant.]`), which by HRS convention marks a
    * catchline supplied editorially rather than enacted. Distinct from
-   * `isUncodified`, where the bracket encloses the whole heading. Both record
-   * the same convention applied at different scope.
+   * `headingIsSupplied`, where the bracket encloses the whole heading. Both
+   * record the same convention applied at different scope.
    */
   titleIsSupplied: boolean;
   /**
@@ -261,7 +262,7 @@ export const SECTION_FIELD_ORDER: readonly (keyof ParsedSection)[] = [
   "crossReferences",
   "caseNotes",
   "annotations",
-  "isUncodified",
+  "headingIsSupplied",
   "isRepealed",
   "covers",
   "titleIsSupplied",

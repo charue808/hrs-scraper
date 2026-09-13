@@ -14,7 +14,7 @@
       "text": "In section heading, \"chapter\" substituted for \"Act\"."
     }
   ],
-  "isUncodified": true,
+  "headingIsSupplied": true,
   "isRepealed": false,
   "covers": null,
   "titleIsSupplied": false,

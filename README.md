@@ -135,7 +135,7 @@ Each statute section is parsed into structured data (`bodyHtml` elided):
       "text": "Prior to amendment spelling out that legislature may provide..."
     }
   ],
-  "isUncodified": false,
+  "headingIsSupplied": false,
   "isRepealed": false,
   "covers": null,
   "titleIsSupplied": false,
@@ -148,11 +148,11 @@ Each statute section is parsed into structured data (`bodyHtml` elided):
 
 Field notes, in the order they appear:
 
-- `isUncodified` — the heading was bracketed (`[§11-1.52]`). **The field name is
-  wrong**: brackets mark material *supplied by the revisor* rather than enacted
-  by the legislature, not an uncodified section — 33.6% of the corpus carries
-  one. Renaming it rewrites all 23,373 files, so it is tracked separately. The
-  rendered pages say "heading supplied by the revisor".
+- `headingIsSupplied` — the heading was bracketed (`[§11-1.52]`): brackets mark
+  material *supplied by the revisor* rather than enacted by the legislature,
+  not an uncodified section — 33.6% of the corpus carries one. The rendered
+  pages say "heading supplied by the revisor". (Called `isUncodified` until
+  2026-09-12; the rename is its own commit.)
 - `covers` — set on the 272 pages whose heading states a span rather than one
   section (`§515-10 to 515-12 REPEALED.`). A range heading cannot say which of
   its members a given file is, so those take their number from the filename and

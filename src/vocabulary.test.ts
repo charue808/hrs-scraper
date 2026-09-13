@@ -14,7 +14,7 @@ const section = (over: Partial<ParsedSection>): ParsedSection => ({
   partHeading: null,
   chapterNumber: "1",
   docType: "hrs",
-  isUncodified: false,
+  headingIsSupplied: false,
   isRepealed: false,
   covers: null,
   titleIsSupplied: false,

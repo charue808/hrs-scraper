@@ -56,7 +56,7 @@ const section = (over: Partial<ParsedSection> = {}): ParsedSection => ({
   partHeading: null,
   chapterNumber: "502",
   docType: "hrs",
-  isUncodified: false,
+  headingIsSupplied: false,
   isRepealed: false,
   covers: null,
   titleIsSupplied: false,
@@ -254,7 +254,7 @@ describe("bracketed headings", () => {
   // 7,859 sections (33.6%) carry a bracketed heading and are plainly printed in
   // the HRS. The Revision Notes say brackets mark revisor-supplied material.
   test("a bracketed heading is described as revisor-supplied, not uncodified", () => {
-    const html = render({ isUncodified: true });
+    const html = render({ headingIsSupplied: true });
     expect(html).toContain("heading supplied by the revisor");
     expect(html).not.toContain("codified");
   });
@@ -266,7 +266,7 @@ describe("bracketed headings", () => {
   // The label is scoped to the heading on purpose — the statute's text is
   // enacted law either way, and "not enacted" would invite the wrong reading.
   test("the label makes no claim about the statute's force", () => {
-    const html = render({ isUncodified: true, bodyText: "The department shall act." });
+    const html = render({ headingIsSupplied: true, bodyText: "The department shall act." });
     expect(html).not.toContain("not enacted");
     expect(html).toContain("The department shall act.");
   });

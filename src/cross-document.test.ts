@@ -14,7 +14,7 @@ const section = (sectionNumber: string, docType: DocType, title = ""): ParsedSec
   partHeading: null,
   chapterNumber: "05-CONST",
   docType,
-  isUncodified: false,
+  headingIsSupplied: false,
   isRepealed: false,
   covers: null,
   titleIsSupplied: false,

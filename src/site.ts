@@ -390,7 +390,7 @@ const DISCLAIMER =
  *
  * The brackets come off for display and the fact is stated in words instead.
  * That matches how a bracketed *section* heading is already handled — the
- * parser strips the brackets and `isUncodified` carries the meaning — and it
+ * parser strips the brackets and `headingIsSupplied` carries the meaning — and it
  * stops `[PART IV. THE EXECUTIVE BUDGET]` from reading as a rendering artifact,
  * which is exactly how it read when the brackets were left in.
  *
@@ -637,9 +637,8 @@ export function sectionPage(
   //
   // Scoped to the heading on purpose: the statute's *text* is enacted law
   // either way, and a phrase like "not enacted" would invite exactly the wrong
-  // reading. The field name `isUncodified` is still wrong and is tracked
-  // separately — renaming it rewrites all 23,373 files.
-  if (section.isUncodified) flags.push("heading supplied by the revisor");
+  // reading.
+  if (section.headingIsSupplied) flags.push("heading supplied by the revisor");
   if (section.titleIsSupplied) flags.push("catchline supplied by the revisor");
   if (flags.length) body.push(`<p class="meta">${flags.join(" · ")}</p>`);
 

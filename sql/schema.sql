@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS sections (
   part_heading TEXT,
   chapter_number TEXT NOT NULL REFERENCES chapters(number),
   doc_type TEXT NOT NULL DEFAULT 'hrs',
-  is_uncodified BOOLEAN DEFAULT FALSE,
+  heading_is_supplied BOOLEAN DEFAULT FALSE,
   filename TEXT NOT NULL,
   url TEXT NOT NULL,
   is_repealed BOOLEAN DEFAULT FALSE,
@@ -58,7 +58,16 @@ CREATE TABLE IF NOT EXISTS sections (
 ALTER TABLE chapters ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '';
 ALTER TABLE sections ADD COLUMN IF NOT EXISTS annotations JSONB NOT NULL DEFAULT '[]';
 ALTER TABLE sections ADD COLUMN IF NOT EXISTS doc_type TEXT NOT NULL DEFAULT 'hrs';
-ALTER TABLE sections ADD COLUMN IF NOT EXISTS is_uncodified BOOLEAN DEFAULT FALSE;
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS heading_is_supplied BOOLEAN DEFAULT FALSE;
+-- Renamed 2026-09-12: brackets mark a revisor-supplied heading, not an
+-- uncodified section. Carries the old column's values forward where it exists.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'sections' AND column_name = 'is_uncodified') THEN
+    UPDATE sections SET heading_is_supplied = is_uncodified;
+    ALTER TABLE sections DROP COLUMN is_uncodified;
+  END IF;
+END $$;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_sections_fts ON sections USING GIN (fts);

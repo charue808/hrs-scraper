@@ -9,6 +9,16 @@ search verified in a real browser against the live host. 235 tests, typecheck
 clean. The access-log cron is installed on the host; a `usage` report over the
 pulled logs is the next operational piece, once there is traffic to shape it.
 
+## 2026-09-12 — `isUncodified` → `headingIsSupplied`
+
+The rename the docs had been promising since 2026-09-10, done while there is
+still no amendment diff for it to bury: 23,373 files, one line each, verified
+by diffing the corpus after `bun run reparse` — exactly two distinct changed
+lines across the whole tree, the old key out and the new key in. The name
+pairs with `titleIsSupplied`, which is the same convention at narrower scope.
+The side tool's column is renamed too, with a re-runnable migration that
+carries the old column's values forward.
+
 ## 2026-09-12 — Division/Title navigation
 
 The site navigated by volume, which is how the printed edition is bound and

@@ -180,7 +180,7 @@ describe("parseSection", () => {
     );
     const parsed = parseSection(html, "HRS_0011-0001_0005_0002.htm", "https://x/f.htm");
     expect(parsed.sectionNumber).toBe("§11-1.52");
-    expect(parsed.isUncodified).toBe(true);
+    expect(parsed.headingIsSupplied).toBe(true);
     expect(parsed.title).toBe("Electronic Registration Information Center, Inc.; membership.");
   });
 
@@ -300,7 +300,7 @@ describe("parseSection", () => {
     expect(parsed.sectionNumber).toBe("\u00A710-1");
     expect(parsed.numberSource).toBe("page");
     expect(parsed.title).toBe("Declaration of purpose.");
-    expect(parsed.isUncodified).toBe(true);
+    expect(parsed.headingIsSupplied).toBe(true);
     expect(parsed.partHeading).toBe("PART I. GENERAL PROVISIONS");
     expect(parsed.bodyText).toContain("public trust");
     expect(parsed.annotations.map((a) => a.heading)).toEqual(["Note"]);
@@ -596,7 +596,7 @@ describe("bracketed headings", () => {
     );
     const parsed = parseSection(html, "HRS_0440G-0016.htm", "https://x/HRS_0440G-0016.htm");
     expect(parsed.title).toBe("Rules.");
-    expect(parsed.isUncodified).toBe(true);
+    expect(parsed.headingIsSupplied).toBe(true);
     expect(parsed.titleIsSupplied).toBe(false);
   });
 
@@ -609,7 +609,7 @@ describe("bracketed headings", () => {
     const parsed = parseSection(html, "HRS_0604-0013.htm", "https://x/HRS_0604-0013.htm");
     expect(parsed.title).toBe("Arrest under warrant.");
     expect(parsed.titleIsSupplied).toBe(true);
-    expect(parsed.isUncodified).toBe(false);
+    expect(parsed.headingIsSupplied).toBe(false);
   });
 
   // "[OLD]" is a marker inside the title, not a bracket around it.

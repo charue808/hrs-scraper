@@ -248,10 +248,9 @@ Nothing here is a defect. In the order I would take them:
    extracted; the listing itself is not. It would make a good coverage check
    against the files actually discovered. Not needed for chapter pages — those
    are built from the parsed sections, which carry real titles.
-4. **Rename `isUncodified`.** The name is wrong (see the bracket convention) and
-   the field is documented as wrong in four places. Renaming rewrites all 23,373
-   files, so it wants its own commit with nothing else in it — do it before the
-   first real amendment diff, or never.
+4. ~~**Rename `isUncodified`.**~~ **Done 2026-09-12** — `headingIsSupplied`,
+   pairing with `titleIsSupplied`. One commit, 23,373 files, one line each,
+   before any amendment diff exists to bury.
 5. **Enhancing ranges for research.** Recorded as open question 5 in
    `citation-linking.md`. The current handling is correct and agreed; the
    question is only how much further to go.
@@ -374,9 +373,9 @@ arguments. Each is documented in full where noted.
   corpus says so in its own Revision Notes, and 33.6% of sections carry a
   bracketed heading — far too many to be awaiting codification. The convention
   runs through headings, catchlines, PART banners and numbers cited in running
-  text, and missing it costs something at every one of those sites. The field is
-  still called `isUncodified`; the name is wrong and renaming it rewrites all
-  23,373 files. (`project-plan.md`, The bracket convention)
+  text, and missing it costs something at every one of those sites. The field
+  was called `isUncodified` until 2026-09-12 and is now `headingIsSupplied`.
+  (`project-plan.md`, The bracket convention)
 - **A list keyword is not always plural.** `section 667-22 or 667-55` is ordinary
   HRS drafting. Gating list continuation on `sections` dropped roughly 1,600
   links. (`citation-linking.md`, hazard 4)

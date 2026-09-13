@@ -80,7 +80,7 @@ console.log(`Title:          ${parsed.title || "(none)"}`);
 console.log(`Chapter:        ${parsed.chapterNumber}`);
 console.log(`Doc type:       ${parsed.docType}`);
 console.log(`Repealed:       ${parsed.isRepealed}`);
-console.log(`Uncodified:     ${parsed.isUncodified}`);
+console.log(`Heading supplied: ${parsed.headingIsSupplied}`);
 console.log(`Part Heading:   ${parsed.partHeading ?? "(none)"}`);
 console.log("");
 console.log(`--- Body Text (${parsed.bodyText.length} chars, first 500) ---`);
